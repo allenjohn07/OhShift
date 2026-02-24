@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
         {/* Next shift highlight */}
         {nextShift && (
-          <Card className="border-primary/20 bg-primary/[0.02]">
+          <Card className="border-primary/20 bg-primary/2">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base">Your Next Shift</CardTitle>
