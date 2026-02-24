@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OhShift
+
+Smart shift scheduling for modern teams. Create schedules, manage employees, and communicate changes — all from one clean interface.
+
+Built with **Next.js 14** · **Tailwind CSS** · **shadcn/ui** · **Supabase** · **TypeScript**
+
+---
+
+## Features
+
+- **Visual Scheduling** — Week calendar view for both employees and managers
+- **Team Management** — Invite employees, assign roles, view team at a glance
+- **Shift CRUD** — Create, edit, cancel shifts with instant notifications
+- **Employee Dashboard** — Upcoming shifts, stats, and acknowledgement
+- **Manager Overview** — Coverage stats, activity feed, today/tomorrow shifts
+- **Calendar Grid** — Employee × day schedule view for managers
+- **Dark Mode** — System-aware with manual toggle
+- **Notifications** — In-app bell with unread count and configurable preferences
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| Database | Supabase (Postgres) |
+| Auth | Supabase Auth |
+| State | Zustand + TanStack Query |
+| Email | Resend + React Email |
+| Icons | Lucide React |
+| Dates | date-fns |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Add your Supabase and Resend keys
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── page.tsx                 # Landing page
+│   ├── login/                   # Auth pages
+│   ├── signup/
+│   └── (app)/                   # Authenticated routes
+│       ├── dashboard/           # Employee dashboard
+│       ├── schedule/            # Personal schedule
+│       ├── shifts/[id]/         # Shift detail
+│       ├── manage/              # Manager views
+│       │   ├── schedule/        # Team calendar grid
+│       │   ├── employees/       # Team management
+│       │   └── shifts/          # Create/edit shifts
+│       └── settings/            # Company & notification settings
+├── components/
+│   ├── layout/                  # Sidebar, header, theme toggle
+│   ├── shifts/                  # Shift card components
+│   └── ui/                      # shadcn/ui components
+├── stores/                      # Zustand stores
+└── lib/                         # Types, utilities, mock data
+```
 
-## Learn More
+## Routes
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Access | Description |
+|---|---|---|
+| `/` | Public | Landing page |
+| `/login` | Public | Sign in |
+| `/signup` | Public | Create account |
+| `/dashboard` | Employee | Upcoming shifts & stats |
+| `/schedule` | Employee | Personal week calendar |
+| `/shifts/[id]` | Employee | Shift detail & acknowledge |
+| `/manage` | Manager | Overview & activity |
+| `/manage/schedule` | Manager | Team calendar grid |
+| `/manage/employees` | Manager | Team list & invite |
+| `/manage/shifts/new` | Manager | Create shift |
+| `/manage/shifts/[id]/edit` | Manager | Edit shift |
+| `/settings` | Owner | Company settings |
+| `/settings/notifications` | All | Notification preferences |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RESEND_API_KEY=
+EMAIL_FROM=noreply@ohshift.com
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run dev       # Start development server
+npm run build     # Production build
+npm run start     # Start production server
+npm run lint      # Run ESLint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
