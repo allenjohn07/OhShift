@@ -104,7 +104,7 @@ export default function LandingPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-foreground/[0.03] to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-linear-to-b from-foreground/3 to-transparent rounded-full blur-3xl" />
       </div>
 
       {/* Nav */}
@@ -281,7 +281,7 @@ export default function LandingPage() {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="group relative rounded-2xl border border-border/50 bg-card/30 p-7 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/[0.03] dark:hover:shadow-black/20 hover:-translate-y-1"
+                className="group relative rounded-2xl border border-border/50 bg-card/30 p-7 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20 hover:-translate-y-1"
               >
                 <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5 transition-transform duration-300 group-hover:scale-110">
                   <feature.icon className="h-5 w-5 text-foreground/70" />
@@ -313,7 +313,7 @@ export default function LandingPage() {
 
           <div className="relative">
             {/* Connecting line */}
-            <div className="hidden md:block absolute top-[3.25rem] left-[calc(16.67%+1.5rem)] right-[calc(16.67%+1.5rem)] h-px bg-border" />
+            <div className="hidden md:block absolute top-13 left-[calc(16.67%+1.5rem)] right-[calc(16.67%+1.5rem)] h-px bg-border" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
               {steps.map((step) => (
@@ -349,7 +349,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Company card */}
-            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/[0.03] dark:hover:shadow-black/20">
+            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20">
               <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5">
                 <Building2 className="h-6 w-6 text-foreground/70" />
               </div>
@@ -377,7 +377,7 @@ export default function LandingPage() {
             </div>
 
             {/* Employee card */}
-            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/[0.03] dark:hover:shadow-black/20">
+            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20">
               <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5">
                 <User className="h-6 w-6 text-foreground/70" />
               </div>

@@ -86,7 +86,7 @@ export default function EmployeeLoginPage() {
             <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
               <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-foreground text-background font-bold text-sm overflow-hidden">
                 <span className="relative z-10">O</span>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent" />
               </div>
               <span className="text-xl font-semibold tracking-tight">
                 OhShift
