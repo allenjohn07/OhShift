@@ -4,21 +4,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, User, Info } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export default function EmployeeLoginPage() {
+export default function CompanyRegisterPage() {
+  const [companyName, setCompanyName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      toast.info("Login functionality coming soon!", {
+      toast.info("Registration coming soon!", {
         description: "We're still building this. Check back later.",
       });
     }, 800);
@@ -46,31 +48,33 @@ export default function EmployeeLoginPage() {
         Back
       </Link>
 
-      {/* Left decorative panel — hidden on mobile */}
+      {/* Left decorative panel */}
       <div className="hidden lg:flex lg:w-[45%] bg-accent/30 items-center justify-center p-12 border-r border-border/30 animate-fade-in">
         <div className="max-w-md space-y-8 animate-fade-in delay-100">
           <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-accent">
-            <User className="h-8 w-8 text-foreground/60" />
+            <Building2 className="h-8 w-8 text-foreground/60" />
           </div>
           <div>
             <h2 className="text-3xl font-bold tracking-tight mb-3">
-              Employee Portal
+              Start scheduling
+              <br />
+              <span className="text-muted-foreground">in minutes.</span>
             </h2>
             <p className="text-muted-foreground leading-relaxed text-lg">
-              View your schedule, check upcoming shifts, and stay connected with
-              your team — all from one place.
+              Register your company and gain instant access to a powerful shift
+              scheduling platform.
             </p>
           </div>
           <div className="space-y-4">
             {[
-              "View your upcoming shifts at a glance",
-              "Get notified about schedule changes",
-              "Access from any device, anywhere",
+              "Free for teams up to 10 members",
+              "No credit card required",
+              "Setup in under 2 minutes",
+              "Invite unlimited managers",
+              "Cancel anytime, no strings attached",
             ].map((item) => (
-              <div key={item} className="flex items-start gap-3">
-                <div className="mt-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-foreground/5 shrink-0">
-                  <div className="w-1.5 h-1.5 rounded-full bg-foreground/40" />
-                </div>
+              <div key={item} className="flex items-center gap-3">
+                <CheckCircle2 className="h-4 w-4 text-foreground/40 shrink-0" />
                 <span className="text-sm text-muted-foreground">{item}</span>
               </div>
             ))}
@@ -93,24 +97,43 @@ export default function EmployeeLoginPage() {
               </span>
             </Link>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Employee Sign In
+              Register your company
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in to view your schedule and shifts
-            </p>
-          </div>
-
-          {/* Info box */}
-          <div className="animate-fade-in delay-100 flex items-start gap-3 rounded-xl bg-accent/50 border border-border/50 p-4">
-            <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your account is created when your company sends you a magic link.
-              If you haven&apos;t received one, contact your manager.
+              Create your workspace and start scheduling
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-5 animate-fade-in delay-200">
+          <form onSubmit={handleRegister} className="space-y-4 animate-fade-in delay-100">
+            <div className="space-y-2">
+              <Label htmlFor="companyName" className="text-sm font-medium">
+                Company name
+              </Label>
+              <Input
+                id="companyName"
+                type="text"
+                placeholder="Brew & Co."
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Your full name
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Alex Morgan"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
                 Email
@@ -118,7 +141,7 @@ export default function EmployeeLoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="alex@brewco.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -136,8 +159,12 @@ export default function EmployeeLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
                 className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
               />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters
+              </p>
             </div>
 
             <Button
@@ -148,30 +175,30 @@ export default function EmployeeLoginPage() {
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                  Signing in...
+                  Creating account...
                 </span>
               ) : (
                 <>
-                  Sign in
+                  Create company account
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>
           </form>
 
-          <div className="text-center space-y-3 animate-fade-in delay-300">
+          <div className="text-center space-y-3 animate-fade-in delay-200">
             <p className="text-xs text-muted-foreground/70">
-              By signing in, you agree to our Terms of Service and Privacy
+              By registering, you agree to our Terms of Service and Privacy
               Policy.
             </p>
             <div className="h-px bg-border/50" />
             <p className="text-sm text-muted-foreground">
-              Managing a team?{" "}
+              Already have an account?{" "}
               <Link
                 href="/company/login"
                 className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
               >
-                Company portal →
+                Sign in →
               </Link>
             </p>
           </div>

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, User, Info } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export default function EmployeeLoginPage() {
+export default function CompanyLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -46,26 +46,27 @@ export default function EmployeeLoginPage() {
         Back
       </Link>
 
-      {/* Left decorative panel — hidden on mobile */}
+      {/* Left decorative panel */}
       <div className="hidden lg:flex lg:w-[45%] bg-accent/30 items-center justify-center p-12 border-r border-border/30 animate-fade-in">
         <div className="max-w-md space-y-8 animate-fade-in delay-100">
           <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-accent">
-            <User className="h-8 w-8 text-foreground/60" />
+            <Building2 className="h-8 w-8 text-foreground/60" />
           </div>
           <div>
             <h2 className="text-3xl font-bold tracking-tight mb-3">
-              Employee Portal
+              Company Portal
             </h2>
             <p className="text-muted-foreground leading-relaxed text-lg">
-              View your schedule, check upcoming shifts, and stay connected with
-              your team — all from one place.
+              Manage your entire team&apos;s schedule from one powerful
+              dashboard. Full control, zero complexity.
             </p>
           </div>
           <div className="space-y-4">
             {[
-              "View your upcoming shifts at a glance",
-              "Get notified about schedule changes",
-              "Access from any device, anywhere",
+              "Create and assign shifts visually",
+              "Invite employees with magic links",
+              "Real-time notifications for your team",
+              "Role-based access for managers",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3">
                 <div className="mt-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-foreground/5 shrink-0">
@@ -93,24 +94,15 @@ export default function EmployeeLoginPage() {
               </span>
             </Link>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Employee Sign In
+              Company Sign In
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in to view your schedule and shifts
-            </p>
-          </div>
-
-          {/* Info box */}
-          <div className="animate-fade-in delay-100 flex items-start gap-3 rounded-xl bg-accent/50 border border-border/50 p-4">
-            <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your account is created when your company sends you a magic link.
-              If you haven&apos;t received one, contact your manager.
+              Sign in to manage your team and schedules
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-5 animate-fade-in delay-200">
+          <form onSubmit={handleLogin} className="space-y-5 animate-fade-in delay-100">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
                 Email
@@ -118,7 +110,7 @@ export default function EmployeeLoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="admin@yourcompany.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -159,19 +151,24 @@ export default function EmployeeLoginPage() {
             </Button>
           </form>
 
-          <div className="text-center space-y-3 animate-fade-in delay-300">
-            <p className="text-xs text-muted-foreground/70">
-              By signing in, you agree to our Terms of Service and Privacy
-              Policy.
+          <div className="text-center space-y-3 animate-fade-in delay-200">
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have a company account?{" "}
+              <Link
+                href="/company/register"
+                className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
+              >
+                Register your company →
+              </Link>
             </p>
             <div className="h-px bg-border/50" />
             <p className="text-sm text-muted-foreground">
-              Managing a team?{" "}
+              Looking for the employee login?{" "}
               <Link
-                href="/company/login"
+                href="/login"
                 className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
               >
-                Company portal →
+                Employee sign in →
               </Link>
             </p>
           </div>
