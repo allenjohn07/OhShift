@@ -45,7 +45,7 @@ Create schedules, manage employees, and communicate changes — all from one cle
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
-- [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
+- [Bun](https://bun.sh/)
 
 ### Installation
 
@@ -55,10 +55,10 @@ git clone https://github.com/allenjohn07/OhShift.git
 cd OhShift
 
 # Install dependencies
-npm install
+bun install
 
 # Start the development server
-npm run dev
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
@@ -103,10 +103,10 @@ src/
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Create production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+| `bun run dev` | Start development server |
+| `bun run build` | Create production build |
+| `bun run start` | Start production server |
+| `bun run lint` | Run ESLint |
 
 ## 🎨 Design
 
