@@ -10,7 +10,9 @@ import {
   ChevronRight,
   Building2,
   User,
-  CheckCircle2,
+  Github,
+  Twitter,
+  Linkedin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
@@ -52,44 +54,6 @@ const features = [
     description:
       "Built for speed — every interaction feels instant. No loading spinners, ever.",
   },
-];
-
-const steps = [
-  {
-    number: "01",
-    title: "Register your company",
-    description:
-      "Create your workspace in seconds. Add your business name, set your timezone, and you're live.",
-    icon: Building2,
-  },
-  {
-    number: "02",
-    title: "Invite your team",
-    description:
-      "Send magic links to your employees. They click, create a password, and they're in — no signup needed.",
-    icon: Users,
-  },
-  {
-    number: "03",
-    title: "Build your schedule",
-    description:
-      "Drag and drop shifts onto the calendar. Your team is notified instantly via email.",
-    icon: Calendar,
-  },
-];
-
-const stats = [
-  { value: "10K+", label: "Shifts Scheduled" },
-  { value: "500+", label: "Teams Active" },
-  { value: "99.9%", label: "Uptime" },
-  { value: "< 1s", label: "Load Time" },
-];
-
-const benefits = [
-  "Free for teams up to 10 members",
-  "No credit card required",
-  "Setup in under 2 minutes",
-  "Cancel anytime",
 ];
 
 export default function LandingPage() {
@@ -135,7 +99,7 @@ export default function LandingPage() {
           beautiful interface.
         </p>
 
-        <div className="animate-fade-in delay-400 flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+        <div className="animate-fade-in delay-400 flex items-center justify-center">
           <Link href="/company/register">
             <Button
               size="lg"
@@ -145,25 +109,6 @@ export default function LandingPage() {
               Register your company
             </Button>
           </Link>
-          <Link href="/login">
-            <Button
-              variant="outline"
-              size="lg"
-              className="btn-hover h-13 px-8 text-base rounded-full font-medium"
-            >
-              <User className="mr-2 h-4 w-4" />
-              Employee sign in
-            </Button>
-          </Link>
-        </div>
-
-        <div className="animate-fade-in delay-500 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          {benefits.map((b) => (
-            <span key={b} className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-foreground/50" />
-              {b}
-            </span>
-          ))}
         </div>
       </section>
 
@@ -243,25 +188,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats strip */}
-      <section className="border-y border-border/40 bg-card/20 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 lg:px-12 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold tracking-tight mb-1.5">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
+      {/* Features — Bento Grid */}
       <section className="px-6 lg:px-12 py-24 sm:py-32">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -281,10 +208,10 @@ export default function LandingPage() {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="group relative rounded-2xl border border-border/50 bg-card/30 p-7 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20 hover:-translate-y-1"
+                className="group rounded-2xl border border-border/50 bg-card/40 p-7 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80"
               >
-                <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5 transition-transform duration-300 group-hover:scale-110">
-                  <feature.icon className="h-5 w-5 text-foreground/70" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent mb-5">
+                  <feature.icon className="h-5 w-5 text-foreground/60" />
                 </div>
                 <h3 className="font-semibold text-base mb-2">
                   {feature.title}
@@ -294,43 +221,6 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="px-6 lg:px-12 py-24 sm:py-32 border-t border-border/40">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Up and running in{" "}
-              <span className="text-muted-foreground">minutes</span>
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Three simple steps to transform how your team handles scheduling.
-            </p>
-          </div>
-
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="hidden md:block absolute top-13 left-[calc(16.67%+1.5rem)] right-[calc(16.67%+1.5rem)] h-px bg-border" />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
-              {steps.map((step) => (
-                <div key={step.number} className="text-center relative">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6 bg-accent transition-transform duration-300 hover:scale-110">
-                    <step.icon className="h-6 w-6 text-foreground/70" />
-                  </div>
-                  <div className="text-xs font-bold uppercase tracking-widest mb-3 text-muted-foreground">
-                    Step {step.number}
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-[280px] mx-auto">
-                    {step.description}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
@@ -349,69 +239,148 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Company card */}
-            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20">
-              <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5">
-                <Building2 className="h-6 w-6 text-foreground/70" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">I manage a team</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                Register your company, invite employees, and start building
-                schedules in minutes. Full control over your workspace.
-              </p>
-              <div className="flex flex-col gap-2">
-                <Link href="/company/register">
-                  <Button className="btn-hover w-full rounded-xl h-11 font-medium">
-                    Register company
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/company/login">
-                  <Button
-                    variant="ghost"
-                    className="w-full rounded-xl h-11 text-muted-foreground transition-colors duration-300 hover:text-foreground"
-                  >
-                    Already registered? Sign in
-                  </Button>
-                </Link>
+            <div className="group rounded-2xl border border-border/50 bg-card/40 overflow-hidden transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 flex flex-col">
+              <div className="p-8 flex flex-col flex-1">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-6">
+                  <Building2 className="h-6 w-6 text-foreground/60" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">I manage a team</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
+                  Register your company, invite employees, and start building
+                  schedules in minutes. Full control over your workspace.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Link href="/company/register">
+                    <Button className="btn-hover w-full rounded-xl h-11 font-medium">
+                      Register company
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/company/login">
+                    <Button
+                      variant="ghost"
+                      className="w-full rounded-xl h-11 text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                    >
+                      Already registered? Sign in
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* Employee card */}
-            <div className="group rounded-2xl border border-border/60 bg-card/40 p-8 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/20">
-              <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent mb-5">
-                <User className="h-6 w-6 text-foreground/70" />
+            <div className="group rounded-2xl border border-border/50 bg-card/40 overflow-hidden transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 flex flex-col">
+              <div className="p-8 flex flex-col flex-1">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-6">
+                  <User className="h-6 w-6 text-foreground/60" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  I&apos;m an employee
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
+                  Got a magic link from your company? Log in to see your schedule,
+                  upcoming shifts, and team notifications.
+                </p>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    className="btn-hover w-full rounded-xl h-11 font-medium"
+                  >
+                    Employee sign in
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
-              <h3 className="text-xl font-semibold mb-2">
-                I&apos;m an employee
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                Got a magic link from your company? Log in to see your schedule,
-                upcoming shifts, and team notifications.
-              </p>
-              <Link href="/login">
-                <Button
-                  variant="outline"
-                  className="btn-hover w-full rounded-xl h-11 font-medium"
-                >
-                  Employee sign in
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 px-6 lg:px-12 py-8">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-6 h-6 rounded-md bg-foreground text-background font-bold text-[10px]">
-              O
+      {/* Professional Footer */}
+      <footer className="border-t border-border/40 bg-card/20 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-6 lg:px-12">
+          {/* Footer columns */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 py-14">
+            {/* Brand column */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-foreground text-background font-bold text-xs overflow-hidden">
+                  <span className="relative z-10">O</span>
+                  <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent" />
+                </div>
+                <span className="text-lg font-semibold tracking-tight">OhShift</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Modern shift scheduling that your team will actually enjoy.
+              </p>
             </div>
-            <span className="font-medium text-foreground/80">OhShift</span>
+
+            {/* Product column */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Product</h4>
+              <ul className="space-y-2.5">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Integrations</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Changelog</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company column */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Company</h4>
+              <ul className="space-y-2.5">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">About</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Blog</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Careers</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal column */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2.5">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Privacy</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Terms</a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Security</a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p>© {new Date().getFullYear()} OhShift. All rights reserved.</p>
+
+          {/* Bottom bar */}
+          <div className="border-t border-border/40 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} OhShift. All rights reserved.
+            </p>
+            <div className="flex items-center gap-3">
+              <a href="#" className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200" aria-label="GitHub">
+                <Github className="h-4 w-4" />
+              </a>
+              <a href="#" className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200" aria-label="Twitter">
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a href="#" className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200" aria-label="LinkedIn">
+                <Linkedin className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

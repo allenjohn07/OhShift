@@ -64,9 +64,9 @@ export function Navbar() {
           )}
           <Link href="/login">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-9 px-4 rounded-full font-medium text-muted-foreground hover:text-foreground transition-colors duration-300"
+              className="btn-hover h-9 px-5 rounded-full font-medium"
             >
               Employee Login
             </Button>
@@ -77,7 +77,6 @@ export function Navbar() {
               className="btn-hover h-9 px-5 rounded-full font-medium"
             >
               Company Portal
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>
