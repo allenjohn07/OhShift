@@ -100,11 +100,11 @@ export default function CompanyRegisterPage() {
           </div>
           <div className="space-y-4">
             {[
-              "Free for teams up to 10 members",
-              "No credit card required",
+              "100% free forever",
+              "No limits on team size",
               "Setup in under 2 minutes",
               "Invite unlimited managers",
-              "Cancel anytime, no strings attached",
+              "Full access to all features",
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <CheckCircle2 className="h-4 w-4 text-foreground/40 shrink-0" />
