@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, User, Info } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function EmployeeLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,12 +18,34 @@ export default function EmployeeLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.info("Login functionality coming soon!", {
-        description: "We're still building this. Check back later.",
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-    }, 800);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error("Login failed", {
+          description: data.error || "Invalid credentials.",
+        });
+        return;
+      }
+
+      toast.success("Welcome back!", {
+        description: "Redirecting to your dashboard...",
+      });
+      router.push("/dashboard");
+    } catch {
+      toast.error("Something went wrong", {
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

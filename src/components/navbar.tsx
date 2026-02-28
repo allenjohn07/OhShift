@@ -2,17 +2,39 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, User, Building2, Sun, Moon } from "lucide-react";
+import { ArrowRight, User, Building2, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 
 export function Navbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    // Fetch user state
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        setUser(data.user);
+        setIsLoadingAuth(false);
+      })
+      .catch(() => setIsLoadingAuth(false));
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    setIsOpen(false);
+    router.push("/");
+    router.refresh();
+  };
 
   // Close menu on resize to desktop
   useEffect(() => {
@@ -62,23 +84,51 @@ export function Navbar() {
               )}
             </button>
           )}
-          <Link href="/login">
-            <Button
-              variant="outline"
-              size="sm"
-              className="btn-hover h-9 px-5 rounded-full font-medium"
-            >
-              Employee Login
-            </Button>
-          </Link>
-          <Link href="/company/login">
-            <Button
-              size="sm"
-              className="btn-hover h-9 px-5 rounded-full font-medium"
-            >
-              Company Portal
-            </Button>
-          </Link>
+
+          {!isLoadingAuth && (
+            user ? (
+              <>
+                <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-5 rounded-full font-medium"
+                  >
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="btn-hover h-9 px-4 rounded-full font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="btn-hover h-9 px-5 rounded-full font-medium"
+                  >
+                    Employee Login
+                  </Button>
+                </Link>
+                <Link href="/company/login">
+                  <Button
+                    size="sm"
+                    className="btn-hover h-9 px-5 rounded-full font-medium"
+                  >
+                    Company Portal
+                  </Button>
+                </Link>
+              </>
+            )
+          )}
         </div>
 
         {/* Mobile right side */}
@@ -141,35 +191,62 @@ export function Navbar() {
       >
         <div className="border-t border-border/40 bg-background">
           <div className="flex flex-col p-4 gap-2">
-            <Link href="/login" onClick={() => setIsOpen(false)}>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
-                <User className="h-4.5 w-4.5 text-muted-foreground" />
-                <div>
-                  <div className="text-sm font-medium">Employee Login</div>
-                  <div className="text-xs text-muted-foreground">
-                    Sign in to view your schedule
-                  </div>
-                </div>
-              </div>
-            </Link>
-            <Link href="/company/login" onClick={() => setIsOpen(false)}>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
-                <Building2 className="h-4.5 w-4.5 text-muted-foreground" />
-                <div>
-                  <div className="text-sm font-medium">Company Portal</div>
-                  <div className="text-xs text-muted-foreground">
-                    Manage your team and schedules
-                  </div>
-                </div>
-              </div>
-            </Link>
-            <div className="h-px bg-border/50 my-1" />
-            <Link href="/company/register" onClick={() => setIsOpen(false)}>
-              <Button className="btn-hover w-full h-11 rounded-xl font-medium">
-                Register your company
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            {!isLoadingAuth && (
+              user ? (
+                <>
+                  <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"} onClick={() => setIsOpen(false)}>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
+                      <LayoutDashboard className="h-4.5 w-4.5 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">Dashboard</div>
+                        <div className="text-xs text-muted-foreground">
+                          Manage your schedule and team
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="h-px bg-border/50 my-1" />
+                  <button onClick={handleLogout} className="w-full text-left">
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200 text-rose-500">
+                      <LogOut className="h-4.5 w-4.5" />
+                      <div className="text-sm font-medium">Logout</div>
+                    </div>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
+                      <User className="h-4.5 w-4.5 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">Employee Login</div>
+                        <div className="text-xs text-muted-foreground">
+                          Sign in to view your schedule
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/company/login" onClick={() => setIsOpen(false)}>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
+                      <Building2 className="h-4.5 w-4.5 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">Company Portal</div>
+                        <div className="text-xs text-muted-foreground">
+                          Manage your team and schedules
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="h-px bg-border/50 my-1" />
+                  <Link href="/company/register" onClick={() => setIsOpen(false)}>
+                    <Button className="btn-hover w-full h-11 rounded-xl font-medium">
+                      Register your company
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </>
+              )
+            )}
           </div>
         </div>
       </div>
