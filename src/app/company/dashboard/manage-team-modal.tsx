@@ -76,7 +76,7 @@ export function ManageTeamModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-card w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-border/50 animate-in fade-in zoom-in-95 duration-200 mt-10 max-h-[85vh] flex flex-col">
+      <div className="bg-card w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-border/50 animate-in fade-in zoom-in-95 duration-200 my-4 max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-border/50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">

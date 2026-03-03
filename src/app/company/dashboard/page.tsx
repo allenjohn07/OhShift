@@ -47,8 +47,7 @@ export default async function DashboardPage() {
     .from("shifts")
     .select("*, users!shifts_employee_id_fkey(full_name)")
     .eq("company_id", profile.company_id)
-    .order("start_time", { ascending: true })
-    .gte("start_time", new Date().toISOString());
+    .order("start_time", { ascending: true });
 
   const formatTime = (dateStr: string) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -57,20 +56,10 @@ export default async function DashboardPage() {
       hour12: true
     }).format(new Date(dateStr));
   };
-  
-  const firstShift = shifts && shifts.length > 0 ? shifts[0] : null;
 
-  const referenceDate = firstShift ? new Date(firstShift.start_time) : new Date();
-  referenceDate.setHours(0, 0, 0, 0); // Start of day local time
-  
-  const dayOfWeek = referenceDate.getDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
-  const startOfWeek = new Date(referenceDate);
-  startOfWeek.setDate(referenceDate.getDate() + diffToMonday);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col pt-16">
+    <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
       <RealtimeSubscriber companyId={profile.company_id} />
       <DashboardContent 
         userName={profile.full_name?.split(' ')[0] || "Owner"}

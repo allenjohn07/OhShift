@@ -22,7 +22,7 @@ export function TeamMembersList({ employees, company }: { employees: Employee[] 
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-2 flex flex-col h-full">
-      <div className="border-b border-border/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4">
+      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4">
         <h2 className="font-semibold text-lg">Team Members</h2>
         
         <div className="relative max-w-xs w-full">
@@ -42,7 +42,7 @@ export function TeamMembersList({ employees, company }: { employees: Employee[] 
       {filteredEmployees && filteredEmployees.length > 0 ? (
         <div className="divide-y divide-border/40 overflow-y-auto">
           {filteredEmployees.map((emp) => (
-            <div key={emp.id} className="p-6 flex items-center justify-between hover:bg-card/60 transition-colors">
+            <div key={emp.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-card/60 transition-colors">
               <div>
                 <p className="font-medium text-foreground">{emp.full_name}</p>
                 <div className="flex items-center gap-2 mt-0.5">

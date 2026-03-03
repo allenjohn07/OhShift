@@ -27,13 +27,13 @@ export function DashboardContent({
     <>
       {/* Header Area */}
       <header className="border-b border-border/40 bg-card/20 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-emerald-500 mb-1">
                 {company.name} Workspace
               </p>
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Welcome back, {userName}
               </h1>
             </div>
@@ -45,7 +45,7 @@ export function DashboardContent({
       </header>
 
       {/* Main Dashboard Content */}
-      <main className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div 
@@ -82,7 +82,7 @@ export function DashboardContent({
         </div>
 
         {/* Dashboard Lower Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Team Members Area (takes 2/3 width on large screens) */}
           <TeamMembersList employees={employees} company={company} />
           

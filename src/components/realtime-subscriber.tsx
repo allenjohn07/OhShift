@@ -19,7 +19,9 @@ export function RealtimeSubscriber({ companyId }: { companyId: string }) {
           event: "*",
           schema: "public",
           table: "shifts",
-          filter: `company_id=eq.${companyId}`,
+          // No column filter — Supabase doesn't include old row values in DELETE
+          // payloads by default, so a company_id filter silently drops DELETE events.
+          // RLS on the shifts table scopes which events each client receives.
         },
         (payload) => {
           console.log("Realtime shift update:", payload);

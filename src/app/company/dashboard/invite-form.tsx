@@ -124,13 +124,13 @@ export function InviteEmployeeForm() {
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden h-full flex flex-col">
-      <div className="border-b border-border/40 px-6 py-4 bg-card flex items-center gap-2">
+      <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
         <UserPlus className="h-5 w-5 text-emerald-500" />
         <h2 className="font-semibold text-lg">Invite Employee</h2>
       </div>
       
-      <div className="p-6 flex-1 flex flex-col">
-        <p className="text-sm text-muted-foreground mb-6">
+      <div className="p-4 sm:p-6 flex-1 flex flex-col">
+        <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
           Add team members to your invite list. We will auto-generate an invitation code and send it to their email.
         </p>
 

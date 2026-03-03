@@ -113,8 +113,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
   };
 
   // Determine starting date
-  const firstShift = shifts && shifts.length > 0 ? shifts[0] : null;
-  const referenceDate = firstShift ? new Date(firstShift.start_time) : new Date();
+  const referenceDate = new Date();
   referenceDate.setHours(0, 0, 0, 0);
 
   const dayOfWeek = referenceDate.getDay();
@@ -135,14 +134,13 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
   return (
     <>
       <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden mt-8">
-        <div className="border-b border-border/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4">
+        <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-emerald-500" />
             <h2 className="font-semibold text-lg">Team Schedule</h2>
           </div>
           
-          {/* Navigation Controls */}
-          <div className="flex items-center gap-4 bg-background/50 border border-border/50 rounded-xl p-1">
+          <div className="flex items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto">
              <button 
                onClick={() => setWeekOffset(prev => prev - 1)}
                className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
@@ -150,7 +148,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
              >
                <ChevronLeft className="w-4 h-4" />
              </button>
-             <span className="text-sm font-medium w-40 text-center select-none">
+             <span className="text-xs sm:text-sm font-medium w-28 sm:w-40 text-center select-none">
                {headerDateRange}
              </span>
              <button 
@@ -160,63 +158,74 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
              >
                <ChevronRight className="w-4 h-4" />
              </button>
+             {/* Reset: icon on mobile, label on sm+ */}
              <button 
                onClick={() => setWeekOffset(0)}
-               className="px-3 py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-1"
+               title="Reset to current week"
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
-                Reset
+               <span className="hidden sm:inline">Reset</span>
+               <span className="sm:hidden">↺</span>
              </button>
           </div>
         </div>
         
-        <div className="p-6 overflow-x-auto">
-          <div className="min-w-[700px] rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
-            <div className="grid grid-cols-7 gap-px bg-border/30">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                <div key={day} className="text-center text-sm font-medium text-muted-foreground py-3 bg-card">
-                  {day}
-                </div>
-              ))}
-              
-              {Array.from({ length: 7 }, (_, i) => {
-                const currentDay = new Date(startOfWeek);
-                currentDay.setDate(startOfWeek.getDate() + i);
-                
-                // Filter shifts that fall on this day
-                const dayShifts = shifts?.filter(s => {
-                  const shiftDate = new Date(s.start_time);
-                  return shiftDate.getFullYear() === currentDay.getFullYear() &&
-                         shiftDate.getMonth() === currentDay.getMonth() &&
-                         shiftDate.getDate() === currentDay.getDate();
-                }) || [];
-
-                return (
-                  <div key={i} className="bg-card p-3 min-h-[140px] space-y-2 relative">
-                    <div className="absolute top-1 right-2 text-[10px] text-muted-foreground/40 font-medium">
-                      {currentDay.getDate()}
-                    </div>
-                      {dayShifts.map((shift, idx) => (
-                        <div 
-                           key={shift.id} 
-                           onClick={() => setSelectedShift(shift)}
-                           className={`text-xs font-medium px-2.5 py-2 rounded-lg relative z-10 cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all ${getEmployeeColor(shift.users?.full_name)}`}>
-                          {formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}
-                          <br />
-                          <span className="opacity-80 block truncate mt-0.5">
-                            {shift.users?.full_name?.split(' ')[0]}: {shift.title}
-                          </span>
-                        </div>
-                      ))}
-                      {dayShifts.length === 0 && (
-                        <div className="h-full flex items-center justify-center pt-4">
-                          <span className="text-xs text-muted-foreground/30">-</span>
-                        </div>
-                      )}
+        {/* Scroll hint wrapper — fades on the right edge to hint at scrollability on mobile */}
+        <div className="relative w-full overflow-hidden">
+          <div className="p-3 sm:p-6 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="min-w-[560px] rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
+              <div className="grid grid-cols-7 gap-px bg-border/30">
+                {[
+                  ["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"],
+                  ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]
+                ].map(([full, short]) => (
+                  <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card snap-start">
+                    <span className="hidden sm:inline">{full}</span>
+                    <span className="sm:hidden">{short}</span>
                   </div>
-                )
-              })}
+                ))}
+                
+                {Array.from({ length: 7 }, (_, i) => {
+                  const currentDay = new Date(startOfWeek);
+                  currentDay.setDate(startOfWeek.getDate() + i);
+                  
+                  // Filter shifts that fall on this day
+                  const dayShifts = shifts?.filter(s => {
+                    const shiftDate = new Date(s.start_time);
+                    return shiftDate.getFullYear() === currentDay.getFullYear() &&
+                           shiftDate.getMonth() === currentDay.getMonth() &&
+                           shiftDate.getDate() === currentDay.getDate();
+                  }) || [];
+
+                  return (
+                    <div key={i} className="bg-card p-1.5 sm:p-3 min-h-[100px] sm:min-h-[140px] space-y-1.5 relative snap-start">
+                      <div className="absolute top-1 right-1.5 text-[9px] sm:text-[10px] text-muted-foreground/40 font-medium">
+                        {currentDay.getDate()}
+                      </div>
+                        {dayShifts.map((shift) => (
+                          <div 
+                             key={shift.id} 
+                             onClick={() => setSelectedShift(shift)}
+                             className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg relative z-10 cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all ${getEmployeeColor(shift.users?.full_name)}`}>
+                            <span className="block truncate">{formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}</span>
+                            <span className="opacity-80 block truncate mt-0.5">
+                              {shift.users?.full_name?.split(' ')[0]}: {shift.title}
+                            </span>
+                          </div>
+                        ))}
+                        {dayShifts.length === 0 && (
+                          <div className="h-full flex items-center justify-center pt-4">
+                            <span className="text-xs text-muted-foreground/30">-</span>
+                          </div>
+                        )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
+          {/* Scroll hint gradient — only visible on small screens */}
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-linear-to-l from-card/80 to-transparent sm:hidden" />
         </div>
       </div>
 
