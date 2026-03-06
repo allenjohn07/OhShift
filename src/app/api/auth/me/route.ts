@@ -23,7 +23,10 @@ export async function GET() {
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        profile,
+        profile: {
+          ...profile,
+          avatar_url: authData.user.user_metadata?.avatar_url || null,
+        },
       },
     });
   } catch {

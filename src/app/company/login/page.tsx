@@ -49,6 +49,28 @@ export default function CompanyLoginPage() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast.error("Email required", { description: "Please enter your email to reset your password." });
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send reset email");
+      toast.success("Reset email sent!", { description: "Check your inbox for the password reset link." });
+    } catch (err: any) {
+      toast.error("Reset failed", { description: err.message || "Could not send reset email. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex relative">
       {/* Subtle background */}
@@ -143,9 +165,18 @@ export default function CompanyLoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </Label>
+                <button 
+                  type="button" 
+                  onClick={handleResetPassword}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="password"

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-import { LogoutButton } from "@/app/company/dashboard/logout-button";
+import { UserNav } from "@/components/user-nav";
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
@@ -17,15 +17,21 @@ export default async function EmployeeDashboardPage() {
   }
 
   // 2. Fetch Profile and Company
-  const { data: profile } = await supabase
+  const { data: dbProfile } = await supabase
     .from("users")
     .select("*, companies(*)")
     .eq("id", authData.user.id)
     .single();
 
-  if (!profile) {
+  if (!dbProfile) {
     redirect("/login");
   }
+
+  // Merge avatar_url from Supabase Auth metadata
+  const profile = {
+    ...dbProfile,
+    avatar_url: authData.user.user_metadata?.avatar_url || null,
+  };
 
   // Color hashing by employee name to match the company dashboard
   const getEmployeeColor = (name: string = "") => {
@@ -65,17 +71,17 @@ export default async function EmployeeDashboardPage() {
       {/* Top Header / Welcome */}
       <header className="border-b border-border/40 bg-card/20 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-emerald-500 mb-1">
                 {companyName} Team
               </p>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
                 Welcome back, {userName}
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <LogoutButton />
+              <UserNav user={profile} />
             </div>
           </div>
         </div>

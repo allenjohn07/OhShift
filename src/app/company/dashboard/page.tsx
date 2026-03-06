@@ -15,15 +15,21 @@ export default async function DashboardPage() {
   }
 
   // 2. Fetch Profile and Company
-  const { data: profile } = await supabase
+  const { data: dbProfile } = await supabase
     .from("users")
     .select("*, companies(*)")
     .eq("id", authData.user.id)
     .single();
 
-  if (!profile) {
+  if (!dbProfile) {
     redirect("/company/login");
   }
+
+  // Merge avatar_url from Supabase Auth metadata
+  const profile = {
+    ...dbProfile,
+    avatar_url: authData.user.user_metadata?.avatar_url || null,
+  };
 
   // 3. Authorization Check - Only allow company owners/managers
   if (profile.role === "employee") {
@@ -66,6 +72,7 @@ export default async function DashboardPage() {
         company={profile.companies as CompanySettings}
         employees={employees}
         shifts={shifts}
+        currentUser={profile}
       />
     </div>
   );

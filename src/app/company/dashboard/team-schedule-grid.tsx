@@ -308,31 +308,37 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                    </div>
                  </form>
                ) : (
-                 <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <User className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Assigned to</p>
-                        <p className="font-medium">{selectedShift.users?.full_name}</p>
+                 <div className="space-y-5">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
+                        <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="pt-0.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Assigned to</p>
+                        <p className="text-base font-medium">{selectedShift.users?.full_name}</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Clock className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</p>
-                        <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
+                        <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="pt-0.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Time</p>
+                        <p className="text-base font-medium text-blue-600 dark:text-blue-400">
                           {formatDateLabel(new Date(selectedShift.start_time))}
                         </p>
-                        <p className="text-sm">
-                          {formatTime(selectedShift.start_time)} to {formatTime(selectedShift.end_time)}
+                        <p className="text-sm font-medium mt-0.5 opacity-90">
+                          {formatTime(selectedShift.start_time)} <span className="text-muted-foreground font-normal mx-1">to</span> {formatTime(selectedShift.end_time)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role / Title</p>
-                        <p className="font-medium">{selectedShift.title}</p>
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
+                        <MapPin className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div className="pt-0.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Role / Title</p>
+                        <p className="text-base font-medium">{selectedShift.title}</p>
                       </div>
                     </div>
                  </div>
