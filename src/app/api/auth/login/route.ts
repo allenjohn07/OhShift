@@ -28,12 +28,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if user is returned
+    if (!authData.user) {
+      return NextResponse.json(
+        { error: "Login failed: User data not found" },
+        { status: 500 }
+      );
+    }
+
     // Fetch user profile to get role info
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("users")
       .select("*, companies(name)")
       .eq("id", authData.user.id)
       .single();
+
+    if (profileError) {
+      console.error("Profile fetch error:", profileError);
+      // We can still log them in even if profile fetch fails, or return error
+      // returning error for now since we usually need profile data
+      return NextResponse.json(
+        { error: "Failed to fetch user profile" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       message: "Login successful",
@@ -43,9 +61,19 @@ export async function POST(request: Request) {
         profile,
       },
     });
-  } catch {
+  } catch (error: any) {
+    console.error("Login route error:", error);
+    
+    // Check if environment variables are missing
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return NextResponse.json(
+        { error: "Server configuration error: Missing database connection details." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
