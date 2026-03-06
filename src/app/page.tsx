@@ -4,7 +4,6 @@ import {
   Clock,
   Users,
   Calendar,
-  Bell,
   Shield,
   Zap,
   ChevronRight,
@@ -19,7 +18,7 @@ const features = [
     icon: Calendar,
     title: "Visual Scheduling",
     description:
-      "Drag-and-drop calendar for effortless shift management. See your whole week at a glance.",
+      "Intuitive calendar interface for effortless shift management. See your whole week at a glance.",
   },
   {
     icon: Users,
@@ -28,10 +27,10 @@ const features = [
       "Invite employees, assign roles, and manage your entire team from one place.",
   },
   {
-    icon: Bell,
-    title: "Instant Notifications",
+    icon: User,
+    title: "Employee Portal",
     description:
-      "Email alerts for new shifts, updates, and cancellations. Never miss a change.",
+      "A dedicated, simplified dashboard for your team to easily check their upcoming shifts.",
   },
   {
     icon: Clock,
