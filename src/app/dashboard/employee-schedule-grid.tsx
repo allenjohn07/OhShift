@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Clock, MapPin, User, X } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface Shift {
   id: string;
@@ -52,6 +53,7 @@ export function EmployeeScheduleGrid({
 }) {
   const [shifts, setShifts] = useState<Shift[]>(initialShifts ?? []);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const fetchShifts = async () => {
     const supabase = createClient();
@@ -70,7 +72,33 @@ export function EmployeeScheduleGrid({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "shifts" },
-        () => { fetchShifts(); }
+        (payload) => { 
+          // Check if payload is related to this employee (if employee_id is available)
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+          
+          const isForMe = (newRow && newRow.employee_id === employeeId) || 
+                          ((payload as any).eventType === 'DELETE'); // Can't filter DELETEs easily without RLS since old record is empty
+          
+          if (isForMe || (payload as any).eventType === 'DELETE') {
+            fetchShifts(); 
+            
+            // Show toast notifications based on event type
+            if ((payload as any).eventType === 'INSERT') {
+              if (newRow && newRow.employee_id === employeeId) {
+                 toast.success(newRow.title ? `New shift assigned: ${newRow.title}` : "A new shift has been assigned to you");
+              }
+            } else if ((payload as any).eventType === 'DELETE') {
+              // We rely on the refresh to update the grid. Supabase realtime DELETE payload doesn't contain the full old row 
+              // unless replica identity is full. It just tells us *something* was deleted.
+              toast.info("A shift has been removed from your schedule");
+            } else if ((payload as any).eventType === 'UPDATE') {
+              if (newRow && newRow.employee_id === employeeId) {
+                toast.success("A shift in your schedule has been updated");
+              }
+            }
+          }
+        }
       )
       .subscribe();
 
@@ -78,19 +106,59 @@ export function EmployeeScheduleGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 
-  // Build the current week (Mon–Sun)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dayOfWeek = today.getDay();
+  // Build the requested week (Mon–Sun) based on offset
+  const referenceDate = new Date();
+  referenceDate.setHours(0, 0, 0, 0);
+
+  const dayOfWeek = referenceDate.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() + diffToMonday);
+  
+  const baseStartOfWeek = new Date(referenceDate);
+  baseStartOfWeek.setDate(referenceDate.getDate() + diffToMonday);
+
+  const startOfWeek = new Date(baseStartOfWeek);
+  startOfWeek.setDate(baseStartOfWeek.getDate() + (weekOffset * 7));
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  const headerDateRange = `${formatDateLabel(startOfWeek)} - ${formatDateLabel(endOfWeek)}, ${startOfWeek.getFullYear()}`;
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex items-center gap-2 bg-card">
-        <Calendar className="h-5 w-5 text-emerald-500" />
-        <h2 className="font-semibold text-lg">Your Schedule</h2>
+      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-emerald-500" />
+          <h2 className="font-semibold text-lg">Your Schedule</h2>
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto">
+           <button 
+             onClick={() => setWeekOffset(prev => prev - 1)}
+             className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+             aria-label="Previous week"
+           >
+             <ChevronLeft className="w-4 h-4" />
+           </button>
+           <span className="text-xs sm:text-sm font-medium w-28 sm:w-40 text-center select-none">
+             {headerDateRange}
+           </span>
+           <button 
+             onClick={() => setWeekOffset(prev => prev + 1)}
+             className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+             aria-label="Next week"
+           >
+             <ChevronRight className="w-4 h-4" />
+           </button>
+           <button 
+             onClick={() => setWeekOffset(0)}
+             title="Reset to current week"
+             className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+           >
+             <span className="hidden sm:inline">Reset</span>
+             <span className="sm:hidden">↺</span>
+           </button>
+        </div>
       </div>
 
       <div className="p-3 sm:p-6 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

@@ -93,15 +93,15 @@ export function ShiftSummary({
     upcoming:  { label: "Upcoming",  className: "bg-blue-500/15 text-blue-400" },
   };
 
-  // Upcoming shifts this week (future days, not today)
+  // Upcoming shifts (future days, not today)
   const endOfWeek = new Date(now);
   const daysToSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
   endOfWeek.setDate(now.getDate() + daysToSunday);
   endOfWeek.setHours(23, 59, 59, 999);
 
-  const thisWeekUpcoming = shifts.filter((s) => {
+  const upcomingShifts = shifts.filter((s) => {
     const shiftDate = toLocalDate(s.start_time);
-    return shiftDate > localToday && new Date(s.start_time) <= endOfWeek;
+    return shiftDate > localToday;
   });
 
   return (
@@ -144,36 +144,44 @@ export function ShiftSummary({
         </div>
       )}
 
-      {/* Upcoming shifts this week — always shown */}
+      {/* Upcoming shifts — always shown */}
       <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
         <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
           <Clock className="h-4 w-4 text-emerald-500" />
-          <h2 className="font-semibold">Upcoming This Week</h2>
-          {thisWeekUpcoming.length > 0 && (
+          <h2 className="font-semibold">Upcoming Shifts</h2>
+          {upcomingShifts.length > 0 && (
             <span className="ml-auto text-xs font-medium bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full">
-              {thisWeekUpcoming.length} shift{thisWeekUpcoming.length > 1 ? "s" : ""}
+              {upcomingShifts.length} shift{upcomingShifts.length > 1 ? "s" : ""}
             </span>
           )}
         </div>
-        {thisWeekUpcoming.length === 0 ? (
+        {upcomingShifts.length === 0 ? (
           <div className="px-4 sm:px-6 py-8 text-center text-muted-foreground text-sm">
-            No more shifts scheduled for this week.
+            No upcoming shifts scheduled.
           </div>
         ) : (
           <div className="divide-y divide-border/40">
-            {thisWeekUpcoming.map((shift) => (
-              <div key={shift.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">{shift.title}</p>
-                  <p className="text-sm text-muted-foreground">{formatDate(shift.start_time)}</p>
+            {upcomingShifts.map((shift) => {
+              const shiftStart = new Date(shift.start_time);
+              const isThisWeek = shiftStart <= endOfWeek;
+              
+              return (
+                <div key={shift.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{shift.title}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(shift.start_time)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>{formatTime(shift.start_time)} – {formatTime(shift.end_time)}</span>
+                    <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Upcoming</span>
+                    {isThisWeek && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400">This Week</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>{formatTime(shift.start_time)} – {formatTime(shift.end_time)}</span>
-                  <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Upcoming</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

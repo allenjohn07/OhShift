@@ -1,9 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const transporter = process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD 
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    })
+  : null;
 
 export async function POST(request: Request) {
   try {
@@ -16,9 +24,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!resend) {
+    if (!transporter) {
       return NextResponse.json(
-        { error: "RESEND_API_KEY is not configured on the server." },
+        { error: "SMTP_EMAIL or SMTP_PASSWORD is not configured on the server." },
         { status: 500 }
       );
     }
@@ -61,11 +69,12 @@ export async function POST(request: Request) {
       existingUser.role === "owner" ? "/company/login" : "/login"
     }`;
 
-    const { error: emailError } = await resend.emails.send({
-      from: "OhShift Support <onboarding@resend.dev>",
-      to: [email],
-      subject: `Your Password Reset Request - OhShift`,
-      html: `
+    try {
+      await transporter.sendMail({
+        from: `"OhShift Support" <${process.env.SMTP_EMAIL}>`,
+        to: email,
+        subject: `Your Password Reset Request - OhShift`,
+        html: `
         <div style="font-family: sans-serif; max-w-xl mx-auto p-6 bg-slate-50 border border-slate-200 rounded-xl">
           <h2 style="color: #333 text-xl font-bold">Password Reset</h2>
           <p style="color: #555 mt-4">Hi ${existingUser.full_name || 'there'},</p>
@@ -91,10 +100,9 @@ export async function POST(request: Request) {
           </p>
         </div>
       `,
-    });
-
-    if (emailError) {
-      console.error("Resend Email Error:", emailError);
+      });
+    } catch (emailError: any) {
+      console.error("Nodemailer Email Error:", emailError);
       return NextResponse.json(
         { error: emailError.message || "Password was reset but failed to send the email." },
         { status: 500 }

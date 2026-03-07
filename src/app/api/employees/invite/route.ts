@@ -1,9 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const transporter = process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD 
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    })
+  : null;
 
 export async function POST(request: Request) {
   try {
@@ -16,9 +24,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!resend) {
+    if (!transporter) {
       return NextResponse.json(
-        { error: "RESEND_API_KEY is not configured on the server." },
+        { error: "SMTP_EMAIL or SMTP_PASSWORD is not configured on the server." },
         { status: 500 }
       );
     }
@@ -101,12 +109,13 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // 6. Send the invitation email with Resend
-        const { error: emailError } = await resend.emails.send({
-          from: "OhShift Invitations <onboarding@resend.dev>",
-          to: [email],
-          subject: `You've been invited to join ${companyName} on OhShift`,
-          html: `
+        // 6. Send the invitation email with Nodemailer
+        try {
+          await transporter.sendMail({
+            from: `"OhShift Invitations" <${process.env.SMTP_EMAIL}>`,
+            to: email,
+            subject: `You've been invited to join ${companyName} on OhShift`,
+            html: `
             <div style="font-family: sans-serif; max-w-xl mx-auto p-6 bg-slate-50 border border-slate-200 rounded-xl">
               <h2 style="color: #333 text-xl font-bold">Welcome to OhShift!</h2>
               <p style="color: #555 mt-4">Hi ${fullName},</p>
@@ -132,10 +141,9 @@ export async function POST(request: Request) {
               </p>
             </div>
           `,
-        });
-
-        if (emailError) {
-          console.error("Resend Email Error for", email, emailError);
+          });
+        } catch (emailError: any) {
+          console.error("Nodemailer Email Error for", email, emailError);
           inviteErrors.push(`${email}: User created, but email invite failed to send.`);
           // We don't continue here since the user was actually created, just the email failed.
         }
