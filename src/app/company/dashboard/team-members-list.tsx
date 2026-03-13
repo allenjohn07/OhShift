@@ -21,7 +21,7 @@ export function TeamMembersList({ employees, company }: { employees: Employee[] 
   );
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-2 flex flex-col h-full">
+    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-7 flex flex-col h-full">
       <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4">
         <h2 className="font-semibold text-lg">Team Members</h2>
         

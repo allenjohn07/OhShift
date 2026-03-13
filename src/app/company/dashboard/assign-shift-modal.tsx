@@ -67,7 +67,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors"
+        className="text-sm font-medium bg-foreground text-background hover:bg-foreground/90 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
       >
         Assign Shift
       </button>
@@ -127,7 +127,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
                 <button
                   type="button"
                   onClick={() => { setStartTime(company.morning_start); setEndTime(company.morning_end); }}
-                  className="px-2 py-1 text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 rounded-lg transition-colors"
+                  className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
                 >
                   Morning
                 </button>

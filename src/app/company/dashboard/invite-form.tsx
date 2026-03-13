@@ -4,8 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, UserPlus, Loader2, X, Plus } from "lucide-react";
+import { Send, UserPlus, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Invitee {
   fullName: string;
@@ -19,6 +26,12 @@ export function InviteEmployeeForm() {
   const [email, setEmail] = useState("");
   const [designation, setDesignation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Edit states
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editDesignation, setEditDesignation] = useState("");
 
   const handleAddToList = () => {
     if (!fullName.trim() || !email.trim()) {
@@ -56,6 +69,47 @@ export function InviteEmployeeForm() {
 
   const handleRemoveInvitee = (indexToRemove: number) => {
     setInvitees(invitees.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleEditInvitee = (index: number) => {
+    const invitee = invitees[index];
+    setEditFullName(invitee.fullName);
+    setEditEmail(invitee.email);
+    setEditDesignation(invitee.designation);
+    setEditingIndex(index);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFullName.trim() || !editEmail.trim()) {
+      toast.error("Full Name and Email are required.");
+      return;
+    }
+
+    const cleanEmail = editEmail.trim();
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail);
+    
+    if (!isValid) {
+      toast.error("Invalid email format.");
+      return;
+    }
+
+    // Check if email is already in the list (excluding the one being edited)
+    if (invitees.some((i, idx) => i.email === cleanEmail && idx !== editingIndex)) {
+      toast.error("Email is already in the list.");
+      return;
+    }
+
+    if (editingIndex !== null) {
+      const updatedInvitees = [...invitees];
+      updatedInvitees[editingIndex] = {
+        fullName: editFullName.trim(),
+        email: cleanEmail,
+        designation: editDesignation.trim()
+      };
+      setInvitees(updatedInvitees);
+      setEditingIndex(null);
+      toast.success("Invitee details updated.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,14 +277,24 @@ export function InviteEmployeeForm() {
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveInvitee(idx)}
-                        className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                        title="Remove"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEditInvitee(idx)}
+                          className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInvitee(idx)}
+                          className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                          title="Remove"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -257,6 +321,53 @@ export function InviteEmployeeForm() {
           </Button>
         </form>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editingIndex !== null} onOpenChange={(open) => !open && setEditingIndex(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Member Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editFullName" className="text-sm font-medium">Full Name</Label>
+              <Input
+                id="editFullName"
+                value={editFullName}
+                onChange={(e) => setEditFullName(e.target.value)}
+                className="h-10 rounded-xl bg-card/50 border-border/60"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail" className="text-sm font-medium">Email Address</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className="h-10 rounded-xl bg-card/50 border-border/60"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDesignation" className="text-sm font-medium">Designation</Label>
+              <Input
+                id="editDesignation"
+                value={editDesignation}
+                onChange={(e) => setEditDesignation(e.target.value)}
+                className="h-10 rounded-xl bg-card/50 border-border/60"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingIndex(null)} className="h-10 rounded-xl">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} className="h-10 rounded-xl">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

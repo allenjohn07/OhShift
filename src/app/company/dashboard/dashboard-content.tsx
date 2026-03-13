@@ -84,12 +84,12 @@ export function DashboardContent({
         </div>
 
         {/* Dashboard Lower Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Team Members Area (takes 2/3 width on large screens) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* Team Members Area (takes 7/12 width on large screens) */}
           <TeamMembersList employees={employees} company={company} />
           
-          {/* Employee Invitation Form (takes 1/3 width on large screens) */}
-          <div className="lg:col-span-1">
+          {/* Employee Invitation Form (takes 5/12 width on large screens) */}
+          <div className="lg:col-span-5">
             <InviteEmployeeForm />
           </div>
         </div>
