@@ -305,10 +305,6 @@ export default function LandingPage() {
             {/* Brand column */}
             <div className="max-w-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-foreground text-background font-bold text-sm overflow-hidden shadow-lg">
-                  <span className="relative z-10">O</span>
-                  <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent" />
-                </div>
                 <span className="text-2xl font-bold tracking-tight">OhShift</span>
               </div>
               <p className="text-base text-muted-foreground leading-relaxed font-medium">

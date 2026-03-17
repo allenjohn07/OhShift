@@ -61,10 +61,6 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 lg:px-12 h-16">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-foreground text-background font-bold text-sm overflow-hidden transition-transform duration-300 group-hover:scale-105">
-            <span className="relative z-10">O</span>
-            <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent" />
-          </div>
           <span className="text-lg font-semibold tracking-tight">OhShift</span>
         </Link>
 
