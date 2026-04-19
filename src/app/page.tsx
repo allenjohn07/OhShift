@@ -54,7 +54,7 @@ const features = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background">
       {/* Subtle grid background */}
       <div className="fixed inset-0 -z-10">
         <div

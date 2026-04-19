@@ -58,31 +58,38 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-6 lg:px-12 h-16">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="text-lg font-semibold tracking-tight">OhShift</span>
-        </Link>
+    <>
+      <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 lg:px-12 h-16">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <span className="text-lg font-semibold tracking-tight">OhShift</span>
+          </Link>
 
-        {/* Desktop links */}
-        <div className="hidden sm:flex items-center gap-2">
-          {/* Theme toggle */}
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
-              aria-label="Toggle theme"
-            >
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-          )}
+          {/* Desktop links */}
+          <div className="hidden sm:flex items-center gap-2">
+            {/* Theme toggle */}
+            {mounted ? (
+              <button
+                onClick={toggleTheme}
+                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {resolvedTheme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </button>
+            ) : (
+              <div className="w-9 h-9" />
+            )}
 
-          {!isLoadingAuth && (
-            user ? (
+            {isLoadingAuth ? (
+              <>
+                <div className="w-[124px] h-9 ml-2 rounded-full bg-muted/60 animate-pulse" />
+                <div className="w-[134px] h-9 ml-1 rounded-full bg-muted/60 animate-pulse" />
+              </>
+            ) : user ? (
               <>
                 <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"}>
                   <Button
@@ -123,72 +130,79 @@ export function Navbar() {
                   </Button>
                 </Link>
               </>
-            )
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Mobile right side */}
-        <div className="flex sm:hidden items-center gap-1.5">
-          {/* Theme toggle mobile */}
-          {mounted && (
+          {/* Mobile right side */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            {/* Theme toggle mobile */}
+            {mounted ? (
+              <button
+                onClick={toggleTheme}
+                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {resolvedTheme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </button>
+            ) : (
+              <div className="w-9 h-9" />
+            )}
+            {/* Hamburger icon with animated bars */}
             <button
-              onClick={toggleTheme}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
-              aria-label="Toggle theme"
+              onClick={() => setIsOpen(!isOpen)}
+              className="flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
             >
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              <span
+                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                style={{
+                  transform: isOpen
+                    ? "translateY(6.5px) rotate(45deg)"
+                    : "none",
+                }}
+              />
+              <span
+                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
+                style={{
+                  opacity: isOpen ? 0 : 1,
+                  transform: isOpen ? "scaleX(0)" : "scaleX(1)",
+                }}
+              />
+              <span
+                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                style={{
+                  transform: isOpen
+                    ? "translateY(-6.5px) rotate(-45deg)"
+                    : "none",
+                }}
+              />
             </button>
-          )}
-          {/* Hamburger icon with animated bars */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-          >
-            <span
-              className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
-              style={{
-                transform: isOpen
-                  ? "translateY(6.5px) rotate(45deg)"
-                  : "none",
-              }}
-            />
-            <span
-              className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
-              style={{
-                opacity: isOpen ? 0 : 1,
-                transform: isOpen ? "scaleX(0)" : "scaleX(1)",
-              }}
-            />
-            <span
-              className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
-              style={{
-                transform: isOpen
-                  ? "translateY(-6.5px) rotate(-45deg)"
-                  : "none",
-              }}
-            />
-          </button>
+          </div>
         </div>
-      </div>
 
-      {/* Mobile drawer with slide-down animation */}
-      <div
-        ref={menuRef}
-        className="sm:hidden overflow-hidden transition-all duration-200 ease-out"
-        style={{
-          maxHeight: isOpen ? "320px" : "0px",
-          opacity: isOpen ? 1 : 0,
-        }}
-      >
-        <div className="border-t border-border/40 bg-background">
-          <div className="flex flex-col p-4 gap-2">
-            {!isLoadingAuth && (
-              user ? (
+        {/* Mobile drawer with slide-down animation */}
+        <div
+          ref={menuRef}
+          className="sm:hidden overflow-hidden transition-all duration-200 ease-out"
+          style={{
+            maxHeight: isOpen ? "320px" : "0px",
+            opacity: isOpen ? 1 : 0,
+          }}
+        >
+          <div className="border-t border-border/40 bg-background">
+            <div className="flex flex-col p-4 gap-2">
+              {isLoadingAuth ? (
+                <>
+                  <div className="h-16 w-full rounded-xl bg-muted/60 animate-pulse" />
+                  <div className="h-16 w-full rounded-xl bg-muted/60 animate-pulse" />
+                  <div className="h-px bg-border/50 my-1" />
+                  <div className="h-11 w-full rounded-xl bg-muted/60 animate-pulse" />
+                </>
+              ) : user ? (
                 <>
                   <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"} onClick={() => setIsOpen(false)}>
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
@@ -241,21 +255,23 @@ export function Navbar() {
                     </Button>
                   </Link>
                 </>
-              )
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Backdrop */}
-      <div
-        className={`sm:hidden fixed inset-0 top-16 bg-black/20 backdrop-blur-[2px] z-[-1] transition-opacity duration-200 ${
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsOpen(false)}
-      />
-    </nav>
+        {/* Backdrop */}
+        <div
+          className={`sm:hidden fixed inset-0 top-16 bg-black/20 backdrop-blur-[2px] z-[-1] transition-opacity duration-200 ${
+            isOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+          onClick={() => setIsOpen(false)}
+        />
+      </nav>
+      {/* Spacer to prevent content from jumping under fixed navbar */}
+      <div className="h-16 w-full shrink-0" />
+    </>
   );
 }
