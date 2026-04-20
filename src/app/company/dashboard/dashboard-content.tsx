@@ -28,7 +28,7 @@ export function DashboardContent({
   return (
     <>
       {/* Header Area */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div>
           <p className="text-sm font-medium text-emerald-500 mb-1">
             {company.name} Workspace
