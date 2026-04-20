@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-import { UserNav } from "@/components/user-nav";
+
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
+import { Navbar } from "@/components/navbar";
 
 export default async function EmployeeDashboardPage() {
   const supabase = await createClient();
@@ -67,25 +68,19 @@ export default async function EmployeeDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
+      <Navbar />
       <RealtimeSubscriber companyId={profile.company_id} />
       {/* Top Header / Welcome */}
-      <header className="border-b border-border/40 bg-card/20 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-emerald-500 mb-1">
-                {companyName} Team
-              </p>
-              <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-                Welcome back, {userName}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <UserNav user={profile} />
-            </div>
-          </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+        <div>
+          <p className="text-sm font-medium text-emerald-500 mb-1">
+            {companyName} Team
+          </p>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+            Welcome back, {userName}
+          </h1>
         </div>
-      </header>
+      </div>
 
       {/* Main Dashboard Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8">

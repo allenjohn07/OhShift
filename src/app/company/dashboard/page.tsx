@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardContent } from "./dashboard-content";
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import type { CompanySettings } from "./manage-settings-modal";
+import { Navbar } from "@/components/navbar";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -66,6 +67,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
+      <Navbar />
       <RealtimeSubscriber companyId={profile.company_id} />
       <DashboardContent 
         userName={profile.full_name?.split(' ')[0] || "Owner"}

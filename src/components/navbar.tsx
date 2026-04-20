@@ -6,6 +6,7 @@ import { ArrowRight, User, Building2, Sun, Moon, LogOut, LayoutDashboard } from 
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+import { UserNav } from "@/components/user-nav";
 
 export function Navbar() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 lg:px-12 h-16">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
           <Link href="/" className="flex items-center gap-2.5 group">
             <span className="text-lg font-semibold tracking-tight">OhShift</span>
           </Link>
@@ -71,7 +72,7 @@ export function Navbar() {
             {mounted ? (
               <button
                 onClick={toggleTheme}
-                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
                 aria-label="Toggle theme"
               >
                 {resolvedTheme === "dark" ? (
@@ -90,26 +91,7 @@ export function Navbar() {
                 <div className="w-[134px] h-9 ml-1 rounded-full bg-muted/60 animate-pulse" />
               </>
             ) : user ? (
-              <>
-                <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-5 rounded-full font-medium"
-                  >
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="btn-hover h-9 px-4 rounded-full font-medium text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </>
+              <UserNav user={user.profile} />
             ) : (
               <>
                 <Link href="/login">
@@ -139,7 +121,7 @@ export function Navbar() {
             {mounted ? (
               <button
                 onClick={toggleTheme}
-                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
                 aria-label="Toggle theme"
               >
                 {resolvedTheme === "dark" ? (
@@ -151,36 +133,41 @@ export function Navbar() {
             ) : (
               <div className="w-9 h-9" />
             )}
-            {/* Hamburger icon with animated bars */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
-            >
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
-                style={{
-                  transform: isOpen
-                    ? "translateY(6.5px) rotate(45deg)"
-                    : "none",
-                }}
-              />
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
-                style={{
-                  opacity: isOpen ? 0 : 1,
-                  transform: isOpen ? "scaleX(0)" : "scaleX(1)",
-                }}
-              />
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
-                style={{
-                  transform: isOpen
-                    ? "translateY(-6.5px) rotate(-45deg)"
-                    : "none",
-                }}
-              />
-            </button>
+            {isLoadingAuth ? (
+              <div className="w-9 h-9 rounded-full bg-muted/60 animate-pulse" />
+            ) : user ? (
+              <UserNav user={user.profile} />
+            ) : (
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+              >
+                <span
+                  className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                  style={{
+                    transform: isOpen
+                      ? "translateY(6.5px) rotate(45deg)"
+                      : "none",
+                  }}
+                />
+                <span
+                  className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
+                  style={{
+                    opacity: isOpen ? 0 : 1,
+                    transform: isOpen ? "scaleX(0)" : "scaleX(1)",
+                  }}
+                />
+                <span
+                  className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                  style={{
+                    transform: isOpen
+                      ? "translateY(-6.5px) rotate(-45deg)"
+                      : "none",
+                  }}
+                />
+              </button>
+            )}
           </div>
         </div>
 
@@ -202,28 +189,7 @@ export function Navbar() {
                   <div className="h-px bg-border/50 my-1" />
                   <div className="h-11 w-full rounded-xl bg-muted/60 animate-pulse" />
                 </>
-              ) : user ? (
-                <>
-                  <Link href={user.profile?.role === "employee" ? "/dashboard" : "/company/dashboard"} onClick={() => setIsOpen(false)}>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
-                      <LayoutDashboard className="h-4.5 w-4.5 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm font-medium">Dashboard</div>
-                        <div className="text-xs text-muted-foreground">
-                          Manage your schedule and team
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="h-px bg-border/50 my-1" />
-                  <button onClick={handleLogout} className="w-full text-left">
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200 text-rose-500">
-                      <LogOut className="h-4.5 w-4.5" />
-                      <div className="text-sm font-medium">Logout</div>
-                    </div>
-                  </button>
-                </>
-              ) : (
+              ) : user ? null : (
                 <>
                   <Link href="/login" onClick={() => setIsOpen(false)}>
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">

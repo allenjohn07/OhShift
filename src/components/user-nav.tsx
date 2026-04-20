@@ -42,7 +42,7 @@ export function UserNav({ user }: { user: any }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 outline-hidden ring-offset-background transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full cursor-pointer hover:opacity-80">
-          <Avatar className="h-9 w-9 border border-border/50">
+          <Avatar className="h-8 w-8 border border-border/50">
             <AvatarImage src={user?.avatar_url || ""} alt={user?.full_name || "User"} />
             <AvatarFallback className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-sm">
               {initials}

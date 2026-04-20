@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Users, Calendar, Settings } from "lucide-react";
-import { UserNav } from "@/components/user-nav";
+
 import { TeamMembersList } from "./team-members-list";
 import { InviteEmployeeForm } from "./invite-form";
 import { TeamScheduleGrid } from "@/app/company/dashboard/team-schedule-grid";
@@ -28,23 +28,16 @@ export function DashboardContent({
   return (
     <>
       {/* Header Area */}
-      <header className="border-b border-border/40 bg-card/20 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-emerald-500 mb-1">
-                {company.name} Workspace
-              </p>
-              <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-                Welcome back, {userName}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <UserNav user={currentUser} />
-            </div>
-          </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+        <div>
+          <p className="text-sm font-medium text-emerald-500 mb-1">
+            {company.name} Workspace
+          </p>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+            Welcome back, {userName}
+          </h1>
         </div>
-      </header>
+      </div>
 
       {/* Main Dashboard Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
