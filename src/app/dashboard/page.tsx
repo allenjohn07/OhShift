@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 
 
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
+import { TodayCompanySchedule } from "./today-company-schedule";
 import { Navbar } from "@/components/navbar";
 
 export default async function EmployeeDashboardPage() {
@@ -59,11 +61,19 @@ export default async function EmployeeDashboardPage() {
   const companyName = profile.companies?.name || "Your Company";
   const userName = profile.full_name;
 
-  // 4. Fetch Shifts
+  // 4. Fetch Shifts (Employee's own shifts)
   const { data: shifts } = await supabase
     .from("shifts")
     .select("*")
     .eq("employee_id", authData.user.id)
+    .order("start_time", { ascending: true });
+
+  // 5. Fetch all company shifts
+  const adminSupabase = createAdminClient();
+  const { data: companyShifts } = await adminSupabase
+    .from("shifts")
+    .select("*, users!shifts_employee_id_fkey(full_name)")
+    .eq("company_id", profile.company_id)
     .order("start_time", { ascending: true });
 
   return (
@@ -93,6 +103,13 @@ export default async function EmployeeDashboardPage() {
           initialShifts={shifts}
           employeeId={authData.user.id}
           employeeName={profile.full_name ?? ""}
+        />
+
+        {/* Today's Team Schedule */}
+        <TodayCompanySchedule 
+          initialShifts={companyShifts as any} 
+          companyId={profile.company_id} 
+          currentUserId={authData.user.id} 
         />
       </main>
     </div>

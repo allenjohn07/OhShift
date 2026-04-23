@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -20,6 +20,94 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
+
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const overscrollAccumulator = useRef(0);
+  const lastWheelEventTime = useRef(0);
+  const hasChangedWeekInCurrentSwipe = useRef(false);
+  const lastSwipeDirection = useRef(0);
+
+  const changeWeek = (direction: 1 | -1) => {
+    setWeekOffset(prev => prev + direction);
+    overscrollAccumulator.current = 0;
+    
+    // Attempt to play a subtle haptic feedback (supported on Android, ignored on iOS Safari)
+    if (typeof window !== "undefined" && navigator && navigator.vibrate) {
+      try { navigator.vibrate(50); } catch (e) {}
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null || !scrollRef.current) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const distance = touchEnd - touchStart;
+
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    const isAtRightEdge = scrollLeft + clientWidth >= scrollWidth - 5;
+    const isAtLeftEdge = scrollLeft <= 5;
+
+    // Swipe left (finger moves left, distance < 0) reveals right content
+    if (distance < -50 && isAtRightEdge) {
+      changeWeek(1); // Next week
+    } 
+    // Swipe right (finger moves right, distance > 0) reveals left content
+    else if (distance > 50 && isAtLeftEdge) {
+      changeWeek(-1); // Previous week
+    }
+    setTouchStart(null);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    const now = Date.now();
+    
+    // Determine the direction of the current scroll event
+    const currentDirection = e.deltaX > 0 ? 1 : -1;
+
+    if (
+      now - lastWheelEventTime.current > 150 || 
+      (lastSwipeDirection.current !== 0 && lastSwipeDirection.current !== currentDirection) ||
+      Math.abs(e.deltaX) < 5
+    ) {
+      hasChangedWeekInCurrentSwipe.current = false;
+      overscrollAccumulator.current = 0;
+    }
+
+    lastWheelEventTime.current = now;
+    if (Math.abs(e.deltaX) >= 5) {
+      lastSwipeDirection.current = currentDirection;
+    }
+
+    if (hasChangedWeekInCurrentSwipe.current) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    const isAtRightEdge = scrollLeft + clientWidth >= scrollWidth - 5;
+    const isAtLeftEdge = scrollLeft <= 5;
+
+    // If scrolling horizontally
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (isAtRightEdge && e.deltaX > 0) {
+        overscrollAccumulator.current += e.deltaX;
+        if (overscrollAccumulator.current > 80) {
+          changeWeek(1);
+          hasChangedWeekInCurrentSwipe.current = true;
+        }
+      } else if (isAtLeftEdge && e.deltaX < 0) {
+        overscrollAccumulator.current += e.deltaX;
+        if (overscrollAccumulator.current < -80) {
+          changeWeek(-1);
+          hasChangedWeekInCurrentSwipe.current = true;
+        }
+      } else {
+        if (!isAtRightEdge && !isAtLeftEdge) {
+          overscrollAccumulator.current = 0;
+        }
+      }
+    }
+  };
 
   // Color hashing by employee name
   const getEmployeeColor = (name: string = "") => {
@@ -165,15 +253,20 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                title="Reset to current week"
                className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
-               <span className="hidden sm:inline">Reset</span>
-               <span className="sm:hidden">↺</span>
+               <span>Reset</span>
              </button>
           </div>
         </div>
         
         {/* Scroll hint wrapper — fades on the right edge to hint at scrollability on mobile */}
         <div className="relative w-full overflow-hidden">
-          <div className="p-3 sm:p-6 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div 
+            ref={scrollRef}
+            className="p-3 sm:p-6 overflow-x-auto overscroll-x-none snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onWheel={handleWheel}
+          >
             <div className="min-w-[560px] rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
               <div className="grid grid-cols-7 gap-px bg-border/30">
                 {[

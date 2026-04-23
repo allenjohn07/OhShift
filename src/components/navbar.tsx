@@ -91,7 +91,15 @@ export function Navbar() {
                 <div className="w-[134px] h-9 ml-1 rounded-full bg-muted/60 animate-pulse" />
               </>
             ) : user ? (
-              <UserNav user={user.profile} />
+              <>
+                <Link
+                  href={user.profile?.role === "company" ? "/company/dashboard" : "/dashboard"}
+                  className="flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
+                >
+                  Dashboard
+                </Link>
+                <UserNav user={user.profile} />
+              </>
             ) : (
               <>
                 <Link href="/login">
@@ -136,7 +144,15 @@ export function Navbar() {
             {isLoadingAuth ? (
               <div className="w-9 h-9 rounded-full bg-muted/60 animate-pulse" />
             ) : user ? (
-              <UserNav user={user.profile} />
+              <>
+                <Link
+                  href={user.profile?.role === "company" ? "/company/dashboard" : "/dashboard"}
+                  className="flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
+                >
+                  Dashboard
+                </Link>
+                <UserNav user={user.profile} />
+              </>
             ) : (
               <button
                 onClick={() => setIsOpen(!isOpen)}

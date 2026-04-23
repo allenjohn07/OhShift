@@ -6,6 +6,7 @@ import { Users, Calendar, Settings } from "lucide-react";
 import { TeamMembersList } from "./team-members-list";
 import { InviteEmployeeForm } from "./invite-form";
 import { TeamScheduleGrid } from "@/app/company/dashboard/team-schedule-grid";
+import { TodayCompanySchedule } from "@/app/dashboard/today-company-schedule";
 import { ManageTeamModal } from "@/app/company/dashboard/manage-team-modal";
 import { ManageSettingsModal, type CompanySettings } from "./manage-settings-modal";
 
@@ -89,6 +90,13 @@ export function DashboardContent({
 
         {/* Weekly Schedule Preview */}
         <TeamScheduleGrid shifts={shifts} />
+
+        {/* Upcoming Team Schedule List */}
+        <TodayCompanySchedule 
+          initialShifts={shifts}
+          companyId={company.id}
+          currentUserId={currentUser.id}
+        />
       </main>
 
       <ManageTeamModal 
