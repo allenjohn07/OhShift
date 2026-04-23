@@ -42,7 +42,8 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
     if (!selectedShift) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/shifts?id=${selectedShift.id}`, {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await fetch(`/api/shifts?id=${selectedShift.id}&timezone=${encodeURIComponent(timezone)}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete shift');

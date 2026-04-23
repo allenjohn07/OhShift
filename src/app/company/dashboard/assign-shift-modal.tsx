@@ -46,6 +46,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
           title,
           startTime,
           endTime,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 

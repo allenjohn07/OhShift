@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Parse request body
-    const { employeeId, title, startTime, endTime } = await request.json();
+    const { employeeId, title, startTime, endTime, timezone = "UTC" } = await request.json();
 
     if (!employeeId || !title || !startTime || !endTime) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -89,9 +89,11 @@ export async function POST(request: Request) {
         try {
           // Format times for email
           const formattedStart = new Date(startTime).toLocaleString("en-US", {
+            timeZone: timezone,
             weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
           });
           const formattedEnd = new Date(endTime).toLocaleString("en-US", {
+            timeZone: timezone,
             hour: "numeric", minute: "2-digit"
           });
 
@@ -162,6 +164,7 @@ export async function DELETE(request: Request) {
     // 3. Parse query param for shift ID
     const { searchParams } = new URL(request.url);
     const shiftId = searchParams.get("id");
+    const timezone = searchParams.get("timezone") || "UTC";
 
     if (!shiftId) {
       return NextResponse.json({ error: "Missing shift ID" }, { status: 400 });
@@ -207,9 +210,11 @@ export async function DELETE(request: Request) {
           let timeString = "";
           if (existingShift.start_time && existingShift.end_time) {
              const formattedStart = new Date(existingShift.start_time).toLocaleString("en-US", {
+                timeZone: timezone,
                 weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
              });
              const formattedEnd = new Date(existingShift.end_time).toLocaleString("en-US", {
+                timeZone: timezone,
                 hour: "numeric", minute: "2-digit"
              });
              timeString = `<p style="margin: 8px 0 0; color: #475569; font-size: 15px;">🗓 ${formattedStart} - ${formattedEnd}</p>`;
