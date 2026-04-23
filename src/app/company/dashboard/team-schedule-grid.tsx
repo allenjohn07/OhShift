@@ -284,12 +284,12 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                   currentDay.setDate(startOfWeek.getDate() + i);
                   
                   // Filter shifts that fall on this day
-                  const dayShifts = shifts?.filter(s => {
+                  const dayShifts = (shifts?.filter(s => {
                     const shiftDate = new Date(s.start_time);
                     return shiftDate.getFullYear() === currentDay.getFullYear() &&
                            shiftDate.getMonth() === currentDay.getMonth() &&
                            shiftDate.getDate() === currentDay.getDate();
-                  }) || [];
+                  }) || []).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
                   return (
                     <div key={i} className="bg-card p-1.5 sm:p-3 min-h-[100px] sm:min-h-[140px] space-y-1.5 relative snap-start">
