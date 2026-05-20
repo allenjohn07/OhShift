@@ -1,46 +1,46 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
 
-import { ProfileForm } from "./profile-form";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { AuthGuard } from "@/components/auth-guard";
+import { useApi } from "@/hooks/use-api";
+import { parseApiJson } from "@/lib/api";
+import { ProfileForm } from "./profile-form";
 import { Navbar } from "@/components/navbar";
 
-export default async function ProfilePage() {
-  const supabase = await createClient();
+function ProfilePageContent() {
+  const api = useApi();
+  const router = useRouter();
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
 
-  // 1. Verify Authentication
-  const { data: authData, error: authError } = await supabase.auth.getUser();
+  useEffect(() => {
+    api("/dashboard/profile")
+      .then((res) => parseApiJson<{ profile: Record<string, unknown> }>(res))
+      .then((data) => setProfile(data.profile))
+      .catch(() => router.replace("/login"));
+  }, [api, router]);
 
-  if (authError || !authData?.user) {
-    redirect("/login");
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
   }
-
-  // 2. Fetch Profile and Company
-  const { data: dbProfile } = await supabase
-    .from("users")
-    .select("*, companies(*)")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (!dbProfile) {
-    redirect("/login");
-  }
-
-  // 3. Merge avatar_url from Supabase Auth metadata
-  const profile = {
-    ...dbProfile,
-    avatar_url: authData.user.user_metadata?.avatar_url || null,
-  };
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
       <Navbar />
-      {/* Top Header / Welcome */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div className="flex items-center gap-4">
-          <Link 
-            href={profile.role === "employee" ? "/dashboard" : "/company/dashboard"}
+          <Link
+            href={
+              profile.role === "employee"
+                ? "/dashboard"
+                : "/company/dashboard"
+            }
             className="-ml-2 p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -53,10 +53,17 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <ProfileForm user={profile} />
       </main>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfilePageContent />
+    </AuthGuard>
   );
 }

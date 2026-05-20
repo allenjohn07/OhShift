@@ -1,81 +1,80 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AuthGuard } from "@/components/auth-guard";
+import { useApi } from "@/hooks/use-api";
+import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import type { CompanySettings } from "./manage-settings-modal";
 import { Navbar } from "@/components/navbar";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  // 1. Verify Authentication
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !authData?.user) {
-    redirect("/company/login");
-  }
-
-  // 2. Fetch Profile and Company
-  const { data: dbProfile } = await supabase
-    .from("users")
-    .select("*, companies(*)")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (!dbProfile) {
-    redirect("/company/login");
-  }
-
-  // Merge avatar_url from Supabase Auth metadata
-  const profile = {
-    ...dbProfile,
-    avatar_url: authData.user.user_metadata?.avatar_url || null,
+type CompanyDashboardData = {
+  profile: {
+    full_name: string;
+    role: string;
+    company_id: string;
+    avatar_url?: string | null;
+    companies: CompanySettings | null;
   };
+  employees: Array<{
+    id: string;
+    full_name: string;
+    email: string;
+    designation: string | null;
+  }>;
+  shifts: Array<Record<string, unknown>>;
+};
 
-  // 3. Authorization Check - Only allow company owners/managers
-  if (profile.role === "employee") {
-    // Redirect employees to the employee portal
-    redirect("/login");
+function CompanyDashboard() {
+  const api = useApi();
+  const router = useRouter();
+  const [data, setData] = useState<CompanyDashboardData | null>(null);
+
+  useEffect(() => {
+    api("/dashboard/company")
+      .then((res) => parseApiJson<CompanyDashboardData & { error?: string }>(res))
+      .then((json) => {
+        if (json.profile?.role === "employee") {
+          router.replace("/login");
+          return;
+        }
+        setData(json);
+      })
+      .catch(() => router.replace("/company/login"));
+  }, [api, router]);
+
+  if (!data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
   }
-
-  const companyName = profile.companies?.name || "Your Company";
-  const userName = profile.full_name;
-
-  // 4. Fetch Employees
-  const { data: employees } = await supabase
-    .from("users")
-    .select("id, full_name, email, designation")
-    .eq("company_id", profile.company_id)
-    .eq("role", "employee")
-    .order("full_name");
-
-  // 5. Fetch all company shifts
-  const { data: shifts } = await supabase
-    .from("shifts")
-    .select("*, users!shifts_employee_id_fkey(full_name)")
-    .eq("company_id", profile.company_id)
-    .order("start_time", { ascending: true });
-
-  const formatTime = (dateStr: string) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(new Date(dateStr));
-  };
-
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
       <Navbar />
-      <RealtimeSubscriber companyId={profile.company_id} />
-      <DashboardContent 
-        userName={profile.full_name?.split(' ')[0] || "Owner"}
-        company={profile.companies as CompanySettings}
-        employees={employees}
-        shifts={shifts}
-        currentUser={profile}
+      <RealtimeSubscriber companyId={data.profile.company_id} />
+      <DashboardContent
+        userName={data.profile.full_name?.split(" ")[0] || "Owner"}
+        company={data.profile.companies as CompanySettings}
+        employees={data.employees}
+        shifts={data.shifts as any}
+        currentUser={data.profile}
       />
     </div>
+  );
+}
+
+export default function CompanyDashboardPage() {
+  return (
+    <AuthGuard
+      loginPath="/company/login"
+      allowedRoles={["owner", "manager"]}
+    >
+      <CompanyDashboard />
+    </AuthGuard>
   );
 }

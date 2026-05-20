@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/backend/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -28,9 +29,6 @@ bun-debug.log*
 # env files
 .env
 .env*.local
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo

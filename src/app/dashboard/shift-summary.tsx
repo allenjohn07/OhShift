@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Calendar, Clock } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useApi } from "@/hooks/use-api";
 
 interface Shift {
   id: string;
@@ -40,37 +40,19 @@ export function ShiftSummary({
   initialShifts: Shift[] | null;
   employeeId: string;
 }) {
+  const api = useApi();
   const [shifts, setShifts] = useState<Shift[]>(initialShifts ?? []);
 
-  // Re-fetch shifts directly from Supabase (client-side)
   const fetchShifts = async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("shifts")
-      .select("id, title, start_time, end_time")
-      .eq("employee_id", employeeId)
-      .order("start_time", { ascending: true });
-    if (data) setShifts(data);
+    const res = await api("/shifts/mine");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.shifts) setShifts(data.shifts);
   };
 
   useEffect(() => {
-    const supabase = createClient();
-
-    // Subscribe to any change on the shifts table — re-fetch on every event
-    const channel = supabase
-      .channel("employee-shifts-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "shifts" },
-        () => {
-          fetchShifts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchShifts, 30_000);
+    return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 

@@ -1,43 +1,66 @@
 # OhShift
 
-OhShift is a smart shift scheduling platform designed for modern teams, providing a seamless experience for both managers and employees to manage work schedules in real-time.
+Smart shift scheduling for modern teams — managers assign shifts, employees view schedules in real time.
 
-## Tech Stack
+## Architecture
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
-- **Backend & Auth**: [Supabase](https://supabase.com/) (using SSR and Middleware)
-- **Email/Onboarding**: [Resend](https://resend.com/) (Magic Links for employee onboarding)
+| Part | Stack | Hosting |
+|------|--------|---------|
+| **Frontend** | Next.js (static export) | [GitHub Pages](https://pages.github.com/) |
+| **API** | Bun + Elysia + Prisma | [Render](https://render.com/) |
+| **Database** | PostgreSQL | [Neon](https://neon.tech/) |
 
-## Getting Started
+## Local development
+
+**1. Backend** (terminal 1):
 
 ```bash
+cd backend
+cp .env.example .env   # or copy from README in backend/
+# Set DATABASE_URL, DIRECT_URL, AUTH_SECRET, SMTP_*
+bun install
+bun run db:push
+bun run dev
+```
+
+**2. Frontend** (terminal 2):
+
+```bash
+cp .env.example .env.local
+# NEXT_PUBLIC_API_URL=http://localhost:3001
+# NEXT_PUBLIC_BASE_PATH=   (leave empty locally)
 bun install
 bun run dev
 ```
 
-## Features Currently Implemented
+Open [http://localhost:3000](http://localhost:3000).
 
-### Authentication & Onboarding
-- **Company Registration**: Businesses can easily register and set up their organization.
-- **Role-Based Access**: Specialized views and permissions for Owners/Managers vs. Employees.
-- **Magic Link Onboarding**: Seamless employee invitation and login via Resend-powered magic links.
+## Deploy frontend (GitHub Pages)
 
-### Manager Dashboard
-- **Team Management**: Invite employees, manage roles, and view team lists.
-- **Interactive Schedule Grid**: A comprehensive view of the entire team's schedule.
-- **Shift Assignment**: Create and assign shifts to specific employees with ease.
-- **Company Settings**: Manage organizational details and preferences.
+1. Repo **Settings → Pages → Build and deployment**: Source = **GitHub Actions**.
+2. **Settings → Secrets and variables → Actions → Variables**:
+   - `NEXT_PUBLIC_API_URL` — your Render API URL (e.g. `https://ohshift-api.onrender.com`)
+   - `NEXT_PUBLIC_APP_URL` — your Pages URL (e.g. `https://username.github.io/OhShift`)
+3. Push to `main` — workflow `.github/workflows/deploy-pages.yml` builds `out/` and deploys.
 
-### Employee Dashboard
-- **Personalized Shift Views**: Employees can see their upcoming shifts at a glance.
-- **Shift Summaries**: Detailed breakdowns of weekly and monthly work hours.
-- **Real-time Sync**: Schedules update instantly across all devices.
+`NEXT_PUBLIC_BASE_PATH` is set automatically to `/<repo-name>` in CI.
 
-### Profile Management
-- **User Profiles**: All users can update their personal information and preferences.
-- **Secure Sessions**: Robust session management using Supabase SSR.
+## Deploy backend (Render)
 
----
-*More features coming soon...*
+See [backend/README.md](backend/README.md). Set `FRONTEND_URL` to your GitHub Pages URL for CORS. Use UptimeRobot on `/ping` to keep the free tier awake.
+
+## Project structure
+
+```
+├── src/              # Next.js static frontend
+├── backend/          # Bun API (all business logic + auth)
+├── .github/workflows/
+└── public/
+```
+
+## Features
+
+- Company registration and team invites
+- Role-based dashboards (owner / manager / employee)
+- Shift assignment with email notifications
+- Schedule polling (30s refresh)

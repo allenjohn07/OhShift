@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, Clock, Loader2 } from "lucide-react";
 import type { CompanySettings } from "./manage-settings-modal";
+import { useApi } from "@/hooks/use-api";
 
 interface Employee {
   id: string;
@@ -19,6 +20,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const router = useRouter();
+  const api = useApi();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,11 +38,8 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
     const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
 
     try {
-      const res = await fetch("/api/shifts", {
+      const res = await api("/shifts", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           employeeId: employee.id,
           title,

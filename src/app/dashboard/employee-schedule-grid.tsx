@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 
 interface Shift {
@@ -157,54 +157,18 @@ export function EmployeeScheduleGrid({
     }
   };
 
+  const api = useApi();
+
   const fetchShifts = async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("shifts")
-      .select("id, title, start_time, end_time")
-      .eq("employee_id", employeeId)
-      .order("start_time", { ascending: true });
-    if (data) setShifts(data);
+    const res = await api("/shifts/mine");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.shifts) setShifts(data.shifts);
   };
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("employee-schedule-grid-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "shifts" },
-        (payload) => { 
-          // Check if payload is related to this employee (if employee_id is available)
-          const newRow = payload.new as any;
-          const oldRow = payload.old as any;
-          
-          const isForMe = (newRow && newRow.employee_id === employeeId) || 
-                          ((payload as any).eventType === 'DELETE'); // Can't filter DELETEs easily without RLS since old record is empty
-          
-          if (isForMe || (payload as any).eventType === 'DELETE') {
-            fetchShifts(); 
-            
-            // Show toast notifications based on event type
-            if ((payload as any).eventType === 'INSERT') {
-              if (newRow && newRow.employee_id === employeeId) {
-                 toast.success(newRow.title ? `New shift assigned: ${newRow.title}` : "A new shift has been assigned to you");
-              }
-            } else if ((payload as any).eventType === 'DELETE') {
-              // We rely on the refresh to update the grid. Supabase realtime DELETE payload doesn't contain the full old row 
-              // unless replica identity is full. It just tells us *something* was deleted.
-              toast.info("A shift has been removed from your schedule");
-            } else if ((payload as any).eventType === 'UPDATE') {
-              if (newRow && newRow.employee_id === employeeId) {
-                toast.success("A shift in your schedule has been updated");
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(fetchShifts, 30_000);
+    return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 

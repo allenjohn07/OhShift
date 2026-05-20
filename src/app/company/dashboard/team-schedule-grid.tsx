@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useApi } from "@/hooks/use-api";
 
 interface Shift {
   id: string;
@@ -14,6 +15,7 @@ interface Shift {
 }
 
 export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
+  const api = useApi();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -131,7 +133,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
     setIsDeleting(true);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const res = await fetch(`/api/shifts?id=${selectedShift.id}&timezone=${encodeURIComponent(timezone)}`, {
+      const res = await api(`/shifts?id=${selectedShift.id}&timezone=${encodeURIComponent(timezone)}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete shift');
@@ -161,9 +163,8 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
     const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
 
     try {
-      const res = await fetch("/api/shifts", {
+      const res = await api("/shifts", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shiftId: selectedShift.id,
           title,

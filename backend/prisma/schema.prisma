@@ -1,0 +1,73 @@
+// OhShift API — Neon PostgreSQL via Prisma
+// https://www.prisma.io/docs/guides/database/neon
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  owner
+  manager
+  employee
+
+  @@map("user_role")
+}
+
+model Company {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  ownerId       String   @map("owner_id") @db.Uuid
+  morningStart  String   @default("08:00") @map("morning_start")
+  morningEnd    String   @default("16:00") @map("morning_end")
+  eveningStart  String   @default("16:00") @map("evening_start")
+  eveningEnd    String   @default("00:00") @map("evening_end")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  owner   User    @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members User[]  @relation("CompanyMembers")
+  shifts  Shift[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  fullName     String    @map("full_name")
+  email        String    @unique
+  passwordHash String?   @map("password_hash")
+  role         UserRole
+  companyId    String?   @map("company_id") @db.Uuid
+  designation  String?
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company       Company? @relation("CompanyMembers", fields: [companyId], references: [id], onDelete: SetNull)
+  ownedCompanies Company[] @relation("CompanyOwner")
+  shifts        Shift[]  @relation("EmployeeShifts")
+
+  @@map("users")
+}
+
+model Shift {
+  id         String   @id @default(uuid()) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  employeeId String   @map("employee_id") @db.Uuid
+  title      String
+  startTime  DateTime @map("start_time") @db.Timestamptz(6)
+  endTime    DateTime @map("end_time") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee User    @relation("EmployeeShifts", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@map("shifts")
+}

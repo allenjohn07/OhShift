@@ -1,0 +1,31 @@
+{
+  "name": "ohshift-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bunx prisma generate",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@auth/core": "^0.41.0",
+    "@elysiajs/cors": "^1.4.0",
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.2",
+    "elysia": "^1.4.18",
+    "nodemailer": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/bun": "latest",
+    "@types/nodemailer": "^7.0.11",
+    "prisma": "^6.19.0",
+    "typescript": "^5"
+  }
+}

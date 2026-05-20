@@ -8,9 +8,12 @@ import { ArrowRight, ArrowLeft, User, Info, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/components/auth-provider";
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,28 +24,19 @@ export default function EmployeeLoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error("Login failed", {
-          description: data.error || "Invalid credentials.",
-        });
-        return;
-      }
-
+      const authUser = await login(email, password);
       toast.success("Welcome back!", {
         description: "Redirecting to your dashboard...",
       });
-      router.push("/dashboard");
-    } catch {
-      toast.error("Something went wrong", {
-        description: "Please try again later.",
+      router.push(
+        authUser.profile.role === "employee"
+          ? "/dashboard"
+          : "/company/dashboard",
+      );
+    } catch (err: unknown) {
+      toast.error("Login failed", {
+        description:
+          err instanceof Error ? err.message : "Please try again later.",
       });
     } finally {
       setIsLoading(false);
@@ -56,9 +50,8 @@ export default function EmployeeLoginPage() {
     }
     try {
       setIsLoading(true);
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await apiFetch("/auth/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();

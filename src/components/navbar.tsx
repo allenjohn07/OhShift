@@ -2,42 +2,31 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, User, Building2, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
+import { ArrowRight, User, Building2, Sun, Moon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
 import { UserNav } from "@/components/user-nav";
 
 export function Navbar() {
   const router = useRouter();
+  const { user, loading: isLoadingAuth, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Fetch user state
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        setUser(data.user);
-        setIsLoadingAuth(false);
-      })
-      .catch(() => setIsLoadingAuth(false));
   }, []);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+  const handleLogout = () => {
+    logout();
     setIsOpen(false);
     router.push("/");
-    router.refresh();
   };
 
-  // Close menu on resize to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 640) setIsOpen(false);
@@ -46,7 +35,6 @@ export function Navbar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Prevent body scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
@@ -58,6 +46,20 @@ export function Navbar() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
+  const dashboardHref =
+    user?.profile?.role === "employee" ? "/dashboard" : "/company/dashboard";
+
+  const navUser = user
+    ? {
+        profile: {
+          ...user.profile,
+          full_name: user.profile.full_name,
+          email: user.email,
+          role: user.profile.role,
+        },
+      }
+    : null;
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
@@ -66,9 +68,7 @@ export function Navbar() {
             <span className="text-lg font-semibold tracking-tight">OhShift</span>
           </Link>
 
-          {/* Desktop links */}
           <div className="hidden sm:flex items-center gap-2">
-            {/* Theme toggle */}
             {mounted ? (
               <button
                 onClick={toggleTheme}
@@ -90,15 +90,15 @@ export function Navbar() {
                 <div className="w-[124px] h-9 ml-2 rounded-full bg-muted/60 animate-pulse" />
                 <div className="w-[134px] h-9 ml-1 rounded-full bg-muted/60 animate-pulse" />
               </>
-            ) : user ? (
+            ) : navUser ? (
               <>
                 <Link
-                  href={user.profile?.role === "company" ? "/company/dashboard" : "/dashboard"}
+                  href={dashboardHref}
                   className="flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
                 >
                   Dashboard
                 </Link>
-                <UserNav user={user.profile} />
+                <UserNav user={navUser.profile} onLogout={handleLogout} />
               </>
             ) : (
               <>
@@ -123,9 +123,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile right side */}
           <div className="flex sm:hidden items-center gap-1.5">
-            {/* Theme toggle mobile */}
             {mounted ? (
               <button
                 onClick={toggleTheme}
@@ -143,15 +141,15 @@ export function Navbar() {
             )}
             {isLoadingAuth ? (
               <div className="w-9 h-9 rounded-full bg-muted/60 animate-pulse" />
-            ) : user ? (
+            ) : navUser ? (
               <>
                 <Link
-                  href={user.profile?.role === "company" ? "/company/dashboard" : "/dashboard"}
+                  href={dashboardHref}
                   className="flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50"
                 >
                   Dashboard
                 </Link>
-                <UserNav user={user.profile} />
+                <UserNav user={navUser.profile} onLogout={handleLogout} />
               </>
             ) : (
               <button
@@ -187,7 +185,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile drawer with slide-down animation */}
         <div
           ref={menuRef}
           className="sm:hidden overflow-hidden transition-all duration-200 ease-out"
@@ -205,7 +202,7 @@ export function Navbar() {
                   <div className="h-px bg-border/50 my-1" />
                   <div className="h-11 w-full rounded-xl bg-muted/60 animate-pulse" />
                 </>
-              ) : user ? null : (
+              ) : navUser ? null : (
                 <>
                   <Link href="/login" onClick={() => setIsOpen(false)}>
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
@@ -242,7 +239,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Backdrop */}
         <div
           className={`sm:hidden fixed inset-0 top-16 bg-black/20 backdrop-blur-[2px] z-[-1] transition-opacity duration-200 ${
             isOpen
@@ -252,7 +248,6 @@ export function Navbar() {
           onClick={() => setIsOpen(false)}
         />
       </nav>
-      {/* Spacer to prevent content from jumping under fixed navbar */}
       <div className="h-16 w-full shrink-0" />
     </>
   );

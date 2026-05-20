@@ -5,12 +5,15 @@ import { User, Building2, Calendar, Lock, Loader2, Link as LinkIcon, Download, E
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
+import { useApi } from "@/hooks/use-api";
+import { apiFetch } from "@/lib/api";
 
 export function ProfileForm({ user }: { user: any }) {
   const router = useRouter();
-  const supabase = createClient();
+  const api = useApi();
+  const { refreshUser } = useAuth();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
@@ -29,9 +32,8 @@ export function ProfileForm({ user }: { user: any }) {
     const avatarUrl = formData.get("avatarUrl") as string;
     
     try {
-      const res = await fetch("/api/auth/update-avatar", {
+      const res = await api("/auth/update-avatar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatarUrl }),
       });
       
@@ -40,7 +42,7 @@ export function ProfileForm({ user }: { user: any }) {
       if (!res.ok) throw new Error(data.error || "Failed to update profile picture");
       
       toast.success("Profile picture updated");
-      router.refresh();
+      await refreshUser();
       (e.target as HTMLFormElement).reset();
     } catch (error: any) {
       console.error("Avatar Update Error:", error);
@@ -59,21 +61,13 @@ export function ProfileForm({ user }: { user: any }) {
     const newPassword = formData.get("newPassword") as string;
     
     try {
-      // 1. Verify current password by trying to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
+      const res = await api("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update password");
 
-      if (signInError) {
-        throw new Error("Incorrect current password.");
-      }
-
-      // 2. Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-      
-      if (updateError) throw updateError;
-      
       toast.success("Password updated successfully");
       (e.target as HTMLFormElement).reset();
     } catch (error: any) {
@@ -86,9 +80,8 @@ export function ProfileForm({ user }: { user: any }) {
   const handleResetPassword = async () => {
     try {
       setIsSendingReset(true);
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await apiFetch("/auth/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email }),
       });
       const data = await res.json();

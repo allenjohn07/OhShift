@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Users, Loader2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { useApi } from "@/hooks/use-api";
 
 interface Employee {
   id: string;
@@ -23,6 +24,7 @@ export function ManageTeamModal({
   employees: Employee[] | null;
 }) {
   const router = useRouter();
+  const api = useApi();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [isSaving, setIsSaving] = useState<string | null>(null);
@@ -33,9 +35,8 @@ export function ManageTeamModal({
   const handleSaveDesignation = async (employeeId: string) => {
     setIsSaving(employeeId);
     try {
-      const res = await fetch("/api/employees", {
+      const res = await api("/employees", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employeeId, designation: editValue.trim() }),
       });
 
@@ -56,7 +57,7 @@ export function ManageTeamModal({
     
     setIsDeleting(employeeId);
     try {
-      const res = await fetch(`/api/employees?id=${employeeId}`, {
+      const res = await api(`/employees?id=${employeeId}`, {
         method: "DELETE",
       });
 

@@ -8,6 +8,7 @@ import { ArrowRight, ArrowLeft, Building2, CheckCircle2, Eye, EyeOff } from "luc
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 
 export default function CompanyRegisterPage() {
   const router = useRouter();
@@ -31,9 +32,8 @@ export default function CompanyRegisterPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/register-company", {
+      const res = await apiFetch("/auth/register-company", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companyName, name, email, password }),
       });
 

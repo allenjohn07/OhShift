@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Send, UserPlus, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useApi } from "@/hooks/use-api";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface Invitee {
 }
 
 export function InviteEmployeeForm() {
+  const api = useApi();
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -137,9 +139,8 @@ export function InviteEmployeeForm() {
     }
 
     try {
-      const res = await fetch("/api/employees/invite", {
+      const res = await api("/employees/invite", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invites: currentInvitees }),
       });
 

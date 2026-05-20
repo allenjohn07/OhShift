@@ -6,6 +6,7 @@ import { Settings, Clock, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useApi } from "@/hooks/use-api";
 
 export interface CompanySettings {
   id: string;
@@ -26,6 +27,7 @@ export function ManageSettingsModal({
   company: CompanySettings;
 }) {
   const router = useRouter();
+  const api = useApi();
   const [isLoading, setIsLoading] = useState(false);
   
   // Local state for the 4 time presets
@@ -41,9 +43,8 @@ export function ManageSettingsModal({
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/company", {
+      const res = await api("/company", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           morning_start: morningStart,
           morning_end: morningEnd,

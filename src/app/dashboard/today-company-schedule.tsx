@@ -60,17 +60,14 @@ export function TodayCompanySchedule({
 
   useEffect(() => {
     // Poll the server for fresh data to simulate real-time for the company schedule
-    // since client-side Supabase subscriptions are blocked by RLS for other users' shifts
+    // Poll for team schedule updates (static site — no websocket)
     const interval = setInterval(() => {
       router.refresh();
     }, 15000);
     return () => clearInterval(interval);
   }, [router]);
 
-  // Removed client-side fetching and realtime subscription here because 
-  // the client-side Supabase client respects RLS, which prevents an employee
-  // from fetching other employees' shifts. The server-side admin client in page.tsx 
-  // provides the initial data correctly.
+  // Team shifts are provided by the employee dashboard API.
 
   // Display shifts from today onwards
   const now = new Date();
