@@ -1,5 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
+import { verifyMailConnection } from "./lib/mail";
 import { prisma } from "./lib/prisma";
 import { authRoutes } from "./routes/auth";
 import { companyRoutes } from "./routes/company";
@@ -57,6 +58,8 @@ const app = new Elysia()
   .use(shiftsRoutes)
   .use(dashboardRoutes)
   .listen(port);
+
+void verifyMailConnection();
 
 console.log(
   `OhShift API running at http://${app.server?.hostname}:${app.server?.port}`,

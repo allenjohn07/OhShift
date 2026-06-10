@@ -53,10 +53,13 @@ export default function CompanyLoginPage() {
       const res = await apiFetch("/auth/reset-password", {
         method: "POST",
         body: JSON.stringify({ email }),
+        timeoutMs: 90_000,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send reset email");
-      toast.success("Reset email sent!", { description: "Check your inbox for the password reset link." });
+      toast.success("Reset email sent!", {
+        description: "Check your inbox (and spam) for a temporary password.",
+      });
     } catch (err: any) {
       toast.error("Reset failed", { description: err.message || "Could not send reset email. Please try again." });
     } finally {

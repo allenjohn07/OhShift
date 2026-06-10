@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../lib/auth-guard";
 import { generateTempPassword, hashPassword, verifyPassword } from "../lib/password";
-import { appUrl, mailConfigured, sendMail } from "../lib/mail";
+import { appUrl, mailConfigured, mailErrorMessage, sendMail } from "../lib/mail";
 import { serializeUser } from "../lib/serialize";
 import { requireUser } from "../lib/auth-guard";
 import { createAccessToken } from "../lib/session";
@@ -128,13 +128,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }
 
     const tempPassword = generateTempPassword();
-    const passwordHash = await hashPassword(tempPassword);
-
-    await prisma.user.update({
-      where: { id: existingUser.id },
-      data: { passwordHash },
-    });
-
     const loginLink = `${appUrl()}${
       existingUser.role === "owner" ? "/company/login" : "/login"
     }`;
@@ -164,13 +157,16 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       `,
       });
     } catch (emailError: unknown) {
-      const message =
-        emailError instanceof Error
-          ? emailError.message
-          : "Password was reset but failed to send the email.";
       set.status = 500;
-      return { error: message };
+      return { error: mailErrorMessage(emailError) };
     }
+
+    const passwordHash = await hashPassword(tempPassword);
+
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: { passwordHash },
+    });
 
     return { message: "Password reset email sent successfully" };
   })
