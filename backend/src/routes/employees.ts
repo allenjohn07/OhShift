@@ -92,7 +92,7 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
         set.status = 500;
         return {
           error:
-            "Email is not configured. On Render, set BREVO_API_KEY (SMTP is blocked on free tier).",
+            "Email not configured. Add BREVO_API_KEY and BREVO_SENDER_EMAIL on Render (Gmail SMTP does not work on free tier).",
         };
       }
 

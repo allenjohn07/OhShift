@@ -3,6 +3,10 @@ import type Transporter from "nodemailer/lib/mailer";
 
 const SMTP_TIMEOUT_MS = 15_000;
 
+function isProduction() {
+  return process.env.NODE_ENV === "production";
+}
+
 function useBrevo() {
   return Boolean(process.env.BREVO_API_KEY?.trim());
 }
@@ -50,6 +54,9 @@ function getTransporter() {
 }
 
 export function mailConfigured() {
+  if (isProduction()) {
+    return useBrevo() && Boolean(brevoSenderEmail());
+  }
   if (useBrevo()) return Boolean(brevoSenderEmail());
   return getTransporter() !== null;
 }
@@ -127,6 +134,13 @@ async function sendViaBrevo(options: {
 }
 
 export async function verifyMailConnection(): Promise<void> {
+  if (isProduction() && !useBrevo()) {
+    console.error(
+      "Mail: BREVO_API_KEY is required in production (Render blocks Gmail SMTP).",
+    );
+    return;
+  }
+
   if (useBrevo()) {
     const sender = brevoSenderEmail();
     if (!sender) {
@@ -161,6 +175,12 @@ export async function sendMail(options: {
   subject: string;
   html: string;
 }) {
+  if (isProduction() && !useBrevo()) {
+    throw new Error(
+      "Email not configured for production. Add BREVO_API_KEY and BREVO_SENDER_EMAIL on Render (Gmail SMTP is blocked).",
+    );
+  }
+
   if (useBrevo()) {
     try {
       await sendViaBrevo(options);
