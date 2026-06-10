@@ -19,3 +19,9 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: SMTP_EMAIL
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
