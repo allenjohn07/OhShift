@@ -8,7 +8,10 @@ import { employeesRoutes } from "./routes/employees";
 import { shiftsRoutes } from "./routes/shifts";
 
 const port = Number(process.env.PORT) || 3001;
-const frontendOrigin = process.env.FRONTEND_URL ?? "http://localhost:3000";
+// Browsers send Origin without a path (e.g. https://user.github.io), so normalize FRONTEND_URL.
+const frontendOrigin = process.env.FRONTEND_URL
+  ? new URL(process.env.FRONTEND_URL).origin
+  : "http://localhost:3000";
 
 const app = new Elysia()
   .use(
