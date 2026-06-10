@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
+import { ColdStartBanner } from "@/components/cold-start-banner";
 
 export default function CompanyRegisterPage() {
   const router = useRouter();
@@ -60,7 +61,9 @@ export default function CompanyRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex relative">
+    <>
+      <ColdStartBanner />
+      <div className="min-h-screen bg-background flex relative">
       {/* Subtle background */}
       <div className="fixed inset-0 -z-10">
         <div
@@ -277,5 +280,6 @@ export default function CompanyRegisterPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

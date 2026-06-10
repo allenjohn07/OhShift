@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { ColdStartBanner } from "@/components/cold-start-banner";
 
 export default function CompanyLoginPage() {
   const router = useRouter();
@@ -68,7 +69,9 @@ export default function CompanyLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex relative">
+    <>
+      <ColdStartBanner />
+      <div className="min-h-screen bg-background flex relative">
       {/* Subtle background */}
       <div className="fixed inset-0 -z-10">
         <div
@@ -237,5 +240,6 @@ export default function CompanyLoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

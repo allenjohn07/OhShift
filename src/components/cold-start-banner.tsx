@@ -29,7 +29,7 @@ export function ColdStartBanner() {
   return (
     <div
       role="status"
-      className="relative z-[100] border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-950 dark:text-amber-100"
+      className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-950 dark:text-amber-100"
     >
       <div className="mx-auto flex max-w-6xl items-start gap-3 sm:items-center">
         <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 sm:mt-0" />

@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { UserNav } from "@/components/user-nav";
+import { ColdStartBanner } from "@/components/cold-start-banner";
 
 export function Navbar() {
   const router = useRouter();
@@ -249,6 +250,7 @@ export function Navbar() {
         />
       </nav>
       <div className="h-16 w-full shrink-0" />
+      <ColdStartBanner />
     </>
   );
 }
