@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "set-password": "bun run scripts/set-password.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.0",
