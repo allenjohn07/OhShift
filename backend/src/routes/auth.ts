@@ -113,7 +113,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     if (!mailConfigured()) {
       set.status = 500;
       return {
-        error: "SMTP_EMAIL or SMTP_PASSWORD is not configured on the server.",
+        error:
+          "Email is not configured. On Render, set BREVO_API_KEY (SMTP is blocked on free tier).",
       };
     }
 

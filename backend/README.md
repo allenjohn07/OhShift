@@ -52,7 +52,23 @@ API runs at `http://localhost:3001`.
    - `DIRECT_URL` — Neon **direct** connection string (for Prisma migrations)
    - `FRONTEND_URL` — production Next.js URL (CORS)
    - `NODE_ENV=production`
+   - `BREVO_API_KEY` — see **Email (Brevo)** below (required on Render free tier)
+   - `BREVO_SENDER_EMAIL` — verified sender in Brevo (your Gmail)
 6. Set **Health Check Path** to `/ping`.
+
+## Email (Brevo) — required on Render free tier
+
+**Render free tier blocks outbound SMTP** (ports 25, 465, 587). Gmail SMTP will fail with `ECONNREFUSED` in logs. Use [Brevo](https://www.brevo.com) instead — free tier (300 emails/day), **no custom domain** required.
+
+1. Sign up at [brevo.com](https://www.brevo.com)
+2. **Senders & IP** → **Senders** → **Add a sender** → enter your Gmail → verify via the link Brevo emails you
+3. **SMTP & API** → **API keys** → **Generate a new API key**
+4. On Render, add:
+   - `BREVO_API_KEY` — the API key
+   - `BREVO_SENDER_EMAIL` — the exact Gmail you verified (e.g. `you@gmail.com`)
+5. Redeploy. Logs should show: `Mail: Brevo API configured (sender: ...)`
+
+For **local dev**, you can keep using Gmail SMTP (`SMTP_EMAIL` + `SMTP_PASSWORD` in `backend/.env`) — no Brevo key needed locally.
 
 Run migrations on deploy (one-time or in build):
 

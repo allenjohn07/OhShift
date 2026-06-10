@@ -3,9 +3,20 @@ import type Transporter from "nodemailer/lib/mailer";
 
 const SMTP_TIMEOUT_MS = 15_000;
 
+function useBrevo() {
+  return Boolean(process.env.BREVO_API_KEY?.trim());
+}
+
+function brevoSenderEmail() {
+  return (
+    process.env.BREVO_SENDER_EMAIL?.trim() ||
+    process.env.SMTP_EMAIL?.trim() ||
+    null
+  );
+}
+
 function smtpCredentials() {
   const user = process.env.SMTP_EMAIL?.trim();
-  // Gmail app passwords are often copied with spaces — strip them.
   const pass = process.env.SMTP_PASSWORD?.replace(/\s/g, "");
   if (!user || !pass) return null;
   return { user, pass };
@@ -15,13 +26,14 @@ function createSmtpTransporter(): Transporter | null {
   const auth = smtpCredentials();
   if (!auth) return null;
 
-  // Port 587 + STARTTLS is more reliable from cloud hosts (e.g. Render) than 465.
+  // family: 4 avoids IPv6 ECONNREFUSED on some hosts. Note: Render free tier
+  // blocks SMTP ports 25/465/587 entirely — use Brevo API in production.
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    port: 465,
+    secure: true,
     auth,
+    family: 4,
     connectionTimeout: SMTP_TIMEOUT_MS,
     greetingTimeout: SMTP_TIMEOUT_MS,
     socketTimeout: SMTP_TIMEOUT_MS,
@@ -38,6 +50,7 @@ function getTransporter() {
 }
 
 export function mailConfigured() {
+  if (useBrevo()) return Boolean(brevoSenderEmail());
   return getTransporter() !== null;
 }
 
@@ -49,11 +62,18 @@ export function mailErrorMessage(err: unknown): string {
       : "";
 
   if (
+    code === "ECONNREFUSED" &&
+    (message.includes(":587") || message.includes(":465") || message.includes(":25"))
+  ) {
+    return "SMTP is blocked on Render free tier. Add BREVO_API_KEY on Render instead of Gmail SMTP.";
+  }
+
+  if (
     code === "ETIMEDOUT" ||
     code === "ESOCKET" ||
     message.toLowerCase().includes("timeout")
   ) {
-    return "Email server timed out. Try again in a moment — if this keeps happening, check SMTP settings on Render.";
+    return "Email server timed out. On Render free tier, use Brevo (BREVO_API_KEY) instead of SMTP.";
   }
 
   if (
@@ -61,24 +81,78 @@ export function mailErrorMessage(err: unknown): string {
     message.includes("Invalid login") ||
     message.includes("authentication failed")
   ) {
-    return "Email is misconfigured on the server (check Gmail app password on Render).";
+    return "Email is misconfigured on the server (check Gmail app password or Brevo API key).";
   }
 
   return message || "Failed to send email.";
 }
 
+async function sendViaBrevo(options: {
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const apiKey = process.env.BREVO_API_KEY!.trim();
+  const senderEmail = brevoSenderEmail();
+  if (!senderEmail) {
+    throw new Error("BREVO_SENDER_EMAIL or SMTP_EMAIL must be set with BREVO_API_KEY.");
+  }
+
+  const fromName = options.subject.includes("Invitation")
+    ? "OhShift Invitations"
+    : options.subject.includes("Shift")
+      ? "OhShift Scheduling"
+      : "OhShift Support";
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: senderEmail },
+      to: [{ email: options.to }],
+      subject: options.subject,
+      htmlContent: options.html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    console.error("Brevo API failed:", res.status, body);
+    throw new Error(`Brevo send failed (${res.status}): ${body}`);
+  }
+}
+
 export async function verifyMailConnection(): Promise<void> {
+  if (useBrevo()) {
+    const sender = brevoSenderEmail();
+    if (!sender) {
+      console.warn("Mail: BREVO_API_KEY set but no BREVO_SENDER_EMAIL / SMTP_EMAIL.");
+      return;
+    }
+    console.log(`Mail: Brevo API configured (sender: ${sender}).`);
+    return;
+  }
+
   const transport = getTransporter();
   if (!transport) {
-    console.warn("Mail: SMTP_EMAIL / SMTP_PASSWORD not set — emails disabled.");
+    console.warn(
+      "Mail: not configured. Set BREVO_API_KEY on Render (SMTP blocked on free tier) or SMTP_EMAIL locally.",
+    );
     return;
   }
 
   try {
     await transport.verify();
-    console.log("Mail: SMTP connection verified.");
+    console.log("Mail: Gmail SMTP connection verified.");
   } catch (err) {
     console.error("Mail: SMTP verification failed:", err);
+    console.warn(
+      "Mail: Render free tier blocks SMTP ports. Use Brevo — see backend/README.md.",
+    );
   }
 }
 
@@ -87,11 +161,23 @@ export async function sendMail(options: {
   subject: string;
   html: string;
 }) {
+  if (useBrevo()) {
+    try {
+      await sendViaBrevo(options);
+    } catch (err) {
+      console.error("sendMail failed (Brevo):", err);
+      throw err;
+    }
+    return;
+  }
+
   const transport = getTransporter();
   const fromEmail = process.env.SMTP_EMAIL?.trim();
 
   if (!transport || !fromEmail) {
-    throw new Error("SMTP_EMAIL or SMTP_PASSWORD is not configured on the server.");
+    throw new Error(
+      "Email not configured. Set BREVO_API_KEY on Render or SMTP_EMAIL locally.",
+    );
   }
 
   try {
@@ -106,7 +192,7 @@ export async function sendMail(options: {
       html: options.html,
     });
   } catch (err) {
-    console.error("sendMail failed:", err);
+    console.error("sendMail failed (SMTP):", err);
     throw err;
   }
 }
