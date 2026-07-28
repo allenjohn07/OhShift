@@ -3,6 +3,22 @@ import { getAccessToken } from "@/lib/auth-storage";
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+async function fetchWithNetworkErrorHint(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new Error(
+        `Cannot reach API at ${API_URL}. Verify NEXT_PUBLIC_API_URL and backend CORS/availability in production.`,
+      );
+    }
+    throw err;
+  }
+}
+
 export async function apiFetch(
   path: string,
   init: RequestInit & { token?: string | null; timeoutMs?: number } = {},
@@ -27,7 +43,7 @@ export async function apiFetch(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetch(`${API_URL}${path}`, {
+      return await fetchWithNetworkErrorHint(`${API_URL}${path}`, {
         ...rest,
         headers,
         signal: controller.signal,
@@ -44,7 +60,7 @@ export async function apiFetch(
     }
   }
 
-  return fetch(`${API_URL}${path}`, { ...rest, headers });
+  return fetchWithNetworkErrorHint(`${API_URL}${path}`, { ...rest, headers });
 }
 
 export async function parseApiJson<T>(res: Response): Promise<T> {
