@@ -12,6 +12,7 @@ import { Navbar } from "@/components/navbar";
 
 type CompanyDashboardData = {
   profile: {
+    id: string;
     full_name: string;
     role: string;
     company_id: string;
@@ -24,7 +25,14 @@ type CompanyDashboardData = {
     email: string;
     designation: string | null;
   }>;
-  shifts: Array<Record<string, unknown>>;
+  shifts: Array<{
+    id: string;
+    title: string;
+    start_time: string;
+    end_time: string;
+    employee_id: string;
+    users?: { full_name: string };
+  }>;
 };
 
 function CompanyDashboard() {
@@ -61,7 +69,7 @@ function CompanyDashboard() {
         userName={data.profile.full_name?.split(" ")[0] || "Owner"}
         company={data.profile.companies as CompanySettings}
         employees={data.employees}
-        shifts={data.shifts as any}
+        shifts={data.shifts}
         currentUser={data.profile}
       />
     </div>

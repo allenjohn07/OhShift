@@ -17,12 +17,6 @@ interface Shift {
   users?: UserInfo;
 }
 
-/** Returns YYYY-MM-DD in the client's local timezone */
-function toLocalDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function formatTime(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -48,11 +42,9 @@ function getEmployeeColor(name: string = "") {
 
 export function TodayCompanySchedule({
   initialShifts,
-  companyId,
   currentUserId,
 }: {
   initialShifts: Shift[] | null;
-  companyId: string;
   currentUserId: string;
 }) {
   const router = useRouter();

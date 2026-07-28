@@ -9,7 +9,7 @@ interface Employee {
   id: string;
   full_name: string;
   email: string;
-  designation?: string;
+  designation?: string | null;
 }
 
 export function TeamMembersList({ employees, company }: { employees: Employee[] | null, company: CompanySettings }) {

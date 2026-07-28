@@ -100,7 +100,9 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
         try {
           const existing = await prisma.user.findUnique({ where: { email } });
           if (existing) {
-            inviteErrors.push(`${email}: Already exists`);
+            inviteErrors.push(
+              `${email}: already registered — use a different email`,
+            );
             continue;
           }
 
@@ -120,8 +122,11 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
 
           created.push({ email, fullName, inviteCode });
           successCount++;
-        } catch {
-          inviteErrors.push(`${email}: Unexpected error processing invite`);
+        } catch (err) {
+          console.error("Invite failed for", email, err);
+          const reason =
+            err instanceof Error ? err.message : "Unexpected error";
+          inviteErrors.push(`${email}: ${reason}`);
         }
       }
 

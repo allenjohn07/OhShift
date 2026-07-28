@@ -45,7 +45,7 @@ export function ManageTeamModal({
       toast.success("Designation updated!");
       setEditingId(null);
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error("Could not update designation");
     } finally {
       setIsSaving(null);
@@ -68,8 +68,8 @@ export function ManageTeamModal({
 
       toast.success(`${name} was removed from the team`);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove employee");
     } finally {
       setIsDeleting(null);
     }

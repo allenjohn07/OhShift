@@ -25,7 +25,14 @@ type DashboardData = {
     start_time: string;
     end_time: string;
   }>;
-  companyShifts: Array<Record<string, unknown>>;
+  companyShifts: Array<{
+    id: string;
+    title: string;
+    start_time: string;
+    end_time: string;
+    employee_id: string;
+    users?: { full_name: string };
+  }>;
 };
 
 function EmployeeDashboard() {
@@ -81,8 +88,7 @@ function EmployeeDashboard() {
           employeeName={profile.full_name ?? ""}
         />
         <TodayCompanySchedule
-          initialShifts={data.companyShifts as any}
-          companyId={profile.company_id}
+          initialShifts={data.companyShifts}
           currentUserId={user.id}
         />
       </main>

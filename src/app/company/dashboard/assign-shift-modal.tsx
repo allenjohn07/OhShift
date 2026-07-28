@@ -10,7 +10,7 @@ interface Employee {
   id: string;
   full_name: string;
   email: string;
-  designation?: string;
+  designation?: string | null;
 }
 
 export function AssignShiftModal({ employee, company }: { employee: Employee, company: CompanySettings }) {
@@ -56,8 +56,8 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
 
       setIsOpen(false);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to assign shift");
     } finally {
       setIsLoading(false);
     }

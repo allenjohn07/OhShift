@@ -10,14 +10,24 @@ import { parseApiJson } from "@/lib/api";
 import { ProfileForm } from "./profile-form";
 import { Navbar } from "@/components/navbar";
 
+type ProfileData = {
+  full_name?: string | null;
+  email: string;
+  role: string;
+  avatar_url?: string | null;
+  created_at?: string;
+  designation?: string | null;
+  companies?: { name: string } | null;
+};
+
 function ProfilePageContent() {
   const api = useApi();
   const router = useRouter();
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     api("/dashboard/profile")
-      .then((res) => parseApiJson<{ profile: Record<string, unknown> }>(res))
+      .then((res) => parseApiJson<{ profile: ProfileData }>(res))
       .then((data) => setProfile(data.profile))
       .catch(() => router.replace("/login"));
   }, [api, router]);

@@ -61,7 +61,7 @@ export function ManageSettingsModal({
       toast.success("Settings saved successfully!");
       router.refresh(); // Refresh to ensure changes propagate
       onClose();
-    } catch (err) {
+    } catch {
       toast.error("Network error saving settings");
     } finally {
       setIsLoading(false);

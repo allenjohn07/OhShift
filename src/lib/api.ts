@@ -18,7 +18,10 @@ export async function apiFetch(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const { token: _token, timeoutMs, ...rest } = init;
+  const timeoutMs = init.timeoutMs;
+  const rest: RequestInit = { ...init };
+  delete (rest as { token?: unknown }).token;
+  delete (rest as { timeoutMs?: unknown }).timeoutMs;
 
   if (timeoutMs) {
     const controller = new AbortController();

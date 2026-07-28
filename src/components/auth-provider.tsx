@@ -48,11 +48,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const applySession = useCallback((nextUser: AuthUser | null, token: string | null) => {
+    if (nextUser && token) {
+      setAccessToken(token);
+      setTokenState(token);
+      setUser(nextUser);
+      return;
+    }
+    clearAccessToken();
+    setUser(null);
+    setTokenState(null);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const token = getAccessToken();
     if (!token) {
-      setUser(null);
-      setTokenState(null);
+      applySession(null, null);
       return;
     }
 
@@ -60,20 +71,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await parseApiJson<{ user: AuthUser | null }>(res);
 
     if (!data.user) {
-      clearAccessToken();
-      setUser(null);
-      setTokenState(null);
+      applySession(null, null);
       return;
     }
 
-    setAccessToken(token);
-    setTokenState(token);
-    setUser(data.user);
-  }, []);
+    applySession(data.user, token);
+  }, [applySession]);
 
   useEffect(() => {
-    refreshUser().finally(() => setLoading(false));
-  }, [refreshUser]);
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        // Yield so session updates are not synchronous inside the effect body.
+        await Promise.resolve();
+        const token = getAccessToken();
+        if (!token) {
+          if (!cancelled) applySession(null, null);
+          return;
+        }
+
+        const res = await apiFetch("/auth/me", { token });
+        const data = await parseApiJson<{ user: AuthUser | null }>(res);
+        if (cancelled) return;
+
+        if (!data.user) {
+          applySession(null, null);
+          return;
+        }
+
+        applySession(data.user, token);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applySession]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiFetch("/auth/login", {
@@ -92,17 +128,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.error || "Invalid credentials");
     }
 
-    setAccessToken(data.accessToken);
-    setTokenState(data.accessToken);
-    setUser(data.user);
+    applySession(data.user, data.accessToken);
     return data.user;
-  }, []);
+  }, [applySession]);
 
   const logout = useCallback(() => {
-    clearAccessToken();
-    setUser(null);
-    setTokenState(null);
-  }, []);
+    applySession(null, null);
+  }, [applySession]);
 
   const value = useMemo(
     () => ({

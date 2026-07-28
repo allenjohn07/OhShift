@@ -10,6 +10,22 @@ import { TodayCompanySchedule } from "@/app/dashboard/today-company-schedule";
 import { ManageTeamModal } from "@/app/company/dashboard/manage-team-modal";
 import { ManageSettingsModal, type CompanySettings } from "./manage-settings-modal";
 
+type DashboardEmployee = {
+  id: string;
+  full_name: string;
+  email: string;
+  designation?: string | null;
+};
+
+type DashboardShift = {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  employee_id: string;
+  users?: { full_name: string };
+};
+
 export function DashboardContent({ 
   userName, 
   company, 
@@ -19,9 +35,9 @@ export function DashboardContent({
 }: { 
   userName: string, 
   company: CompanySettings, 
-  employees: any, 
-  shifts: any,
-  currentUser: any
+  employees: DashboardEmployee[] | null, 
+  shifts: DashboardShift[] | null,
+  currentUser: { id: string }
 }) {
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [isManageSettingsOpen, setIsManageSettingsOpen] = useState(false);
@@ -94,7 +110,6 @@ export function DashboardContent({
         {/* Upcoming Team Schedule List */}
         <TodayCompanySchedule 
           initialShifts={shifts}
-          companyId={company.id}
           currentUserId={currentUser.id}
         />
       </main>

@@ -36,7 +36,9 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
     
     // Attempt to play a subtle haptic feedback (supported on Android, ignored on iOS Safari)
     if (typeof window !== "undefined" && navigator && navigator.vibrate) {
-      try { navigator.vibrate(50); } catch (e) {}
+      try { navigator.vibrate(50); } catch {
+        // Ignore vibration errors
+      }
     }
   };
 
@@ -141,7 +143,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
       toast.success("Shift deleted successfully");
       setSelectedShift(null);
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error("Could not delete shift");
     } finally {
       setIsDeleting(false);
@@ -179,7 +181,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
       setIsEditing(false);
       setSelectedShift(null);
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error("Could not update shift");
     } finally {
       setIsSaving(false);

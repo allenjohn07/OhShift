@@ -1,17 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { User, Building2, Calendar, Lock, Loader2, Link as LinkIcon, Download, Eye, EyeOff } from "lucide-react";
+import { User, Building2, Calendar, Lock, Loader2, Link as LinkIcon, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { apiFetch } from "@/lib/api";
 
-export function ProfileForm({ user }: { user: any }) {
-  const router = useRouter();
+type ProfileUser = {
+  full_name?: string | null;
+  email: string;
+  role: string;
+  avatar_url?: string | null;
+  created_at?: string;
+  designation?: string | null;
+  companies?: { name: string } | null;
+};
+
+export function ProfileForm({ user }: { user: ProfileUser }) {
   const api = useApi();
   const { refreshUser } = useAuth();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
@@ -44,9 +52,11 @@ export function ProfileForm({ user }: { user: any }) {
       toast.success("Profile picture updated");
       await refreshUser();
       (e.target as HTMLFormElement).reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Avatar Update Error:", error);
-      toast.error(error.message || "Failed to update profile picture");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile picture",
+      );
     } finally {
       setIsUpdatingAvatar(false);
     }
@@ -70,8 +80,10 @@ export function ProfileForm({ user }: { user: any }) {
 
       toast.success("Password updated successfully");
       (e.target as HTMLFormElement).reset();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update password");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update password",
+      );
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -93,8 +105,13 @@ export function ProfileForm({ user }: { user: any }) {
           : data.message || "Use the temporary password to log in.",
         duration: 20_000,
       });
-    } catch (err: any) {
-      toast.error("Reset failed", { description: err.message || "Could not reset password. Please try again." });
+    } catch (err: unknown) {
+      toast.error("Reset failed", {
+        description:
+          err instanceof Error
+            ? err.message
+            : "Could not reset password. Please try again.",
+      });
     } finally {
       setIsSendingReset(false);
     }
@@ -106,7 +123,7 @@ export function ProfileForm({ user }: { user: any }) {
       <div className="md:col-span-1 space-y-6">
         <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col items-center text-center">
           <Avatar className="h-24 w-24 border-2 border-border/50 mb-4 shadow-xs">
-            <AvatarImage src={user.avatar_url || ""} alt={user.full_name} />
+            <AvatarImage src={user.avatar_url || ""} alt={user.full_name || "User"} />
             <AvatarFallback className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-2xl font-medium">
               {initials}
             </AvatarFallback>
@@ -150,10 +167,12 @@ export function ProfileForm({ user }: { user: any }) {
             <div>
               <p className="text-xs text-muted-foreground">Joined</p>
               <p className="text-sm font-medium">
-                {new Date(user.created_at).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric"
-                })}
+                {user.created_at
+                  ? new Date(user.created_at).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : "—"}
               </p>
             </div>
           </div>

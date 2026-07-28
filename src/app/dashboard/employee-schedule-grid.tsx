@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
-import { toast } from "sonner";
 
 interface Shift {
   id: string;
@@ -69,7 +68,7 @@ export function EmployeeScheduleGrid({
     if (typeof window !== "undefined" && navigator && navigator.vibrate) {
       try {
         navigator.vibrate(50);
-      } catch (e) {
+      } catch {
         // Ignore vibration errors
       }
     }

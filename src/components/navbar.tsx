@@ -3,24 +3,24 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, User, Building2, Sun, Moon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { UserNav } from "@/components/user-nav";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 
+function subscribe() {
+  return () => {};
+}
+
 export function Navbar() {
   const router = useRouter();
   const { user, loading: isLoadingAuth, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLogout = () => {
     logout();
@@ -37,7 +37,12 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
+    const prev = document.body.style.overflow;
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = prev || "";
+    }
     return () => {
       document.body.style.overflow = "";
     };
@@ -64,7 +69,7 @@ export function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 lg:px-12 h-16">
           <Link href="/" className="flex items-center gap-2.5 group">
             <span className="text-lg font-semibold tracking-tight">OhShift</span>
           </Link>
@@ -155,7 +160,7 @@ export function Navbar() {
             ) : (
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
+                className="relative z-60 flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px]"
                 aria-label={isOpen ? "Close menu" : "Open menu"}
               >
                 <span
@@ -185,70 +190,62 @@ export function Navbar() {
             )}
           </div>
         </div>
-
-        <div
-          ref={menuRef}
-          className="sm:hidden overflow-hidden transition-all duration-200 ease-out"
-          style={{
-            maxHeight: isOpen ? "320px" : "0px",
-            opacity: isOpen ? 1 : 0,
-          }}
-        >
-          <div className="border-t border-border/40 bg-background">
-            <div className="flex flex-col p-4 gap-2">
-              {isLoadingAuth ? (
-                <>
-                  <div className="h-16 w-full rounded-xl bg-muted/60 animate-pulse" />
-                  <div className="h-16 w-full rounded-xl bg-muted/60 animate-pulse" />
-                  <div className="h-px bg-border/50 my-1" />
-                  <div className="h-11 w-full rounded-xl bg-muted/60 animate-pulse" />
-                </>
-              ) : navUser ? null : (
-                <>
-                  <Link href="/login" onClick={() => setIsOpen(false)}>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
-                      <User className="h-4.5 w-4.5 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm font-medium">Employee Login</div>
-                        <div className="text-xs text-muted-foreground">
-                          Sign in to view your schedule
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                  <Link href="/company/login" onClick={() => setIsOpen(false)}>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent transition-colors duration-200">
-                      <Building2 className="h-4.5 w-4.5 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm font-medium">Company Portal</div>
-                        <div className="text-xs text-muted-foreground">
-                          Manage your team and schedules
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="h-px bg-border/50 my-1" />
-                  <Link href="/company/register" onClick={() => setIsOpen(false)}>
-                    <Button className="btn-hover w-full h-11 rounded-xl font-medium">
-                      Register your company
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`sm:hidden fixed inset-0 top-16 bg-black/20 backdrop-blur-[2px] z-[-1] transition-opacity duration-200 ${
-            isOpen
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }`}
-          onClick={() => setIsOpen(false)}
-        />
       </nav>
+
+      {/* Full-screen mobile menu */}
+      <div
+        ref={menuRef}
+        className={`sm:hidden fixed inset-0 z-40 bg-background transition-opacity duration-300 ${
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <div className="flex h-full flex-col px-6 pt-24 pb-10">
+          {isLoadingAuth ? (
+            <div className="flex flex-col gap-3">
+              <div className="h-20 w-full rounded-2xl bg-muted/60 animate-pulse" />
+              <div className="h-20 w-full rounded-2xl bg-muted/60 animate-pulse" />
+              <div className="h-12 w-full rounded-xl bg-muted/60 animate-pulse mt-4" />
+            </div>
+          ) : navUser ? null : (
+            <div className="flex flex-1 flex-col justify-between">
+              <div className="flex flex-col gap-2">
+                <Link href="/login" onClick={() => setIsOpen(false)}>
+                  <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <div className="text-base font-medium">Employee Login</div>
+                      <div className="text-sm text-muted-foreground">
+                        Sign in to view your schedule
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+                <Link href="/company/login" onClick={() => setIsOpen(false)}>
+                  <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <div className="text-base font-medium">Company Portal</div>
+                      <div className="text-sm text-muted-foreground">
+                        Manage your team and schedules
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+              <Link href="/company/register" onClick={() => setIsOpen(false)}>
+                <Button className="btn-hover w-full h-12 rounded-xl font-medium text-base">
+                  Register your company
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="h-16 w-full shrink-0" />
       <ColdStartBanner />
     </>
