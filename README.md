@@ -70,16 +70,21 @@ Copy the Worker URL (`https://ohshift-api.<subdomain>.workers.dev`). Check `/pin
 4. Deploy frontend (Pages) — use **one** of these:
 
 **A. Cloudflare dashboard (Git connected)**  
-Build settings (do **not** use Wrangler deploy for the frontend):
-- Build command: `bun install && bun run build`
-- Build output directory: `out`
-- Root directory: `/` (repo root)  
-Environment variables: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty).
+In **Settings → Builds & deployments → Build configuration**:
 
-There is **no** root `wrangler.toml` on purpose — that file made Cloudflare run `wrangler deploy` (Workers) and fail with “Missing entry-point”.
+| Field | Value |
+|-------|--------|
+| Framework preset | **None** (not Next.js / OpenNext) |
+| Build command | `bun install && bun run build` |
+| Build output directory | `out` |
+| Root directory | `/` (leave empty / repo root) |
+| Deploy command | leave **empty** |
 
-**B. GitHub Actions**  
-Add secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` and variables `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty). Push to `main`.
+If you still see `opennextjs-cloudflare` in logs, the preset is still Next.js/OpenNext — change it to **None** and save. This app is a static export (`output: "export"`); OpenNext will always fail.
+
+Environment variables (Production): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty).
+
+**Tip:** Prefer **one** deploy path. Either dashboard Git builds **or** GitHub Actions — not both fighting each other.
 
 5. Set Worker secret `FRONTEND_URL` to the **Pages origin** (e.g. `https://ohshift.pages.dev`) — required for CORS.
 6. Rebuild Pages if `NEXT_PUBLIC_API_URL` was missing on the first build.
