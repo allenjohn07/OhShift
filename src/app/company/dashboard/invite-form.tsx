@@ -153,13 +153,31 @@ export function InviteEmployeeForm() {
         return;
       }
 
-      if (data.details && data.details.length > 0) {
+      const created = (data.invites ?? []) as Array<{
+        email: string;
+        fullName: string;
+        inviteCode: string;
+      }>;
+
+      if (created.length > 0) {
+        const summary = created
+          .map((i) => `${i.email}: ${i.inviteCode}`)
+          .join(" · ");
+        toast.success("Employees invited", {
+          description: `Share these invite codes (not emailed yet): ${summary}`,
+          duration: 30_000,
+        });
+      } else if (data.details && data.details.length > 0) {
         toast.warning(data.message || "Some invitations failed", {
-          description: `Failed for some: ${data.details[0]}${data.details.length > 1 ? ` + ${data.details.length - 1} more` : ''}`,
+          description: `Failed for some: ${data.details[0]}${data.details.length > 1 ? ` + ${data.details.length - 1} more` : ""}`,
         });
       } else {
-        toast.success("Invitations sent!", {
-          description: "All employees have been invited.",
+        toast.success(data.message || "Invitations created");
+      }
+
+      if (data.errors?.length) {
+        toast.warning("Some invites had issues", {
+          description: data.errors[0],
         });
       }
 
@@ -170,7 +188,7 @@ export function InviteEmployeeForm() {
       setDesignation("");
     } catch (err) {
       toast.error("Network error", {
-        description: "Could not reach the server to send the invite.",
+        description: "Could not reach the server to create the invite.",
       });
     } finally {
       setIsLoading(false);
@@ -186,7 +204,7 @@ export function InviteEmployeeForm() {
       
       <div className="p-4 sm:p-6 flex-1 flex flex-col">
         <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
-          Add team members to your invite list. We will auto-generate an invitation code and send it to their email.
+          Add team members to your invite list. We generate an invite code for each person — share it with them to log in (email delivery comes later).
         </p>
 
         {/* Add to List Form */}
@@ -311,12 +329,12 @@ export function InviteEmployeeForm() {
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Sending Invites...
+                Creating Invites...
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
-                Send Invitations
+                Create Invitations
               </span>
             )}
           </Button>

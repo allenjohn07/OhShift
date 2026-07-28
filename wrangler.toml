@@ -1,0 +1,13 @@
+# OhShift frontend — Cloudflare Pages (static export)
+# Dashboard: connect repo, or deploy with: bunx wrangler pages deploy out --project-name=ohshift
+#
+# Build command: bun run build
+# Output directory: out
+# Env (Production): NEXT_PUBLIC_API_URL, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_BASE_PATH=
+
+name = "ohshift"
+compatibility_date = "2025-06-01"
+
+[assets]
+directory = "./out"
+not_found_handling = "single-page-application"

@@ -57,12 +57,15 @@ export default function CompanyLoginPage() {
         timeoutMs: 90_000,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send reset email");
-      toast.success("Reset email sent!", {
-        description: "Check your inbox (and spam) for a temporary password.",
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      toast.success("Temporary password ready", {
+        description: data.tempPassword
+          ? `Copy this password and log in: ${data.tempPassword}`
+          : data.message || "Use the temporary password to log in.",
+        duration: 20_000,
       });
     } catch (err: any) {
-      toast.error("Reset failed", { description: err.message || "Could not send reset email. Please try again." });
+      toast.error("Reset failed", { description: err.message || "Could not reset password. Please try again." });
     } finally {
       setIsLoading(false);
     }

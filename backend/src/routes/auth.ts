@@ -2,7 +2,6 @@ import { Elysia } from "elysia";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../lib/auth-guard";
 import { generateTempPassword, hashPassword, verifyPassword } from "../lib/password";
-import { appUrl, mailConfigured, mailErrorMessage, sendMail } from "../lib/mail";
 import { serializeUser } from "../lib/serialize";
 import { requireUser } from "../lib/auth-guard";
 import { createAccessToken } from "../lib/session";
@@ -110,14 +109,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       return { error: "Email is required" };
     }
 
-    if (!mailConfigured()) {
-      set.status = 500;
-      return {
-        error:
-          "Email not configured. Add BREVO_API_KEY and BREVO_SENDER_EMAIL on Render (Gmail SMTP does not work on free tier).",
-      };
-    }
-
     const existingUser = await prisma.user.findUnique({
       where: { email },
       select: { id: true, fullName: true, role: true },
@@ -129,39 +120,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }
 
     const tempPassword = generateTempPassword();
-    const loginLink = `${appUrl()}${
-      existingUser.role === "owner" ? "/company/login" : "/login"
-    }`;
-
-    try {
-      await sendMail({
-        to: email,
-        subject: "Your Password Reset Request - OhShift",
-        html: `
-        <div style="font-family: sans-serif; max-w-xl mx-auto p-6 bg-slate-50 border border-slate-200 rounded-xl">
-          <h2 style="color: #333 text-xl font-bold">Password Reset</h2>
-          <p style="color: #555 mt-4">Hi ${existingUser.fullName || "there"},</p>
-          <p style="color: #555 mt-2">We received a request to reset your password for OhShift.</p>
-          <div style="margin-top: 24px; padding: 16px; background-color: #f1f5f9; border-radius: 8px;">
-            <p style="margin: 0; color: #64748b; font-size: 14px;">Your temporary password:</p>
-            <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; font-family: monospace; color: #0f172a; letter-spacing: 2px;">
-              ${tempPassword}
-            </p>
-          </div>
-          <p style="color: #555 mt-6">Use this temporary password to log in, and be sure to change it immediately in your profile dashboard.</p>
-          <div style="margin-top: 32px;">
-            <a href="${loginLink}" style="background-color: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; display: inline-block;">
-              Log in to your account
-            </a>
-          </div>
-        </div>
-      `,
-      });
-    } catch (emailError: unknown) {
-      set.status = 500;
-      return { error: mailErrorMessage(emailError) };
-    }
-
     const passwordHash = await hashPassword(tempPassword);
 
     await prisma.user.update({
@@ -169,7 +127,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       data: { passwordHash },
     });
 
-    return { message: "Password reset email sent successfully" };
+    return {
+      message: "Temporary password generated. Copy it now — it will not be emailed.",
+      tempPassword,
+    };
   })
   .post("/update-avatar", async ({ body, headers, set }) => {
     try {

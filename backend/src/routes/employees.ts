@@ -2,7 +2,6 @@ import { Elysia } from "elysia";
 import { ApiError, requireManager, verifyEmployeeInCompany } from "../lib/auth-guard";
 import { prisma } from "../lib/prisma";
 import { generateTempPassword, hashPassword } from "../lib/password";
-import { appUrl, mailConfigured, sendMail } from "../lib/mail";
 import { serializeUser } from "../lib/serialize";
 
 export const employeesRoutes = new Elysia({ prefix: "/employees" })
@@ -88,21 +87,10 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
         return { error: "At least one invitee is required." };
       }
 
-      if (!mailConfigured()) {
-        set.status = 500;
-        return {
-          error:
-            "Email not configured. Add BREVO_API_KEY and BREVO_SENDER_EMAIL on Render (Gmail SMTP does not work on free tier).",
-        };
-      }
-
-      const company = await prisma.company.findUnique({
-        where: { id: sender.companyId! },
-      });
-      const companyName = company?.name || "the company";
-
       let successCount = 0;
       const inviteErrors: string[] = [];
+      const created: Array<{ email: string; fullName: string; inviteCode: string }> =
+        [];
 
       for (const invite of invites) {
         const email = invite.email.trim();
@@ -130,34 +118,7 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
             },
           });
 
-          try {
-            await sendMail({
-              to: email,
-              subject: `You've been invited to join ${companyName} on OhShift`,
-              html: `
-              <div style="font-family: sans-serif; max-w-xl mx-auto p-6 bg-slate-50 border border-slate-200 rounded-xl">
-                <h2 style="color: #333 text-xl font-bold">Welcome to OhShift!</h2>
-                <p style="color: #555 mt-4">Hi ${fullName},</p>
-                <p style="color: #555 mt-2">You have been invited by <strong>${sender.fullName}</strong> to join the team at <strong>${companyName}</strong> on OhShift.</p>
-                <div style="margin-top: 24px; padding: 16px; background-color: #f1f5f9; border-radius: 8px;">
-                  <p style="margin: 0; color: #64748b; font-size: 14px;">Your secure invitation code (password):</p>
-                  <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; font-family: monospace; color: #0f172a; letter-spacing: 2px;">
-                    ${inviteCode}
-                  </p>
-                </div>
-                <p style="color: #555 mt-6">Use this email address along with the invitation code above to log in to your employee portal.</p>
-                <div style="margin-top: 32px;">
-                  <a href="${appUrl()}/login" style="background-color: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; display: inline-block;">
-                    Log in to your account
-                  </a>
-                </div>
-              </div>
-            `,
-            });
-          } catch {
-            inviteErrors.push(`${email}: User created, but email invite failed to send.`);
-          }
-
+          created.push({ email, fullName, inviteCode });
           successCount++;
         } catch {
           inviteErrors.push(`${email}: Unexpected error processing invite`);
@@ -173,7 +134,8 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
       }
 
       return {
-        message: `Successfully invited ${successCount} employee(s).`,
+        message: `Successfully invited ${successCount} employee(s). Share their invite codes — email is not sent yet.`,
+        invites: created,
         errors: inviteErrors.length > 0 ? inviteErrors : undefined,
       };
     } catch (err) {

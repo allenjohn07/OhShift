@@ -29,6 +29,15 @@ bun-debug.log*
 # env files
 .env
 .env*.local
+backend/.env
+!.env.example
+!backend/.env.example
+
+# cloudflare
+.wrangler/
+.dev.vars
+backend/.wrangler/
+backend/.dev.vars
 
 # typescript
 *.tsbuildinfo

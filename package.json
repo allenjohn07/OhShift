@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pages:deploy": "bun run build && bunx wrangler pages deploy out --project-name=ohshift"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

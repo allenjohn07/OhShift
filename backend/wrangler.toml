@@ -1,0 +1,18 @@
+# OhShift API — Cloudflare Workers
+# https://elysiajs.com/integrations/cloudflare-worker
+
+name = "ohshift-api"
+main = "src/worker.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NODE_ENV = "production"
+
+# Set secrets (do not put them in this file):
+#   bunx wrangler secret put DATABASE_URL
+#   bunx wrangler secret put DIRECT_URL
+#   bunx wrangler secret put AUTH_SECRET
+#   bunx wrangler secret put FRONTEND_URL
+#
+# FRONTEND_URL must be the Pages origin, e.g. https://ohshift.pages.dev
