@@ -11,6 +11,7 @@ import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { TodayCompanySchedule } from "./today-company-schedule";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 type DashboardData = {
   profile: {
@@ -35,6 +36,14 @@ type DashboardData = {
   }>;
 };
 
+function PageSpinner() {
+  return (
+    <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
+      <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function EmployeeDashboard() {
   const { user } = useAuth();
   const api = useApi();
@@ -55,21 +64,16 @@ function EmployeeDashboard() {
   }, [api, router]);
 
   if (!data || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   const profile = data.profile;
   const companyName = profile.companies?.name || "Your Company";
 
   return (
-    <div className="min-h-screen bg-background w-full overflow-x-hidden">
-      <Navbar />
+    <>
       <RealtimeSubscriber companyId={profile.company_id} />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div>
           <p className="text-sm font-medium text-emerald-500 mb-1">
             {companyName} Team
@@ -80,7 +84,7 @@ function EmployeeDashboard() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8">
+      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 flex-1">
         <ShiftSummary initialShifts={data.shifts} employeeId={user.id} />
         <EmployeeScheduleGrid
           initialShifts={data.shifts}
@@ -92,14 +96,18 @@ function EmployeeDashboard() {
           currentUserId={user.id}
         />
       </main>
-    </div>
+      <Footer className="mt-auto" />
+    </>
   );
 }
 
 export default function EmployeeDashboardPage() {
   return (
-    <AuthGuard allowedRoles={["employee"]}>
-      <EmployeeDashboard />
-    </AuthGuard>
+    <div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">
+      <Navbar />
+      <AuthGuard allowedRoles={["employee"]}>
+        <EmployeeDashboard />
+      </AuthGuard>
+    </div>
   );
 }

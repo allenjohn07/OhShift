@@ -81,7 +81,7 @@ export default function EmployeeLoginPage() {
   return (
     <>
       <ColdStartBanner />
-      <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="min-h-dvh bg-background flex flex-col relative">
         <div className="fixed inset-0 -z-10">
           <div
             className="absolute inset-0 opacity-[0.02]"

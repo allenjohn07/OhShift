@@ -9,6 +9,7 @@ import { DashboardContent } from "./dashboard-content";
 import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import type { CompanySettings } from "./manage-settings-modal";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 type CompanyDashboardData = {
   profile: {
@@ -35,6 +36,14 @@ type CompanyDashboardData = {
   }>;
 };
 
+function PageSpinner() {
+  return (
+    <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
+      <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function CompanyDashboard() {
   const api = useApi();
   const router = useRouter();
@@ -54,16 +63,11 @@ function CompanyDashboard() {
   }, [api, router]);
 
   if (!data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
-      <Navbar />
+    <>
       <RealtimeSubscriber companyId={data.profile.company_id} />
       <DashboardContent
         userName={data.profile.full_name?.split(" ")[0] || "Owner"}
@@ -72,17 +76,21 @@ function CompanyDashboard() {
         shifts={data.shifts}
         currentUser={data.profile}
       />
-    </div>
+      <Footer className="mt-auto" />
+    </>
   );
 }
 
 export default function CompanyDashboardPage() {
   return (
-    <AuthGuard
-      loginPath="/company/login"
-      allowedRoles={["owner", "manager"]}
-    >
-      <CompanyDashboard />
-    </AuthGuard>
+    <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
+      <Navbar />
+      <AuthGuard
+        loginPath="/company/login"
+        allowedRoles={["owner", "manager"]}
+      >
+        <CompanyDashboard />
+      </AuthGuard>
+    </div>
   );
 }

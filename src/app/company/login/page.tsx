@@ -81,7 +81,7 @@ export default function CompanyLoginPage() {
   return (
     <>
       <ColdStartBanner />
-      <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="min-h-dvh bg-background flex flex-col relative">
         <div className="fixed inset-0 -z-10">
           <div
             className="absolute inset-0 opacity-[0.02]"
@@ -104,7 +104,7 @@ export default function CompanyLoginPage() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-start justify-center px-6 pt-8 pb-12 sm:pt-12">
+        <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-8 pb-12 sm:py-12">
           <div className="w-full max-w-sm space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
               <Link href="/" className="inline-flex items-center gap-2.5 mb-4">

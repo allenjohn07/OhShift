@@ -14,7 +14,8 @@ import { ColdStartBanner } from "@/components/cold-start-banner";
 export default function CompanyRegisterPage() {
   const router = useRouter();
   const [companyName, setCompanyName] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,6 +32,8 @@ export default function CompanyRegisterPage() {
       return;
     }
     setIsLoading(true);
+
+    const name = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 
     try {
       const res = await apiFetch("/auth/register-company", {
@@ -63,7 +66,7 @@ export default function CompanyRegisterPage() {
   return (
     <>
       <ColdStartBanner />
-      <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="min-h-dvh bg-background flex flex-col relative">
         <div className="fixed inset-0 -z-10">
           <div
             className="absolute inset-0 opacity-[0.02]"
@@ -86,8 +89,8 @@ export default function CompanyRegisterPage() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-start justify-center px-6 pt-8 pb-12 sm:pt-12">
-          <div className="w-full max-w-sm space-y-8">
+        <div className="flex-1 flex items-start lg:items-center justify-center px-6 pt-8 pb-12 lg:py-8">
+          <div className="w-full max-w-sm lg:max-w-3xl space-y-6 lg:space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
               <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
                 <span className="text-xl font-semibold tracking-tight">
@@ -106,115 +109,139 @@ export default function CompanyRegisterPage() {
               onSubmit={handleRegister}
               className="space-y-4 animate-fade-in delay-100"
             >
-              <div className="space-y-2">
-                <Label htmlFor="companyName" className="text-sm font-medium">
-                  Company name
-                </Label>
-                <Input
-                  id="companyName"
-                  type="text"
-                  placeholder="Brew & Co."
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                  className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">
-                  Your full name
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Alex Morgan"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="alex@brewco.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName" className="text-sm font-medium">
+                      Company name
+                    </Label>
+                    <Input
+                      id="companyName"
+                      type="text"
+                      placeholder="Brew & Co."
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-sm font-medium">
+                      First name
+                    </Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="Alex"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-sm font-medium">
+                      Last name
+                    </Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Morgan"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                  Confirm password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    tabIndex={-1}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="alex@brewco.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Must be at least 8 characters
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="confirmPassword"
+                      className="text-sm font-medium"
+                    >
+                      Confirm password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <Button
                 type="submit"
-                className="btn-hover w-full h-11 rounded-xl font-medium"
+                className="btn-hover w-full h-11 rounded-xl font-medium lg:mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? (
