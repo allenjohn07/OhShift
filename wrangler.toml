@@ -1,6 +1,0 @@
-# OhShift frontend — Cloudflare Pages
-# https://developers.cloudflare.com/pages/functions/wrangler-configuration/
-
-name = "ohshift"
-compatibility_date = "2025-06-01"
-pages_build_output_dir = "out"

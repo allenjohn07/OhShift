@@ -67,7 +67,20 @@ bun run deploy
 
 Copy the Worker URL (`https://ohshift-api.<subdomain>.workers.dev`). Check `/ping` and `/health`.
 
-4. Deploy frontend (Pages): connect the Git repo in the dashboard, or push to `main` after adding GitHub secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` and variables `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty). Build: `bun run build`, output: `out`.
+4. Deploy frontend (Pages) — use **one** of these:
+
+**A. Cloudflare dashboard (Git connected)**  
+Build settings (do **not** use Wrangler deploy for the frontend):
+- Build command: `bun install && bun run build`
+- Build output directory: `out`
+- Root directory: `/` (repo root)  
+Environment variables: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty).
+
+There is **no** root `wrangler.toml` on purpose — that file made Cloudflare run `wrangler deploy` (Workers) and fail with “Missing entry-point”.
+
+**B. GitHub Actions**  
+Add secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` and variables `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_PATH` (empty). Push to `main`.
+
 5. Set Worker secret `FRONTEND_URL` to the **Pages origin** (e.g. `https://ohshift.pages.dev`) — required for CORS.
 6. Rebuild Pages if `NEXT_PUBLIC_API_URL` was missing on the first build.
 
