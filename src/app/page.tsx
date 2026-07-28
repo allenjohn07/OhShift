@@ -71,8 +71,8 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero — fills first viewport through Register CTA */}
-      <section className="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center px-6 lg:px-12 py-16 sm:py-20">
-        <div className="mx-auto w-full max-w-6xl text-center">
+      <section className="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-16 sm:py-20">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 text-center">
           <div className="animate-fade-in delay-100 inline-flex items-center gap-2.5 rounded-full border border-border/80 bg-card/60 backdrop-blur-sm px-4 py-1.5 text-sm text-muted-foreground mb-8 transition-all duration-300 hover:border-foreground/20 cursor-default">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500/75" />
@@ -109,8 +109,8 @@ export default function LandingPage() {
       </section>
 
       {/* Schedule preview — next section on scroll */}
-      <section className="px-6 lg:px-12 py-16 sm:py-24">
-        <Reveal className="max-w-6xl mx-auto">
+      <section className="py-16 sm:py-24">
+        <Reveal className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="relative rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-1 shadow-2xl shadow-black/5 dark:shadow-black/20">
             <div className="rounded-xl bg-card overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
@@ -195,8 +195,8 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="px-6 lg:px-12 py-24 sm:py-32">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-24 sm:py-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <Reveal className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Everything you need,{" "}
@@ -231,8 +231,8 @@ export default function LandingPage() {
       </section>
 
       {/* Two-column auth CTA */}
-      <section className="px-6 lg:px-12 py-24 sm:py-32 border-t border-border/40">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-24 sm:py-32 border-t border-border/40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <Reveal className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Ready to get started?
@@ -308,7 +308,7 @@ export default function LandingPage() {
           OHSHIFT
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 py-16 md:py-24">
             <div className="max-w-sm">
               <div className="flex items-center gap-3 mb-6">

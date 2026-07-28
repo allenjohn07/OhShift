@@ -93,7 +93,7 @@ export default function EmployeeLoginPage() {
         </div>
 
         <div className="h-16 shrink-0 flex items-center">
-          <div className="w-full max-w-6xl mx-auto px-6 lg:px-12">
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
             <Link
               href="/"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 inline-flex items-center gap-1.5 animate-fade-in"
