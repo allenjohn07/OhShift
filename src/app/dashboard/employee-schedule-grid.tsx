@@ -336,7 +336,7 @@ export function EmployeeScheduleGrid({
             <div className="p-4 border-t border-border/50 bg-black/5 dark:bg-white/5 flex items-center justify-end gap-2">
                <button 
                  onClick={() => setSelectedShift(null)}
-                 className="px-4 py-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-xl transition-colors"
+                 className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"
                >
                  Close
                </button>

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import { ColdStartBanner } from "@/components/cold-start-banner";
+import { BrandMark } from "@/components/brand-mark";
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
@@ -107,7 +108,8 @@ export default function EmployeeLoginPage() {
         <div className="flex-1 flex items-start justify-center px-6 pt-8 pb-12 sm:pt-12">
           <div className="w-full max-w-sm space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
-              <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
+              <Link href="/" className="inline-flex items-center gap-1.5 mb-4">
+                <BrandMark size={22} />
                 <span className="text-xl font-semibold tracking-tight">
                   OhShift
                 </span>

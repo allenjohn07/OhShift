@@ -47,7 +47,7 @@ export function DashboardContent({
       {/* Header Area */}
       <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div>
-          <p className="text-sm font-medium text-emerald-500 mb-1">
+          <p className="text-sm font-medium text-brand mb-1">
             {company.name} Workspace
           </p>
           <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
@@ -62,9 +62,9 @@ export function DashboardContent({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div 
             onClick={() => setIsManageTeamOpen(true)}
-            className="rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4 cursor-pointer hover:bg-card/60 hover:border-emerald-500/50 transition-all group"
+            className="rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4 cursor-pointer hover:bg-card/60 hover:border-brand/40 transition-all group"
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand group-hover:scale-110 transition-transform">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -83,12 +83,12 @@ export function DashboardContent({
           </div>
 
           <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand">
               <Settings className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Manage Setup</p>
-              <p onClick={() => setIsManageSettingsOpen(true)} className="text-sm font-medium mt-1 text-foreground underline underline-offset-4 cursor-pointer hover:text-violet-500 transition-colors">View Settings</p>
+              <p onClick={() => setIsManageSettingsOpen(true)} className="text-sm font-medium mt-1 text-foreground underline underline-offset-4 cursor-pointer hover:text-brand transition-colors">View Settings</p>
             </div>
           </div>
         </div>

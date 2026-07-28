@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { UserNav } from "@/components/user-nav";
 import { ColdStartBanner } from "@/components/cold-start-banner";
+import { BrandMark } from "@/components/brand-mark";
 
 function subscribe() {
   return () => {};
@@ -70,7 +71,8 @@ export function Navbar() {
     <>
       <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-1.5 group">
+            <BrandMark size={22} />
             <span className="text-lg font-semibold tracking-tight">OhShift</span>
           </Link>
 

@@ -75,7 +75,7 @@ function EmployeeDashboard() {
       <RealtimeSubscriber companyId={profile.company_id} />
       <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div>
-          <p className="text-sm font-medium text-emerald-500 mb-1">
+          <p className="text-sm font-medium text-brand mb-1">
             {companyName} Team
           </p>
           <h1 className="text-xl sm:text-3xl font-bold tracking-tight">

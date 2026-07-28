@@ -67,7 +67,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="text-sm font-medium bg-foreground text-background hover:bg-foreground/90 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+        className="text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
       >
         Assign Shift
       </button>
@@ -184,7 +184,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary h-10 px-6 rounded-xl text-sm font-medium"
+              className="btn-brand h-10 px-6 rounded-xl text-sm font-medium"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">

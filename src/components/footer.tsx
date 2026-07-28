@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/brand-mark";
 
 export function Footer({ className }: { className?: string }) {
   return (
@@ -15,7 +16,8 @@ export function Footer({ className }: { className?: string }) {
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col md:flex-row items-start justify-between gap-10 py-16 md:py-24">
           <div className="max-w-sm">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-1.5 mb-6">
+              <BrandMark size={24} />
               <span className="text-2xl font-bold tracking-tight">OhShift</span>
             </div>
             <p className="text-base text-muted-foreground leading-relaxed font-medium">

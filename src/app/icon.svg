@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="osGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6D5CFF"/>
+      <stop offset="100%" stop-color="#4634D6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- the "O" -->
+  <circle cx="60" cy="60" r="48" fill="none" stroke="url(#osGrad)" stroke-width="8"/>
+
+  <!-- the "S", built from two arcs inscribed in the O so it reads as both letters at once -->
+  <path d="M60,12 A24,24 0 0,1 60,60 A24,24 0 0,0 60,108"
+        fill="none" stroke="url(#osGrad)" stroke-width="8" stroke-linecap="round"/>
+</svg>

@@ -463,7 +463,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                        </button>
                       <button 
                          onClick={() => setSelectedShift(null)}
-                         className="px-4 py-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-xl transition-colors"
+                         className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"
                        >
                          Close
                        </button>

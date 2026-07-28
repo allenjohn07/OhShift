@@ -124,7 +124,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
         <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col items-center text-center">
           <Avatar className="h-24 w-24 border-2 border-border/50 mb-4 shadow-xs">
             <AvatarImage src={user.avatar_url || ""} alt={user.full_name || "User"} />
-            <AvatarFallback className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-2xl font-medium">
+            <AvatarFallback className="bg-brand-soft text-brand text-2xl font-medium">
               {initials}
             </AvatarFallback>
           </Avatar>

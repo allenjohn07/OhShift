@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OhShift — Smart Shift Scheduling",
   description: "Lightweight, fast shift scheduling for modern teams. Create schedules, manage employees, and communicate changes — all from one clean interface.",
+  icons: {
+    icon: [{ url: "/logo/ohshift-os-monogram.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({

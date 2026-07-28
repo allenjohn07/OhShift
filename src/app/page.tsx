@@ -66,7 +66,7 @@ export default function LandingPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-linear-to-b from-foreground/3 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-linear-to-b from-brand/15 to-transparent rounded-full blur-3xl" />
       </div>
 
       <Navbar />
@@ -74,10 +74,10 @@ export default function LandingPage() {
       {/* Hero — fills first viewport through Register CTA */}
       <section className="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-16 sm:py-20">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 text-center">
-          <div className="animate-fade-in delay-100 inline-flex items-center gap-2.5 rounded-full border border-border/80 bg-card/60 backdrop-blur-sm px-4 py-1.5 text-sm text-muted-foreground mb-8 transition-all duration-300 hover:border-foreground/20 cursor-default">
+          <div className="animate-fade-in delay-100 inline-flex items-center gap-2.5 rounded-full border border-brand/20 bg-brand-soft/60 backdrop-blur-sm px-4 py-1.5 text-sm text-muted-foreground mb-8 transition-all duration-300 hover:border-brand/35 cursor-default">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500/75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand/75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand" />
             </span>
             Now in public beta
             <ChevronRight className="h-3 w-3" />
@@ -215,8 +215,8 @@ export default function LandingPage() {
             {features.map((feature, index) => (
               <Reveal key={feature.title} delayMs={index * 80}>
                 <div className="group rounded-2xl border border-border/50 bg-card/40 p-7 transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 h-full">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent mb-5">
-                    <feature.icon className="h-5 w-5 text-foreground/60" />
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft mb-5">
+                    <feature.icon className="h-5 w-5 text-brand" />
                   </div>
                   <h3 className="font-semibold text-base mb-2">
                     {feature.title}
@@ -247,8 +247,8 @@ export default function LandingPage() {
             <Reveal delayMs={80}>
               <div className="group rounded-2xl border border-border/50 bg-card/40 overflow-hidden transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 flex flex-col h-full">
                 <div className="p-8 flex flex-col flex-1">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-6">
-                    <Building2 className="h-6 w-6 text-foreground/60" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-soft mb-6">
+                    <Building2 className="h-6 w-6 text-brand" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">I manage a team</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
@@ -278,8 +278,8 @@ export default function LandingPage() {
             <Reveal delayMs={160}>
               <div className="group rounded-2xl border border-border/50 bg-card/40 overflow-hidden transition-all duration-300 hover:border-foreground/10 hover:bg-card/80 flex flex-col h-full">
                 <div className="p-8 flex flex-col flex-1">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-6">
-                    <User className="h-6 w-6 text-foreground/60" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-soft mb-6">
+                    <User className="h-6 w-6 text-brand" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">
                     I&apos;m an employee
