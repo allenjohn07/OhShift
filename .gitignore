@@ -42,3 +42,6 @@ backend/.dev.vars
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cursor plans
+.cursor/plans/

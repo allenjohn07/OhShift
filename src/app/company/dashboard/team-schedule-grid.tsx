@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
@@ -11,16 +11,18 @@ interface Shift {
   title: string;
   start_time: string;
   end_time: string;
+  status?: "draft" | "published";
   users?: { full_name: string };
 }
 
-export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
+export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | null; onPublished?: () => void }) {
   const api = useApi();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const router = useRouter();
 
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -175,14 +177,17 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to edit shift");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to edit shift");
+      }
 
       toast.success("Shift updated successfully");
       setIsEditing(false);
       setSelectedShift(null);
       router.refresh();
-    } catch {
-      toast.error("Could not update shift");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Could not update shift");
     } finally {
       setIsSaving(false);
     }
@@ -223,6 +228,46 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
 
   const headerDateRange = `${formatDateLabel(startOfWeek)} - ${formatDateLabel(endOfWeek)}, ${startOfWeek.getFullYear()}`;
 
+  const weekStartIso = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
+
+  const weekShifts =
+    shifts?.filter((s) => {
+      const shiftDate = new Date(s.start_time);
+      const weekEndExclusive = new Date(startOfWeek);
+      weekEndExclusive.setDate(startOfWeek.getDate() + 7);
+      return shiftDate >= startOfWeek && shiftDate < weekEndExclusive;
+    }) ?? [];
+
+  const draftCount = weekShifts.filter((s) => s.status === "draft").length;
+
+  const handlePublishWeek = async () => {
+    if (draftCount === 0) {
+      toast.message("No draft shifts to publish for this week");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      const res = await api("/company/schedule/publish", {
+        method: "POST",
+        body: JSON.stringify({ weekStart: weekStartIso }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to publish schedule");
+      }
+      toast.success(data.message || "Schedule published");
+      onPublished?.();
+      router.refresh();
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not publish schedule",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <>
       <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden mt-8">
@@ -232,7 +277,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
             <h2 className="font-semibold text-lg">Team Schedule</h2>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto">
+          <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto">
              <button 
                onClick={() => setWeekOffset(prev => prev - 1)}
                className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
@@ -240,7 +285,7 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
              >
                <ChevronLeft className="w-4 h-4" />
              </button>
-             <span className="text-xs sm:text-sm font-medium w-28 sm:w-40 text-center select-none">
+             <span className="flex-1 min-w-0 text-xs font-medium text-center select-none whitespace-nowrap overflow-hidden sm:flex-none sm:w-40 sm:whitespace-normal sm:overflow-visible sm:text-sm">
                {headerDateRange}
              </span>
              <button 
@@ -257,6 +302,29 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
                <span>Reset</span>
+             </button>
+             <button
+               onClick={handlePublishWeek}
+               disabled={isPublishing || draftCount === 0}
+               title={
+                 draftCount === 0
+                   ? "No draft shifts this week"
+                   : `Publish ${draftCount} draft shift(s)`
+               }
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+             >
+               {isPublishing ? (
+                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
+               ) : (
+                 <Send className="w-3.5 h-3.5" />
+               )}
+               <span className="hidden sm:inline">Publish</span>
+               {draftCount > 0 && (
+                 <span className="sm:hidden">{draftCount}</span>
+               )}
+               {draftCount > 0 && (
+                 <span className="hidden sm:inline">({draftCount})</span>
+               )}
              </button>
           </div>
         </div>
@@ -303,10 +371,13 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                           <div 
                              key={shift.id} 
                              onClick={() => setSelectedShift(shift)}
-                             className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg relative z-10 cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all ${getEmployeeColor(shift.users?.full_name)}`}>
+                             className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg relative z-10 cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all ${getEmployeeColor(shift.users?.full_name)} ${shift.status === "draft" ? "border-dashed opacity-80" : ""}`}>
                             <span className="block truncate">{formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}</span>
                             <span className="opacity-80 block truncate mt-0.5">
                               {shift.users?.full_name?.split(' ')[0]}: {shift.title}
+                              {shift.status === "draft" && (
+                                <span className="ml-1 text-[9px] uppercase tracking-wide opacity-70">· draft</span>
+                              )}
                             </span>
                           </div>
                         ))}
@@ -436,6 +507,11 @@ export function TeamScheduleGrid({ shifts }: { shifts: Shift[] | null }) {
                       <div className="pt-0.5">
                         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Role / Title</p>
                         <p className="text-base font-medium">{selectedShift.title}</p>
+                        {selectedShift.status === "draft" && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                            Draft — not visible to employees until published
+                          </p>
+                        )}
                       </div>
                     </div>
                  </div>

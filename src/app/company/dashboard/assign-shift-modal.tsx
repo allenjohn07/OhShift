@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, Clock, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { CompanySettings } from "./manage-settings-modal";
 import { useApi } from "@/hooks/use-api";
 
@@ -54,6 +55,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
         throw new Error(data.error || "Failed to assign shift");
       }
 
+      toast.success("Shift saved as draft — publish the week when ready");
       setIsOpen(false);
       router.refresh();
     } catch (err: unknown) {

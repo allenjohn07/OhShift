@@ -9,12 +9,15 @@ import { TeamScheduleGrid } from "@/app/company/dashboard/team-schedule-grid";
 import { TodayCompanySchedule } from "@/app/dashboard/today-company-schedule";
 import { ManageTeamModal } from "@/app/company/dashboard/manage-team-modal";
 import { ManageSettingsModal, type CompanySettings } from "./manage-settings-modal";
+import { ShiftSummary } from "@/app/dashboard/shift-summary";
+import { ActivityFeed } from "./activity-feed";
 
 type DashboardEmployee = {
   id: string;
   full_name: string;
   email: string;
   designation?: string | null;
+  role?: "employee" | "manager";
 };
 
 type DashboardShift = {
@@ -23,7 +26,15 @@ type DashboardShift = {
   start_time: string;
   end_time: string;
   employee_id: string;
+  status?: "draft" | "published";
   users?: { full_name: string };
+};
+
+type MyShift = {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
 };
 
 export function DashboardContent({ 
@@ -31,16 +42,19 @@ export function DashboardContent({
   company, 
   employees, 
   shifts,
+  myShifts,
   currentUser
 }: { 
   userName: string, 
   company: CompanySettings, 
   employees: DashboardEmployee[] | null, 
   shifts: DashboardShift[] | null,
-  currentUser: { id: string }
+  myShifts: MyShift[],
+  currentUser: { id: string; role: string }
 }) {
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [isManageSettingsOpen, setIsManageSettingsOpen] = useState(false);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
 
   return (
     <>
@@ -58,6 +72,11 @@ export function DashboardContent({
 
       {/* Main Dashboard Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
+        {/* Manager's own shift summary — only for managers, not owners */}
+        {currentUser.role === "manager" && (
+          <ShiftSummary initialShifts={myShifts} employeeId={currentUser.id} />
+        )}
+
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div 
@@ -105,19 +124,23 @@ export function DashboardContent({
         </div>
 
         {/* Weekly Schedule Preview */}
-        <TeamScheduleGrid shifts={shifts} />
+        <TeamScheduleGrid shifts={shifts} onPublished={() => setActivityRefreshKey((k) => k + 1)} />
 
         {/* Upcoming Team Schedule List */}
         <TodayCompanySchedule 
           initialShifts={shifts}
           currentUserId={currentUser.id}
         />
+
+        {/* Recent schedule changes */}
+        <ActivityFeed refreshKey={activityRefreshKey} />
       </main>
 
       <ManageTeamModal 
         isOpen={isManageTeamOpen} 
         onClose={() => setIsManageTeamOpen(false)} 
-        employees={employees} 
+        employees={employees}
+        currentUserRole={currentUser.role}
       />
 
       <ManageSettingsModal

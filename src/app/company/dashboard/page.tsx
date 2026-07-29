@@ -25,6 +25,7 @@ type CompanyDashboardData = {
     full_name: string;
     email: string;
     designation: string | null;
+    role?: "employee" | "manager";
   }>;
   shifts: Array<{
     id: string;
@@ -32,7 +33,14 @@ type CompanyDashboardData = {
     start_time: string;
     end_time: string;
     employee_id: string;
+    status?: "draft" | "published";
     users?: { full_name: string };
+  }>;
+  myShifts: Array<{
+    id: string;
+    title: string;
+    start_time: string;
+    end_time: string;
   }>;
 };
 
@@ -74,6 +82,7 @@ function CompanyDashboard() {
         company={data.profile.companies as CompanySettings}
         employees={data.employees}
         shifts={data.shifts}
+        myShifts={data.myShifts ?? []}
         currentUser={data.profile}
       />
       <Footer className="mt-auto" />

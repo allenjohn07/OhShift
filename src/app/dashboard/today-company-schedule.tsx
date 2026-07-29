@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { Users, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface UserInfo {
@@ -40,6 +40,41 @@ function getEmployeeColor(name: string = "") {
   return colors[Math.abs(hash) % 5];
 }
 
+/** Returns the Monday of the week containing the given date (UTC). */
+function startOfWeekUtc(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getUTCDay(); // 0 = Sun
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatWeekLabel(monday: Date): string {
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  const fmt = (d: Date) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(d);
+  return `${fmt(monday)} – ${fmt(sunday)}, ${monday.getUTCFullYear()}`;
+}
+
+function formatDayLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(d);
+}
+
 export function TodayCompanySchedule({
   initialShifts,
   currentUserId,
@@ -49,71 +84,90 @@ export function TodayCompanySchedule({
 }) {
   const router = useRouter();
   const shifts = initialShifts ?? [];
+  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => {
-    // Poll the server for fresh data to simulate real-time for the company schedule
-    // Poll for team schedule updates (static site — no websocket)
-    const interval = setInterval(() => {
-      router.refresh();
-    }, 15000);
+    const interval = setInterval(() => router.refresh(), 15000);
     return () => clearInterval(interval);
   }, [router]);
 
-  // Team shifts are provided by the employee dashboard API.
+  // Base week = current week's Monday (local timezone via toDateString comparison)
+  const nowForWeek = new Date();
+  const baseMonday = startOfWeekUtc(nowForWeek);
 
-  // Display shifts from today onwards
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const pageMonday = new Date(baseMonday);
+  pageMonday.setUTCDate(baseMonday.getUTCDate() + weekOffset * 7);
 
-  const upcomingShifts = shifts.filter((s) => new Date(s.start_time) >= now);
+  const pageSunday = new Date(pageMonday);
+  pageSunday.setUTCDate(pageMonday.getUTCDate() + 7);
 
-  // Sort upcoming shifts by start time
-  upcomingShifts.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  const weekLabel = formatWeekLabel(pageMonday);
 
-  function formatDateLabel(dateStr: string) {
-    const d = new Date(dateStr);
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  // Filter shifts that fall within the displayed week
+  const weekShifts = shifts
+    .filter((s) => {
+      const t = new Date(s.start_time).getTime();
+      return t >= pageMonday.getTime() && t < pageSunday.getTime();
+    })
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
-    if (d.toDateString() === today.toDateString()) return "Today";
-    if (d.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-    
-    return new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    }).format(d);
+  // Group by day label
+  const grouped: Record<string, Shift[]> = {};
+  const dayOrder: string[] = [];
+  for (const shift of weekShifts) {
+    const label = formatDayLabel(shift.start_time);
+    if (!grouped[label]) {
+      grouped[label] = [];
+      dayOrder.push(label);
+    }
+    grouped[label].push(shift);
   }
-
-  // Group shifts by date label
-  const groupedShifts = upcomingShifts.reduce((acc, shift) => {
-    const dateLabel = formatDateLabel(shift.start_time);
-    if (!acc[dateLabel]) acc[dateLabel] = [];
-    acc[dateLabel].push(shift);
-    return acc;
-  }, {} as Record<string, Shift[]>);
-
-  // Extract unique sorted date labels
-  const sortedDateLabels = Array.from(new Set(upcomingShifts.map((s) => formatDateLabel(s.start_time))));
-
-
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex items-center justify-between bg-card gap-3">
-        <div className="flex items-center gap-2">
+      {/* Header */}
+      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 bg-card">
+        <div className="flex items-center gap-2 shrink-0">
           <Users className="h-5 w-5 text-emerald-500 shrink-0" />
           <h2 className="font-semibold text-lg whitespace-nowrap">Team Schedule</h2>
         </div>
+
+        {/* Week pagination */}
+        <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto sm:ml-auto">
+          <button
+            onClick={() => setWeekOffset((p) => p - 1)}
+            className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Previous week"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="flex-1 min-w-0 text-xs font-medium text-center select-none whitespace-nowrap overflow-hidden sm:flex-none sm:w-48 sm:whitespace-normal sm:overflow-visible sm:text-sm">
+            {weekLabel}
+          </span>
+          <button
+            onClick={() => setWeekOffset((p) => p + 1)}
+            className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Next week"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setWeekOffset(0)}
+            title="Reset to current week"
+            className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>Reset</span>
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        {upcomingShifts.length === 0 ? (
-          <div className="px-4 sm:px-6 py-8 text-center text-muted-foreground text-sm">
-            No upcoming shifts scheduled for the team.
-          </div>
-        ) : (
+      {/* Body */}
+      {weekShifts.length === 0 ? (
+        <div className="px-4 sm:px-6 py-8 text-center text-muted-foreground text-sm">
+          No shifts scheduled for this week.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border/40">
               <tr>
@@ -122,27 +176,31 @@ export function TodayCompanySchedule({
                 <th scope="col" className="px-4 sm:px-6 py-3 font-medium">Time</th>
               </tr>
             </thead>
-            {sortedDateLabels.map((dateLabel) => {
-              const isToday = dateLabel === "Today";
+            {dayOrder.map((dayLabel) => {
+              const isToday = dayLabel === "Today";
               return (
-                <tbody key={dateLabel} className="divide-y divide-border/40">
-                  <tr className="bg-muted/5">
-                    <td colSpan={3} className={`px-4 sm:px-6 py-2.5 font-semibold text-xs border-y border-border/40 uppercase tracking-wider ${isToday ? "text-emerald-500 dark:text-emerald-400 bg-emerald-500/5" : "text-muted-foreground bg-accent/30"}`}>
-                      {dateLabel}
+                <tbody key={dayLabel} className="divide-y divide-border/40">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className={`px-4 sm:px-6 py-2.5 font-semibold text-xs border-y border-border/40 uppercase tracking-wider ${
+                        isToday
+                          ? "text-emerald-500 dark:text-emerald-400 bg-emerald-500/5"
+                          : "text-muted-foreground bg-accent/30"
+                      }`}
+                    >
+                      {dayLabel}
                     </td>
                   </tr>
-                  {groupedShifts[dateLabel].map((shift) => {
+                  {grouped[dayLabel].map((shift) => {
                     const isMe = shift.employee_id === currentUserId;
                     const employeeName = shift.users?.full_name || "Unknown Member";
-                    
                     return (
                       <tr key={shift.id} className="hover:bg-muted/10 transition-colors">
                         <td className="px-4 sm:px-6 py-3">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${getEmployeeColor(
-                                employeeName
-                              )}`}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getEmployeeColor(employeeName)}`}
                             >
                               {employeeName.charAt(0).toUpperCase()}
                             </span>
@@ -174,8 +232,8 @@ export function TodayCompanySchedule({
               );
             })}
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

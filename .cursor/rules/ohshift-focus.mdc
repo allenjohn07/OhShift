@@ -1,0 +1,22 @@
+---
+description: Keep AI work scoped to the current OhShift roadmap phase
+alwaysApply: true
+---
+
+# OhShift — Focused work only
+
+Read `AGENTS.md` at the repo root for product context and current phase.
+
+## Scope rules
+
+1. Implement only what the user asked for in the current task. Do not add unrelated features, drive-by refactors, or “improvements” outside scope.
+2. If you spot unrelated bugs or tech debt, note them briefly — do not fix unless the user asks or the bug blocks your task.
+3. Follow the phased roadmap: Phase 0 (foundations, no email) → Phase 1 (availability, PTO, templates, swaps) → later phases. Do not jump ahead.
+4. Email (Brevo/Resend) is **deferred** — invite codes and temp passwords stay in API/UI until the user has a domain.
+5. One vertical slice per change: Prisma schema → backend route → frontend UI → done.
+
+## Code style
+
+- Reuse existing helpers (`auth-guard`, `serialize`, `useApi`, dashboard patterns).
+- Frontend UI: follow `.cursor/skills/ohshift-ui/SKILL.md`.
+- Keep diffs small and focused.

@@ -1,0 +1,28 @@
+---
+description: Protect env files and secrets from AI modification
+alwaysApply: true
+---
+
+# Environment & secrets guardrails
+
+## Forbidden actions
+
+- Do **not** read, edit, create, delete, or commit: `.env`, `.env.local`, `backend/.env`, `.dev.vars`, `backend/.dev.vars`
+- Do **not** log, echo, or paste secret values in chat or code
+- Do **not** add real credentials to `.env.example` files — placeholders only
+
+## Allowed reference
+
+- `.env.example` and `backend/.env.example` define variable **names** and documentation
+- `.gitignore` already excludes real env files — never remove those entries
+
+## When config is needed
+
+1. Check `.env.example` / `backend/.env.example` for required variable names
+2. Ask the user to verify values in their local env files
+3. Never assume or invent production secrets
+
+## Safe patterns
+
+- Document new env vars in `.env.example` with placeholder values
+- Use `process.env.VAR_NAME` in code; validate at startup where critical (e.g. `AUTH_SECRET`)
