@@ -26,6 +26,12 @@ export default function CompanyRegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      toast.error("Password too short", {
+        description: "Password must be at least 8 characters.",
+      });
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords don't match", {
         description: "Please make sure both passwords are the same.",
@@ -184,7 +190,6 @@ export default function CompanyRegisterPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        minLength={8}
                         className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
                       />
                       <button
@@ -200,9 +205,6 @@ export default function CompanyRegisterPage() {
                         )}
                       </button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Must be at least 8 characters
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label
@@ -219,7 +221,6 @@ export default function CompanyRegisterPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        minLength={8}
                         className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
                       />
                       <button
