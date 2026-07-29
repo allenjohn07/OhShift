@@ -19,6 +19,13 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum ShiftStatus {
+  draft
+  published
+
+  @@map("shift_status")
+}
+
 model Company {
   id            String   @id @default(uuid()) @db.Uuid
   name          String
@@ -29,9 +36,10 @@ model Company {
   eveningEnd    String   @default("00:00") @map("evening_end")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  owner   User    @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members User[]  @relation("CompanyMembers")
-  shifts  Shift[]
+  owner     User       @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   User[]     @relation("CompanyMembers")
+  shifts    Shift[]
+  shiftLogs ShiftLog[]
 
   @@map("companies")
 }
@@ -47,26 +55,57 @@ model User {
   avatarUrl    String?   @map("avatar_url")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  company       Company? @relation("CompanyMembers", fields: [companyId], references: [id], onDelete: SetNull)
+  company       Company?   @relation("CompanyMembers", fields: [companyId], references: [id], onDelete: SetNull)
   ownedCompanies Company[] @relation("CompanyOwner")
-  shifts        Shift[]  @relation("EmployeeShifts")
+  shifts        Shift[]    @relation("EmployeeShifts")
+  actorLogs     ShiftLog[] @relation("ActorLogs")
 
   @@map("users")
 }
 
 model Shift {
-  id         String   @id @default(uuid()) @db.Uuid
-  companyId  String   @map("company_id") @db.Uuid
-  employeeId String   @map("employee_id") @db.Uuid
-  title      String
-  startTime  DateTime @map("start_time") @db.Timestamptz(6)
-  endTime    DateTime @map("end_time") @db.Timestamptz(6)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String      @id @default(uuid()) @db.Uuid
+  companyId   String      @map("company_id") @db.Uuid
+  employeeId  String      @map("employee_id") @db.Uuid
+  title       String
+  startTime   DateTime    @map("start_time") @db.Timestamptz(6)
+  endTime     DateTime    @map("end_time") @db.Timestamptz(6)
+  status      ShiftStatus @default(published)
+  publishedAt DateTime?   @map("published_at") @db.Timestamptz(6)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee User    @relation("EmployeeShifts", fields: [employeeId], references: [id], onDelete: Cascade)
+  company  Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee User       @relation("EmployeeShifts", fields: [employeeId], references: [id], onDelete: Cascade)
+  logs     ShiftLog[]
 
   @@index([companyId])
   @@index([employeeId])
   @@map("shifts")
+}
+
+enum ShiftLogAction {
+  created
+  updated
+  deleted
+  published
+
+  @@map("shift_log_action")
+}
+
+model ShiftLog {
+  id         String         @id @default(uuid()) @db.Uuid
+  companyId  String         @map("company_id") @db.Uuid
+  shiftId    String?        @map("shift_id") @db.Uuid
+  actorId    String         @map("actor_id") @db.Uuid
+  action     ShiftLogAction
+  detail     String
+  weekStart  String?        @map("week_start")
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actor   User     @relation("ActorLogs", fields: [actorId], references: [id], onDelete: Cascade)
+  shift   Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("shift_logs")
 }

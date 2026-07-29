@@ -1,16 +1,25 @@
 import { Elysia } from "elysia";
-import { ApiError, requireManager, verifyEmployeeInCompany } from "../lib/auth-guard";
+import type { UserRole } from "@prisma/client";
+import {
+  ApiError,
+  requireManager,
+  requireOwner,
+  verifyEmployeeInCompany,
+} from "../lib/auth-guard";
 import { prisma } from "../lib/prisma";
 import { generateTempPassword, hashPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
+
+const ASSIGNABLE_ROLES: UserRole[] = ["employee", "manager"];
 
 export const employeesRoutes = new Elysia({ prefix: "/employees" })
   .put("/", async ({ body, headers, set }) => {
     try {
       const user = await requireManager(headers.authorization ?? null);
-      const { employeeId, designation } = body as {
+      const { employeeId, designation, role } = body as {
         employeeId?: string;
         designation?: string | null;
+        role?: UserRole;
       };
 
       if (!employeeId) {
@@ -18,11 +27,33 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
         return { error: "Missing employee ID" };
       }
 
-      await verifyEmployeeInCompany(employeeId, user.companyId!);
+      const member = await verifyEmployeeInCompany(
+        employeeId,
+        user.companyId!,
+      );
+
+      if (member.role === "owner") {
+        set.status = 403;
+        return { error: "Cannot change the company owner's role" };
+      }
+
+      if (role !== undefined) {
+        await requireOwner(headers.authorization ?? null);
+
+        if (!ASSIGNABLE_ROLES.includes(role)) {
+          set.status = 400;
+          return { error: "Role must be employee or manager" };
+        }
+      }
 
       const updated = await prisma.user.update({
         where: { id: employeeId },
-        data: { designation: designation || null },
+        data: {
+          ...(designation !== undefined
+            ? { designation: designation || null }
+            : {}),
+          ...(role !== undefined ? { role } : {}),
+        },
       });
 
       return { employee: serializeUser(updated) };
@@ -57,6 +88,10 @@ export const employeesRoutes = new Elysia({ prefix: "/employees" })
       if (employee.role === "owner") {
         set.status = 403;
         return { error: "Cannot remove company owner" };
+      }
+
+      if (employee.role === "manager") {
+        await requireOwner(headers.authorization ?? null);
       }
 
       await prisma.user.delete({ where: { id: employeeId } });

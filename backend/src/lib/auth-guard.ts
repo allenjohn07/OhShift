@@ -35,6 +35,14 @@ export async function requireManager(authorization: string | null) {
   return user;
 }
 
+export async function requireOwner(authorization: string | null) {
+  const user = await requireManager(authorization);
+  if (user.role !== "owner") {
+    throw new ApiError("Only the company owner can perform this action", 403);
+  }
+  return user;
+}
+
 export function isManagerRole(role: UserRole) {
   return role === "owner" || role === "manager";
 }

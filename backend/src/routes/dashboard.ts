@@ -24,12 +24,12 @@ export const dashboardRoutes = new Elysia({ prefix: "/dashboard" })
       });
 
       const shifts = await prisma.shift.findMany({
-        where: { employeeId: user.id },
+        where: { employeeId: user.id, status: "published" },
         orderBy: { startTime: "asc" },
       });
 
       const companyShifts = await prisma.shift.findMany({
-        where: { companyId: user.companyId },
+        where: { companyId: user.companyId, status: "published" },
         include: { employee: { select: { fullName: true } } },
         orderBy: { startTime: "asc" },
       });
@@ -70,12 +70,16 @@ export const dashboardRoutes = new Elysia({ prefix: "/dashboard" })
       });
 
       const employees = await prisma.user.findMany({
-        where: { companyId: user.companyId, role: "employee" },
+        where: {
+          companyId: user.companyId,
+          role: { in: ["employee", "manager"] },
+        },
         select: {
           id: true,
           fullName: true,
           email: true,
           designation: true,
+          role: true,
         },
         orderBy: { fullName: "asc" },
       });
@@ -86,6 +90,12 @@ export const dashboardRoutes = new Elysia({ prefix: "/dashboard" })
         orderBy: { startTime: "asc" },
       });
 
+      // Manager's own published shifts (for their personal shift summary)
+      const myShifts = await prisma.shift.findMany({
+        where: { employeeId: user.id, status: "published" },
+        orderBy: { startTime: "asc" },
+      });
+
       return {
         profile: serializeUser(profile!),
         employees: employees.map((e) => ({
@@ -93,10 +103,12 @@ export const dashboardRoutes = new Elysia({ prefix: "/dashboard" })
           full_name: e.fullName,
           email: e.email,
           designation: e.designation,
+          role: e.role,
         })),
         shifts: shifts.map((s) =>
           serializeShift({ ...s, users: { fullName: s.employee.fullName } }),
         ),
+        myShifts: myShifts.map(serializeShift),
       };
     } catch (err) {
       if (err instanceof ApiError) {

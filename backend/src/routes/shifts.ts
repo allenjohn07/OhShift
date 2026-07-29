@@ -7,13 +7,21 @@ import {
 } from "../lib/auth-guard";
 import { prisma } from "../lib/prisma";
 import { serializeShift } from "../lib/serialize";
+import {
+  findOverlappingShifts,
+  formatConflictMessage,
+} from "../lib/shift-conflicts";
+import { logShiftAction } from "../lib/shift-log";
 
 export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
   .get("/mine", async ({ headers, set }) => {
     try {
       const user = await requireUser(headers.authorization ?? null);
       const shifts = await prisma.shift.findMany({
-        where: { employeeId: user.id },
+        where: {
+          employeeId: user.id,
+          status: "published",
+        },
         orderBy: { startTime: "asc" },
       });
       return { shifts: shifts.map(serializeShift) };
@@ -41,16 +49,47 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
         return { error: "Missing required fields" };
       }
 
-      await verifyEmployeeInCompany(employeeId, user.companyId!);
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        set.status = 400;
+        return { error: "Invalid start or end time" };
+      }
+
+      if (start >= end) {
+        set.status = 400;
+        return { error: "End time must be after start time" };
+      }
+
+      const employee = await verifyEmployeeInCompany(employeeId, user.companyId!);
+
+      const conflicts = await findOverlappingShifts(employeeId, start, end);
+      if (conflicts.length > 0) {
+        set.status = 409;
+        return {
+          error: formatConflictMessage(conflicts),
+          conflicts: conflicts.map((c) => serializeShift(c)),
+        };
+      }
 
       const shift = await prisma.shift.create({
         data: {
           companyId: user.companyId!,
           employeeId,
           title,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
+          startTime: start,
+          endTime: end,
+          status: "draft",
         },
+      });
+
+      await logShiftAction({
+        companyId: user.companyId!,
+        actorId: user.id,
+        action: "created",
+        shiftId: shift.id,
+        detail: `Assigned "${title}" to ${employee.fullName} on ${start.toDateString()}`,
       });
 
       return { shift: serializeShift(shift) };
@@ -80,6 +119,7 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
 
       const existing = await prisma.shift.findFirst({
         where: { id: shiftId, companyId: user.companyId! },
+        include: { employee: { select: { fullName: true } } },
       });
 
       if (!existing) {
@@ -87,13 +127,44 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
         return { error: "Shift not found or access denied" };
       }
 
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        set.status = 400;
+        return { error: "Invalid start or end time" };
+      }
+
+      if (start >= end) {
+        set.status = 400;
+        return { error: "End time must be after start time" };
+      }
+
+      const conflicts = await findOverlappingShifts(
+        existing.employeeId,
+        start,
+        end,
+        shiftId,
+      );
+      if (conflicts.length > 0) {
+        set.status = 409;
+        return {
+          error: formatConflictMessage(conflicts),
+          conflicts: conflicts.map((c) => serializeShift(c)),
+        };
+      }
+
       const shift = await prisma.shift.update({
         where: { id: shiftId },
-        data: {
-          title,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-        },
+        data: { title, startTime: start, endTime: end },
+      });
+
+      await logShiftAction({
+        companyId: user.companyId!,
+        actorId: user.id,
+        action: "updated",
+        shiftId: shift.id,
+        detail: `Updated "${title}" for ${existing.employee.fullName} on ${start.toDateString()}`,
       });
 
       return { shift: serializeShift(shift) };
@@ -118,6 +189,7 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
 
       const existing = await prisma.shift.findFirst({
         where: { id: shiftId, companyId: user.companyId! },
+        include: { employee: { select: { fullName: true } } },
       });
 
       if (!existing) {
@@ -126,6 +198,14 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       }
 
       await prisma.shift.delete({ where: { id: shiftId } });
+
+      await logShiftAction({
+        companyId: user.companyId!,
+        actorId: user.id,
+        action: "deleted",
+        shiftId: null,
+        detail: `Deleted "${existing.title}" for ${existing.employee.fullName} on ${existing.startTime.toDateString()}`,
+      });
 
       return { message: "Shift deleted successfully" };
     } catch (err) {

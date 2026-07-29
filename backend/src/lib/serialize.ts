@@ -39,7 +39,11 @@ export function serializeCompany(company: Company) {
 }
 
 export function serializeShift(
-  shift: Shift & { users?: { fullName: string } | null },
+  shift: Shift & {
+    status?: "draft" | "published";
+    publishedAt?: Date | null;
+    users?: { fullName: string } | null;
+  },
 ) {
   return {
     id: shift.id,
@@ -48,6 +52,8 @@ export function serializeShift(
     title: shift.title,
     start_time: shift.startTime.toISOString(),
     end_time: shift.endTime.toISOString(),
+    status: shift.status,
+    published_at: shift.publishedAt?.toISOString() ?? null,
     created_at: shift.createdAt.toISOString(),
     users: shift.users
       ? { full_name: shift.users.fullName }
