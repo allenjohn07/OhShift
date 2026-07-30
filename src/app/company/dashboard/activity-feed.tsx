@@ -252,6 +252,8 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
       if (!res.ok) return;
       const data = await res.json();
       if (data.activity) setLogs(data.activity);
+    } catch {
+      // Network/CORS/5xx — keep existing list, don't throw into React.
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -267,11 +269,12 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
 
   const prevKeyRef = useRef(refreshKey);
   useEffect(() => {
+    if (!open) return;
     if (refreshKey !== undefined && refreshKey !== prevKeyRef.current) {
       prevKeyRef.current = refreshKey;
       fetchLogs(true);
     }
-  }, [refreshKey, fetchLogs]);
+  }, [open, refreshKey, fetchLogs]);
 
   const updateFades = useCallback(() => {
     const el = scrollRef.current;

@@ -51,16 +51,32 @@ function EmployeeDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     api("/dashboard/employee")
-      .then((res) => parseApiJson<DashboardData & { error?: string }>(res))
-      .then((json) => {
-        if (json.profile?.role === "owner" || json.profile?.role === "manager") {
+      .then(async (res) => {
+        const json = await parseApiJson<DashboardData & { error?: string }>(res);
+        if (cancelled) return;
+
+        if (res.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        if (!res.ok || !json.profile) return;
+
+        if (json.profile.role === "owner" || json.profile.role === "manager") {
           router.replace("/company/dashboard");
           return;
         }
         setData(json);
       })
-      .catch(() => router.replace("/login"));
+      .catch(() => {
+        // Transient API failures should not force login.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [api, router]);
 
   if (!data || !user) {

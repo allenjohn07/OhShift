@@ -58,16 +58,35 @@ function CompanyDashboard() {
   const [data, setData] = useState<CompanyDashboardData | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     api("/dashboard/company")
-      .then((res) => parseApiJson<CompanyDashboardData & { error?: string }>(res))
-      .then((json) => {
-        if (json.profile?.role === "employee") {
+      .then(async (res) => {
+        const json = await parseApiJson<
+          CompanyDashboardData & { error?: string }
+        >(res);
+        if (cancelled) return;
+
+        // Only treat real auth failures as logout — not network/CORS/5xx.
+        if (res.status === 401) {
+          router.replace("/company/login");
+          return;
+        }
+        if (!res.ok || !json.profile) return;
+
+        if (json.profile.role === "employee") {
           router.replace("/login");
           return;
         }
         setData(json);
       })
-      .catch(() => router.replace("/company/login"));
+      .catch(() => {
+        // Keep user on dashboard; transient API failures should not force login.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [api, router]);
 
   if (!data) {

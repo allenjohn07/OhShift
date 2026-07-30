@@ -143,31 +143,43 @@ export const companyRoutes = new Elysia({ prefix: "/company" })
         },
       });
 
-      // For each publish log fetch shifts for that week using weekStart
-      const logsWithShifts = await Promise.all(
-        logs.map(async (log) => {
-          if (!log.weekStart) return { ...log, publishedShifts: [] };
+      // Unique weekStarts only — avoid N+1 (was 20 parallel queries and hung Workers)
+      const weekStarts = [
+        ...new Set(
+          logs
+            .map((log) => log.weekStart)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ];
 
-          let range: { start: Date; end: Date };
-          try {
-            range = weekRangeFromStart(log.weekStart);
-          } catch {
-            return { ...log, publishedShifts: [] };
-          }
+      const shiftsByWeek = new Map<string, PublishedShift[]>();
+      for (const weekStart of weekStarts) {
+        let range: { start: Date; end: Date };
+        try {
+          range = weekRangeFromStart(weekStart);
+        } catch {
+          shiftsByWeek.set(weekStart, []);
+          continue;
+        }
 
-          const shifts = await prisma.shift.findMany({
-            where: {
-              companyId: user.companyId!,
-              status: "published",
-              startTime: { gte: range.start, lt: range.end },
-            },
-            include: { employee: { select: { fullName: true } } },
-            orderBy: { startTime: "asc" },
-          });
+        const shifts = await prisma.shift.findMany({
+          where: {
+            companyId: user.companyId!,
+            status: "published",
+            startTime: { gte: range.start, lt: range.end },
+          },
+          include: { employee: { select: { fullName: true } } },
+          orderBy: { startTime: "asc" },
+        });
+        shiftsByWeek.set(weekStart, shifts);
+      }
 
-          return { ...log, publishedShifts: shifts };
-        }),
-      );
+      const logsWithShifts = logs.map((log) => ({
+        ...log,
+        publishedShifts: log.weekStart
+          ? (shiftsByWeek.get(log.weekStart) ?? [])
+          : [],
+      }));
 
       return { activity: logsWithShifts.map(serializeLog) };
     } catch (err) {
@@ -175,6 +187,7 @@ export const companyRoutes = new Elysia({ prefix: "/company" })
         set.status = err.status;
         return { error: err.message };
       }
+      console.error(err);
       set.status = 500;
       return { error: "Internal Server Error" };
     }

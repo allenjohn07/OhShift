@@ -37,10 +37,26 @@ function ProfilePageContent() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     api("/dashboard/profile")
-      .then((res) => parseApiJson<{ profile: ProfileData }>(res))
-      .then((data) => setProfile(data.profile))
-      .catch(() => router.replace("/login"));
+      .then(async (res) => {
+        const data = await parseApiJson<{ profile: ProfileData }>(res);
+        if (cancelled) return;
+        if (res.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        if (!res.ok || !data.profile) return;
+        setProfile(data.profile);
+      })
+      .catch(() => {
+        // Transient API failures should not force login.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [api, router]);
 
   if (!profile) {
