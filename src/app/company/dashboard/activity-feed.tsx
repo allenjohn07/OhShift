@@ -263,8 +263,6 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
   useEffect(() => {
     if (!open) return;
     fetchLogs();
-    const interval = setInterval(() => fetchLogs(true), 30_000);
-    return () => clearInterval(interval);
   }, [open, fetchLogs]);
 
   const prevKeyRef = useRef(refreshKey);

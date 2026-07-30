@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
-import { useApi } from "@/hooks/use-api";
 
 interface Shift {
   id: string;
@@ -43,14 +42,13 @@ function getEmployeeColor(name: string = "") {
 
 export function EmployeeScheduleGrid({
   initialShifts,
-  employeeId,
   employeeName,
 }: {
   initialShifts: Shift[] | null;
-  employeeId: string;
+  employeeId?: string;
   employeeName: string;
 }) {
-  const [shifts, setShifts] = useState<Shift[]>(initialShifts ?? []);
+  const [shifts] = useState<Shift[]>(initialShifts ?? []);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -155,21 +153,6 @@ export function EmployeeScheduleGrid({
       }
     }
   };
-
-  const api = useApi();
-
-  const fetchShifts = async () => {
-    const res = await api("/shifts/mine");
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.shifts) setShifts(data.shifts);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(fetchShifts, 30_000);
-    return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId]);
 
   // Build the requested week (Mon–Sun) based on offset
   const referenceDate = new Date();

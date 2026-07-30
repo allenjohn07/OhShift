@@ -6,7 +6,6 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
-import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { TodayCompanySchedule } from "./today-company-schedule";
@@ -88,7 +87,6 @@ function EmployeeDashboard() {
 
   return (
     <>
-      <RealtimeSubscriber companyId={profile.company_id} />
       <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div>
           <p className="text-sm font-medium text-brand mb-1">

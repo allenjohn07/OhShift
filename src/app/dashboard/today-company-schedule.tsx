@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 interface UserInfo {
   full_name: string;
@@ -82,14 +81,8 @@ export function TodayCompanySchedule({
   initialShifts: Shift[] | null;
   currentUserId: string;
 }) {
-  const router = useRouter();
   const shifts = initialShifts ?? [];
   const [weekOffset, setWeekOffset] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => router.refresh(), 15000);
-    return () => clearInterval(interval);
-  }, [router]);
 
   // Base week = current week's Monday (local timezone via toDateString comparison)
   const nowForWeek = new Date();

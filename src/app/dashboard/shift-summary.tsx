@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Calendar, Clock } from "lucide-react";
-import { useApi } from "@/hooks/use-api";
 
 interface Shift {
   id: string;
@@ -35,26 +33,12 @@ function formatDate(dateStr: string) {
 
 export function ShiftSummary({
   initialShifts,
-  employeeId,
 }: {
   initialShifts: Shift[] | null;
-  employeeId: string;
+  /** @deprecated kept for call-site compat; unused */
+  employeeId?: string;
 }) {
-  const api = useApi();
-  const [shifts, setShifts] = useState<Shift[]>(initialShifts ?? []);
-
-  const fetchShifts = async () => {
-    const res = await api("/shifts/mine");
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.shifts) setShifts(data.shifts);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(fetchShifts, 30_000);
-    return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId]);
+  const shifts = initialShifts ?? [];
 
   const now = new Date();
   const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;

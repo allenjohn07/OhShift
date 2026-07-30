@@ -6,7 +6,6 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
-import { RealtimeSubscriber } from "@/components/realtime-subscriber";
 import type { CompanySettings } from "./manage-settings-modal";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -95,7 +94,6 @@ function CompanyDashboard() {
 
   return (
     <>
-      <RealtimeSubscriber companyId={data.profile.company_id} />
       <DashboardContent
         userName={data.profile.full_name?.split(" ")[0] || "Owner"}
         company={data.profile.companies as CompanySettings}
