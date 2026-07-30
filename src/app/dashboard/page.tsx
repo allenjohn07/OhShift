@@ -87,7 +87,7 @@ function EmployeeDashboard() {
 
   return (
     <>
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
+      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 sm:space-y-8 flex-1">
         <div>
           <p className="text-sm font-medium text-brand mb-1">
             {companyName} Team
@@ -96,9 +96,7 @@ function EmployeeDashboard() {
             Welcome back, {profile.full_name}
           </h1>
         </div>
-      </div>
 
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 flex-1">
         <ShiftSummary initialShifts={data.shifts} employeeId={user.id} />
         <EmployeeScheduleGrid
           initialShifts={data.shifts}

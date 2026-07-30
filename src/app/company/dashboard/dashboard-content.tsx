@@ -58,8 +58,7 @@ export function DashboardContent({
 
   return (
     <>
-      {/* Header Area */}
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
         <div>
           <p className="text-sm font-medium text-brand mb-1">
             {company.name} Workspace
@@ -68,10 +67,7 @@ export function DashboardContent({
             Welcome back, {userName}
           </h1>
         </div>
-      </div>
 
-      {/* Main Dashboard Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
         {/* Manager's own shift summary — only for managers, not owners */}
         {currentUser.role === "manager" && (
           <ShiftSummary initialShifts={myShifts} employeeId={currentUser.id} />
