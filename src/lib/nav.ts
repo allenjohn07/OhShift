@@ -56,7 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["employee"],
   },
 
-  // Manager / Owner (also use Availability + Time off as employees)
+  // Manager / Owner
   {
     id: "mgr-overview",
     label: "Overview",
@@ -73,19 +73,20 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["manager", "owner"],
     mobileTab: true,
   },
+  // Managers also work shifts — self-service Availability + Time off
   {
     id: "mgr-availability",
     label: "Availability",
     href: "/dashboard/availability",
     icon: Clock,
-    roles: ["manager", "owner"],
+    roles: ["manager"],
   },
   {
     id: "mgr-time-off",
     label: "Time off",
     href: "/dashboard/time-off",
     icon: Palmtree,
-    roles: ["manager", "owner"],
+    roles: ["manager"],
   },
   {
     id: "mgr-settings",
