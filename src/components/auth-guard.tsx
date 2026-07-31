@@ -3,25 +3,33 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { normalizePath } from "@/lib/nav";
+
+/** Self-service pages managers/owners share with employees */
+const SHARED_SELF_SERVICE = new Set([
+  "/dashboard/availability",
+  "/dashboard/time-off",
+]);
 
 export function AuthGuard({
   children,
-  loginPath = "/login",
   allowedRoles,
 }: {
   children: React.ReactNode;
+  /** @deprecated Unused — unauthenticated users go to the landing page */
   loginPath?: string;
   allowedRoles?: Array<"owner" | "manager" | "employee">;
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const path = normalizePath(pathname);
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      router.replace(loginPath);
+      router.replace("/");
       return;
     }
 
@@ -33,14 +41,20 @@ export function AuthGuard({
       return;
     }
 
-    if (pathname.startsWith("/dashboard") && role !== "employee") {
+    const isSharedSelfService = SHARED_SELF_SERVICE.has(path);
+
+    if (
+      pathname.startsWith("/dashboard") &&
+      role !== "employee" &&
+      !isSharedSelfService
+    ) {
       router.replace("/company/dashboard");
     }
 
     if (pathname.startsWith("/company/dashboard") && role === "employee") {
-      router.replace("/login");
+      router.replace("/dashboard");
     }
-  }, [user, loading, router, loginPath, allowedRoles, pathname]);
+  }, [user, loading, router, allowedRoles, pathname, path]);
 
   if (loading) {
     return (

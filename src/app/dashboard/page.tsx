@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
+import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { TodayCompanySchedule } from "./today-company-schedule";
-import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
 type DashboardData = {
@@ -115,11 +115,10 @@ function EmployeeDashboard() {
 
 export default function EmployeeDashboardPage() {
   return (
-    <div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">
-      <Navbar />
+    <AppShell role="employee">
       <AuthGuard allowedRoles={["employee"]}>
         <EmployeeDashboard />
       </AuthGuard>
-    </div>
+    </AppShell>
   );
 }

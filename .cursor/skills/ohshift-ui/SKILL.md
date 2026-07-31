@@ -97,14 +97,21 @@ Always include **`w-full`** with `mx-auto` so headers don’t shrink-wrap and ce
 
 ### Authenticated pages (dashboard, profile)
 
+Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`:
+
 ```tsx
-<div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">
-  <Navbar />
-  <AuthGuard>...</AuthGuard>  {/* content + Footer inside loaded state */}
-</div>
+<AppShell role="employee"> {/* or "manager" | "owner" */}
+  <AuthGuard allowedRoles={["employee"]}>
+    {/* page content + Footer */}
+  </AuthGuard>
+</AppShell>
 ```
 
-- Navbar stays mounted while content loads.
+- Nav items live in `src/lib/nav.ts` — only link real routes; mark unfinished with `comingSoon`.
+- Desktop: collapsible left sidebar (icon rail when collapsed; preference saved in localStorage).
+- Mobile: bottom tabs + **Menu** sheet for account/extras.
+- Sidebar bottom (and mobile Menu): avatar, Profile, theme toggle, Logout — not in the top bar.
+- Marketing/auth pages still use `Navbar` (logged-out only). Logged-in visits to `/` redirect via `AuthHomeRedirect`.
 - Loading spinner: full remaining viewport, centered:
 
 ```tsx

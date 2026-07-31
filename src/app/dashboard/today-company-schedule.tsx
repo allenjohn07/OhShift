@@ -200,7 +200,7 @@ export function TodayCompanySchedule({
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-foreground">{employeeName}</span>
                               {isMe && (
-                                <span className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                <span className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded tracking-wider">
                                   You
                                 </span>
                               )}

@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { ProfileForm } from "./profile-form";
-import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import type { AppRole } from "@/lib/nav";
 
 type ProfileData = {
   full_name?: string | null;
@@ -32,7 +31,6 @@ function PageSpinner() {
 
 function ProfilePageContent() {
   const api = useApi();
-  const { user } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
@@ -63,29 +61,17 @@ function ProfilePageContent() {
     return <PageSpinner />;
   }
 
-  const role = profile.role || user?.profile.role;
-
   return (
     <>
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-2">
-        <div className="flex items-center justify-start gap-4">
-          <Link
-            href={
-              role === "employee" ? "/dashboard" : "/company/dashboard"
-            }
-            className="-ml-2 p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-              Your Profile
-            </h1>
-          </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 flex-1 w-full space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            Your Profile
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Update how you appear to your team.
+          </p>
         </div>
-      </div>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">
         <ProfileForm user={profile} />
       </main>
       <Footer className="mt-auto" />
@@ -94,12 +80,18 @@ function ProfilePageContent() {
 }
 
 export default function ProfilePage() {
+  const { user } = useAuth();
+  const role = (user?.profile.role ?? "employee") as AppRole;
+  const shellRole: AppRole =
+    role === "owner" || role === "manager" || role === "employee"
+      ? role
+      : "employee";
+
   return (
-    <div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">
-      <Navbar />
+    <AppShell role={shellRole}>
       <AuthGuard>
         <ProfilePageContent />
       </AuthGuard>
-    </div>
+    </AppShell>
   );
 }

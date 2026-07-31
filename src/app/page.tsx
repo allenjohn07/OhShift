@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Reveal } from "@/components/reveal";
+import { AuthHomeRedirect } from "@/components/auth-home-redirect";
 
 const features = [
   {
@@ -56,6 +57,7 @@ const features = [
 
 export default function LandingPage() {
   return (
+    <AuthHomeRedirect>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Subtle grid background */}
       <div className="fixed inset-0 -z-10">
@@ -306,5 +308,6 @@ export default function LandingPage() {
 
       <Footer className="mt-20 sm:mt-32" />
     </div>
+    </AuthHomeRedirect>
   );
 }

@@ -6,6 +6,8 @@ import { companyRoutes } from "./routes/company";
 import { dashboardRoutes } from "./routes/dashboard";
 import { employeesRoutes } from "./routes/employees";
 import { shiftsRoutes } from "./routes/shifts";
+import { availabilityRoutes } from "./routes/availability";
+import { timeOffRoutes } from "./routes/time-off";
 
 function parseOrigin(value: string): string | null {
   try {
@@ -81,11 +83,13 @@ export function buildApp(options: { adapter?: unknown } = {}) {
     })
     .get("/", () => ({
       name: "OhShift API",
-      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard",
+      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off",
     }))
     .use(authRoutes)
     .use(companyRoutes)
     .use(employeesRoutes)
     .use(shiftsRoutes)
-    .use(dashboardRoutes);
+    .use(dashboardRoutes)
+    .use(availabilityRoutes)
+    .use(timeOffRoutes);
 }

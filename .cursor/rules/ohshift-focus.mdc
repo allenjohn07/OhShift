@@ -18,5 +18,7 @@ Read `AGENTS.md` at the repo root for product context and current phase.
 ## Code style
 
 - Reuse existing helpers (`auth-guard`, `serialize`, `useApi`, dashboard patterns).
+- Managers/owners also get Availability + Time off (self-service); no self-approve on Requests.
+- Cross-user live data: follow **Real-time updates** in `AGENTS.md` — use `useVisiblePoll`, wire **both** employee and manager sides, refresh after mutations.
 - Frontend UI: follow `.cursor/skills/ohshift-ui/SKILL.md`.
 - Keep diffs small and focused.

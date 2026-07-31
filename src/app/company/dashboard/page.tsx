@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
+import { AppShell } from "@/components/app-shell";
+import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
 import type { CompanySettings } from "./manage-settings-modal";
-import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import type { AppRole } from "@/lib/nav";
 
 type CompanyDashboardData = {
   profile: {
@@ -108,15 +110,17 @@ function CompanyDashboard() {
 }
 
 export default function CompanyDashboardPage() {
+  const { user } = useAuth();
+  const role: AppRole = user?.profile.role === "owner" ? "owner" : "manager";
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden">
-      <Navbar />
+    <AppShell role={role}>
       <AuthGuard
         loginPath="/company/login"
         allowedRoles={["owner", "manager"]}
       >
         <CompanyDashboard />
       </AuthGuard>
-    </div>
+    </AppShell>
   );
 }

@@ -5,14 +5,10 @@ export function Footer({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
-        "relative border-t border-border/40 bg-card/20 backdrop-blur-sm overflow-hidden",
+        "relative border-t border-border/40 bg-card/20 backdrop-blur-sm",
         className,
       )}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] sm:text-[16rem] md:text-[24rem] font-black tracking-tighter text-foreground/2 pointer-events-none select-none z-0 hidden sm:block">
-        OHSHIFT
-      </div>
-
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col md:flex-row items-start justify-between gap-10 py-16 md:py-24">
           <div className="max-w-sm">
