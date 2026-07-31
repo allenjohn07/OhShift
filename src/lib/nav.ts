@@ -6,6 +6,7 @@ import {
   Inbox,
   Settings,
   Palmtree,
+  Megaphone,
 } from "lucide-react";
 
 export type AppRole = "employee" | "manager" | "owner";
@@ -41,12 +42,19 @@ export const NAV_ITEMS: NavItem[] = [
     mobileTab: true,
   },
   {
+    id: "emp-inbox",
+    label: "Inbox",
+    href: "/dashboard/inbox",
+    icon: Megaphone,
+    roles: ["employee"],
+    mobileTab: true,
+  },
+  {
     id: "emp-time-off",
     label: "Time off",
     href: "/dashboard/time-off",
     icon: Palmtree,
     roles: ["employee"],
-    mobileTab: true,
   },
   {
     id: "emp-settings",
@@ -70,6 +78,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Requests",
     href: "/company/dashboard/requests",
     icon: Inbox,
+    roles: ["manager", "owner"],
+    mobileTab: true,
+  },
+  {
+    id: "mgr-inbox",
+    label: "Inbox",
+    href: "/dashboard/inbox",
+    icon: Megaphone,
     roles: ["manager", "owner"],
     mobileTab: true,
   },

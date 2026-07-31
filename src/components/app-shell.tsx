@@ -39,6 +39,10 @@ import {
   usePendingTimeOffSnapshot,
   usePendingTimeOffSync,
 } from "@/hooks/use-pending-time-off";
+import {
+  useInboxUnreadSnapshot,
+  useInboxUnreadSync,
+} from "@/hooks/use-inbox-unread";
 
 const SIDEBAR_COLLAPSED_KEY = "ohshift-sidebar-collapsed";
 const SIDEBAR_EXPANDED_W = "w-60";
@@ -406,14 +410,21 @@ export function AppShell({
   const { collapsed, toggle: toggleSidebar } = useSidebarCollapsed();
   const isManagerShell = role === "manager" || role === "owner";
   usePendingTimeOffSync(isManagerShell);
+  useInboxUnreadSync(Boolean(user?.profile.company_id));
   const { pendingCount } = usePendingTimeOffSnapshot();
+  const { total: inboxUnread } = useInboxUnreadSnapshot();
 
   const items = navItemsForRole(role);
   const mobileTabs = mobileTabsForRole(role);
   const menuExtras = items.filter((item) => !item.mobileTab);
   const homeHref = homeHrefForRole(role);
-  const badgeFor = (id: string) =>
-    id === "mgr-requests" && pendingCount > 0 ? pendingCount : undefined;
+  const badgeFor = (id: string) => {
+    if (id === "mgr-requests" && pendingCount > 0) return pendingCount;
+    if ((id === "emp-inbox" || id === "mgr-inbox") && inboxUnread > 0) {
+      return inboxUnread;
+    }
+    return undefined;
+  };
   const profileActive = isNavActive(pathname, "/profile");
   const menuActive =
     menuOpen ||

@@ -9,6 +9,7 @@ import { normalizePath } from "@/lib/nav";
 const SHARED_SELF_SERVICE = new Set([
   "/dashboard/availability",
   "/dashboard/time-off",
+  "/dashboard/inbox",
 ]);
 
 export function AuthGuard({

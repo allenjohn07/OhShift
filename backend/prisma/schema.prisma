@@ -41,6 +41,8 @@ model Company {
   shifts          Shift[]
   shiftLogs       ShiftLog[]
   timeOffRequests TimeOffRequest[]
+  announcements   Announcement[]
+  conversations   Conversation[]
 
   @@map("companies")
 }
@@ -56,13 +58,17 @@ model User {
   avatarUrl    String?   @map("avatar_url")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  company              Company?             @relation("CompanyMembers", fields: [companyId], references: [id], onDelete: SetNull)
-  ownedCompanies       Company[]            @relation("CompanyOwner")
-  shifts               Shift[]              @relation("EmployeeShifts")
-  actorLogs            ShiftLog[]           @relation("ActorLogs")
-  availabilityWindows  AvailabilityWindow[]
-  timeOffRequests      TimeOffRequest[]     @relation("EmployeeTimeOff")
-  timeOffReviews       TimeOffRequest[]     @relation("TimeOffReviewer")
+  company                   Company?                  @relation("CompanyMembers", fields: [companyId], references: [id], onDelete: SetNull)
+  ownedCompanies            Company[]                 @relation("CompanyOwner")
+  shifts                    Shift[]                   @relation("EmployeeShifts")
+  actorLogs                 ShiftLog[]                @relation("ActorLogs")
+  availabilityWindows       AvailabilityWindow[]
+  timeOffRequests           TimeOffRequest[]          @relation("EmployeeTimeOff")
+  timeOffReviews            TimeOffRequest[]          @relation("TimeOffReviewer")
+  announcementsAuthored     Announcement[]            @relation("AnnouncementAuthor")
+  announcementReads         AnnouncementRead[]
+  conversationParticipants  ConversationParticipant[]
+  directMessagesSent        DirectMessage[]           @relation("DirectMessageSender")
 
   @@map("users")
 }
@@ -168,4 +174,80 @@ model TimeOffRequest {
   @@index([companyId, status])
   @@index([employeeId])
   @@map("time_off_requests")
+}
+
+model Announcement {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  title     String
+  body      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author  User               @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reads   AnnouncementRead[]
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String   @id @default(uuid()) @db.Uuid
+  announcementId String   @map("announcement_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  readAt         DateTime @default(now()) @map("read_at") @db.Timestamptz(6)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@map("announcement_reads")
+}
+
+/// pairKey = sorted "userIdA:userIdB" for unique 1:1 DMs within a company
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  pairKey   String   @map("pair_key")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company      Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+
+  @@unique([companyId, pairKey])
+  @@index([companyId, updatedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  lastReadAt     DateTime? @map("last_read_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model DirectMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  senderId       String   @map("sender_id") @db.Uuid
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("direct_messages")
 }

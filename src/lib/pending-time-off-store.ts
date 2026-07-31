@@ -43,14 +43,17 @@ export function getPendingTimeOffSnapshot() {
   return snapshot;
 }
 
+/** Must be referentially stable — useSyncExternalStore compares with Object.is */
+const SERVER_SNAPSHOT: PendingTimeOffSnapshot = {
+  pending: [],
+  recent: [],
+  pendingCount: 0,
+  loaded: false,
+  revision: 0,
+};
+
 export function getPendingTimeOffServerSnapshot(): PendingTimeOffSnapshot {
-  return {
-    pending: [],
-    recent: [],
-    pendingCount: 0,
-    loaded: false,
-    revision: 0,
-  };
+  return SERVER_SNAPSHOT;
 }
 
 export function subscribePendingTimeOff(onStoreChange: () => void) {
