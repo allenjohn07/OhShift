@@ -14,9 +14,11 @@ function applyEnv(env: WorkerEnv) {
   }
 }
 
-export default {
+const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     applyEnv(env);
     return runWithPrisma(() => Promise.resolve(app.fetch(request)));
   },
 };
+
+export default worker;

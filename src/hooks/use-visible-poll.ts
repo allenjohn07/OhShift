@@ -15,7 +15,10 @@ export function useVisiblePoll(
   intervalMs: number = DEFAULT_POLL_MS,
 ) {
   const tickRef = useRef(tick);
-  tickRef.current = tick;
+
+  useEffect(() => {
+    tickRef.current = tick;
+  }, [tick]);
 
   useEffect(() => {
     if (!enabled) return;
