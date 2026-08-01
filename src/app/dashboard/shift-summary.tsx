@@ -90,22 +90,23 @@ export function ShiftSummary({
 
   const todayShift =
     shifts.find((s) => toLocalDate(s.start_time) === localToday) ?? null;
+  const todayShiftId = todayShift?.id ?? null;
 
   useEffect(() => {
-    if (!todayShift) {
+    if (!todayShiftId) {
       setTodayEntry(null);
       setActive(null);
       setStatusReady(true);
       return;
     }
-    const cached = readCachedEntry(todayShift.id);
+    const cached = readCachedEntry(todayShiftId);
     if (cached) {
       setTodayEntry(cached);
       setStatusReady(true);
     } else {
       setStatusReady(false);
     }
-  }, [todayShift?.id]);
+  }, [todayShiftId]);
 
   const refreshClock = useCallback(async () => {
     if (!todayShift) {

@@ -50,10 +50,24 @@ import {
 } from "@/hooks/use-inbox-unread";
 
 const SIDEBAR_COLLAPSED_KEY = "ohshift-sidebar-collapsed";
+/** Expanded / collapsed widths — icons sit on a fixed left gutter in both states */
 const SIDEBAR_EXPANDED_W = "w-60";
-const SIDEBAR_COLLAPSED_W = "w-[4.25rem]";
+const SIDEBAR_COLLAPSED_W = "w-16";
 const SIDEBAR_EXPANDED_PL = "md:pl-60";
-const SIDEBAR_COLLAPSED_PL = "md:pl-[4.25rem]";
+const SIDEBAR_COLLAPSED_PL = "md:pl-16";
+/** No overshoot — previous curve felt like a bounce */
+const SIDEBAR_EASE =
+  "duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
+
+/** Neon-style label fade: hide quickly on collapse, reveal after width opens */
+function sidebarLabelClass(collapsed: boolean) {
+  return cn(
+    "min-w-0 truncate whitespace-nowrap transition-opacity motion-reduce:transition-none",
+    collapsed
+      ? "opacity-0 duration-150 pointer-events-none"
+      : "opacity-100 duration-200 delay-100",
+  );
+}
 
 function subscribe() {
   return () => {};
@@ -114,14 +128,17 @@ const compactTabClass =
 function SidebarTooltip({
   label,
   children,
+  enabled = true,
 }: {
   label: string;
   children: React.ReactNode;
+  enabled?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const show = () => {
+    if (!enabled) return;
     const rect = ref.current?.getBoundingClientRect();
     if (!rect) return;
     setPos({
@@ -135,7 +152,7 @@ function SidebarTooltip({
   return (
     <div
       ref={ref}
-      className="relative flex justify-center"
+      className="relative"
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
@@ -143,6 +160,7 @@ function SidebarTooltip({
     >
       {children}
       {pos &&
+        enabled &&
         createPortal(
           <span
             role="tooltip"
@@ -160,21 +178,22 @@ function SidebarTooltip({
 function NavBadge({
   count,
   compact,
-  rail,
+  corner,
 }: {
   count: number;
   compact?: boolean;
-  rail?: boolean;
+  /** Absolute badge on the icon (collapsed rail / mobile tabs) */
+  corner?: boolean;
 }) {
   if (count <= 0) return null;
   const text = count > 9 ? "9+" : String(count);
 
-  if (rail || compact) {
+  if (corner || compact) {
     return (
       <span
         className={cn(
           "absolute flex items-center justify-center rounded-full bg-brand text-[9px] font-bold leading-none text-brand-foreground",
-          rail
+          corner
             ? "-right-1 -top-1 h-4 min-w-4 px-0.5"
             : "-right-2 -top-1.5 h-4 min-w-4 px-0.5",
         )}
@@ -209,6 +228,7 @@ function NavLink({
   onClick?: () => void;
   compact?: boolean;
   flush?: boolean;
+  /** Collapsed sidebar — labels fade; icon position/size stay fixed */
   rail?: boolean;
   badge?: number;
 }) {
@@ -228,11 +248,10 @@ function NavLink({
         "flex items-center rounded-xl transition-colors cursor-pointer",
         compact
           ? compactTabClass
-          : rail
-            ? "justify-center p-2.5"
-            : flush
-              ? "gap-3 py-2.5 text-sm font-medium"
-              : "gap-3 px-3 py-2.5 text-sm font-medium",
+          : flush
+            ? "gap-3 py-2.5 text-sm font-medium"
+            : // Fixed padding forever — never justify-center (that shifts icons)
+              "gap-3 px-3 py-2.5 text-sm font-medium",
         active
           ? "bg-brand-soft text-brand"
           : "text-muted-foreground hover:text-foreground hover:bg-accent",
@@ -240,26 +259,59 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       aria-label={ariaLabel}
     >
-      <span className="relative inline-flex shrink-0">
-        <Icon className={cn(compact || rail ? "h-5 w-5" : "h-4 w-4")} />
-        {(rail || compact) && (
-          <NavBadge count={count} compact={compact} rail={rail} />
+      <span
+        className={cn(
+          "relative inline-flex shrink-0 items-center justify-center",
+          compact ? "h-5 w-5" : "h-4 w-4",
+        )}
+      >
+        <Icon className={cn(compact ? "h-5 w-5" : "h-4 w-4")} />
+        {compact && <NavBadge count={count} compact />}
+        {!compact && !flush && count > 0 && (
+          <span
+            className={cn(
+              "transition-opacity motion-reduce:transition-none",
+              rail
+                ? "opacity-100 duration-150"
+                : "opacity-0 duration-150 pointer-events-none",
+            )}
+            aria-hidden={!rail}
+          >
+            <NavBadge count={count} corner />
+          </span>
         )}
       </span>
-      {!rail && (
+      {!compact && (
         <>
-          <span className={cn(!compact && "truncate", compact && "leading-none")}>
+          <span
+            className={cn(
+              flush ? "truncate whitespace-nowrap" : sidebarLabelClass(!!rail),
+            )}
+            aria-hidden={rail || undefined}
+          >
             {label}
           </span>
-          {!compact && <NavBadge count={count} />}
+          {!flush && count > 0 && (
+            <span
+              className={cn(sidebarLabelClass(!!rail), "ml-auto flex")}
+              aria-hidden={rail || undefined}
+            >
+              <NavBadge count={count} />
+            </span>
+          )}
+          {flush && <NavBadge count={count} />}
         </>
       )}
+      {compact && <span className="leading-none">{label}</span>}
     </Link>
   );
 
-  if (rail) {
+  if (!compact && !flush) {
     return (
-      <SidebarTooltip label={count > 0 ? `${label} (${count})` : label}>
+      <SidebarTooltip
+        label={count > 0 ? `${label} (${count})` : label}
+        enabled={!!rail}
+      >
         {link}
       </SidebarTooltip>
     );
@@ -283,6 +335,7 @@ function AccountPanel({
   onLogout: () => void;
   onNavigate?: () => void;
   flush?: boolean;
+  /** Collapsed — fade name/theme; avatar stays put */
   rail?: boolean;
 }) {
   const { mounted, isDark, toggle } = useThemeToggle();
@@ -302,10 +355,8 @@ function AccountPanel({
       <button
         type="button"
         className={cn(
-          "flex items-center rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-          rail
-            ? "justify-center p-1.5"
-            : cn("h-9 min-w-0 flex-1 gap-2.5", flush ? "px-0" : "px-2"),
+          "flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+          flush ? "px-0" : "px-2",
         )}
       >
         <Avatar className="h-7 w-7 border border-border/50 shrink-0">
@@ -314,32 +365,31 @@ function AccountPanel({
             {initials}
           </AvatarFallback>
         </Avatar>
-        {!rail && (
-          <div className="min-w-0 flex-1 leading-none">
-            <p className="text-sm font-medium truncate">{firstName}</p>
-          </div>
-        )}
+        <div
+          className={cn(
+            "min-w-0 flex-1 leading-none",
+            !flush && sidebarLabelClass(!!rail),
+          )}
+          aria-hidden={rail || undefined}
+        >
+          <p className="text-sm font-medium truncate whitespace-nowrap">
+            {firstName}
+          </p>
+        </div>
       </button>
     </DropdownMenuTrigger>
   );
 
   return (
-    <div
-      className={cn(
-        "flex",
-        rail ? "flex-col items-center gap-2" : "items-center gap-1.5",
-      )}
-    >
+    <div className="flex items-center gap-1.5">
       <DropdownMenu modal={false}>
-        {rail ? (
-          <SidebarTooltip label={firstName}>{avatarTrigger}</SidebarTooltip>
-        ) : (
-          avatarTrigger
-        )}
+        <SidebarTooltip label={firstName} enabled={!!rail}>
+          {avatarTrigger}
+        </SidebarTooltip>
         <DropdownMenuContent
           className="z-[80] w-52"
           side="top"
-          align={rail ? "center" : "start"}
+          align="start"
           sideOffset={8}
         >
           {(displayName || email) && (
@@ -381,22 +431,27 @@ function AccountPanel({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {!rail && (
-        <button
-          type="button"
-          onClick={toggle}
-          className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-colors cursor-pointer"
-          aria-label={
-            mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
-          }
-        >
-          {mounted && isDark ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={toggle}
+        className={cn(
+          "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-opacity cursor-pointer motion-reduce:transition-none",
+          rail
+            ? "opacity-0 duration-150 pointer-events-none"
+            : "opacity-100 duration-200 delay-100",
+        )}
+        aria-label={
+          mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
+        }
+        tabIndex={rail ? -1 : undefined}
+        aria-hidden={rail || undefined}
+      >
+        {mounted && isDark ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )}
+      </button>
     </div>
   );
 }
@@ -482,40 +537,32 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — width + label opacity only; icons never move or resize */}
       <aside
         className={cn(
-          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col border-r border-border/40 bg-background transition-[width] duration-300 ease-in-out",
+          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col overflow-hidden border-r border-border/40 bg-background transition-[width]",
+          SIDEBAR_EASE,
           collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W,
         )}
       >
-        <div
-          className={cn(
-            "flex h-16 items-center border-b border-border/40",
-            collapsed ? "justify-center px-2" : "px-5",
-          )}
-        >
+        <div className="flex h-16 shrink-0 items-center gap-1.5 border-b border-border/40 px-5">
           <Link
             href={homeHref}
-            className={cn(
-              "inline-flex items-center gap-1.5 min-w-0",
-              collapsed && "justify-center",
-            )}
+            className="inline-flex min-w-0 items-center gap-1.5"
           >
             <BrandMark size={22} />
-            {!collapsed && (
-              <span className="text-lg font-semibold tracking-tight truncate">
-                OhShift
-              </span>
-            )}
+            <span
+              className={cn(
+                "text-lg font-semibold tracking-tight",
+                sidebarLabelClass(collapsed),
+              )}
+              aria-hidden={collapsed || undefined}
+            >
+              OhShift
+            </span>
           </Link>
         </div>
-        <nav
-          className={cn(
-            "flex-1 overflow-y-auto space-y-1",
-            collapsed ? "p-2" : "p-3",
-          )}
-        >
+        <nav className="flex-1 space-y-1 overflow-x-hidden overflow-y-auto p-3">
           {items.map((item) => (
             <NavLink
               key={item.id}
@@ -528,34 +575,27 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div
-          className={cn(
-            "border-t border-border/40 space-y-2",
-            collapsed ? "p-2" : "p-3",
-          )}
-        >
-          {collapsed ? (
-            <SidebarTooltip label="Expand sidebar">
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="flex items-center justify-center p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-                aria-label="Expand sidebar"
-              >
-                <PanelLeft className="h-5 w-5" />
-              </button>
-            </SidebarTooltip>
-          ) : (
+        <div className="shrink-0 space-y-2 border-t border-border/40 p-3">
+          <SidebarTooltip label="Expand sidebar" enabled={collapsed}>
             <button
               type="button"
               onClick={toggleSidebar}
-              className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-              aria-label="Collapse sidebar"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <PanelLeftClose className="h-4 w-4 shrink-0" />
-              Collapse
+              {collapsed ? (
+                <PanelLeft className="h-4 w-4 shrink-0" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4 shrink-0" />
+              )}
+              <span
+                className={sidebarLabelClass(collapsed)}
+                aria-hidden={collapsed || undefined}
+              >
+                Collapse
+              </span>
             </button>
-          )}
+          </SidebarTooltip>
           <AccountPanel
             displayName={displayName}
             email={email}
@@ -643,7 +683,8 @@ export function AppShell({
 
       <div
         className={cn(
-          "flex-1 flex flex-col pb-20 md:pb-0 transition-[padding] duration-300 ease-in-out",
+          "flex-1 flex flex-col pb-20 md:pb-0 transition-[padding]",
+          SIDEBAR_EASE,
           collapsed ? SIDEBAR_COLLAPSED_PL : SIDEBAR_EXPANDED_PL,
         )}
       >

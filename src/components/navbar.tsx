@@ -7,6 +7,9 @@ import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
+import { cn } from "@/lib/utils";
+
+const MENU_CLOSE_MS = 200;
 
 function subscribe() {
   return () => {};
@@ -15,21 +18,48 @@ function subscribe() {
 /** Marketing navbar — for logged-out visitors only (landing / auth). */
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuShown = isOpen || isClosing;
+
+  const openMenu = () => {
+    setIsClosing(false);
+    setIsOpen(true);
+  };
+
+  const closeMenu = () => {
+    if (!isOpen || isClosing) return;
+    setIsOpen(false);
+    setIsClosing(true);
+  };
+
+  const toggleMenu = () => {
+    if (isOpen) closeMenu();
+    else openMenu();
+  };
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 640) setIsOpen(false);
+      if (window.innerWidth >= 640) {
+        setIsOpen(false);
+        setIsClosing(false);
+      }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
+    if (!isClosing) return;
+    const id = window.setTimeout(() => setIsClosing(false), MENU_CLOSE_MS);
+    return () => window.clearTimeout(id);
+  }, [isClosing]);
+
+  useEffect(() => {
     const prev = document.body.style.overflow;
-    if (isOpen) {
+    if (menuShown) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = prev || "";
@@ -37,7 +67,7 @@ export function Navbar() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [menuShown]);
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -105,14 +135,15 @@ export function Navbar() {
               <div className="w-9 h-9" />
             )}
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={toggleMenu}
               className="relative z-60 flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px] cursor-pointer"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-label={menuShown ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
             >
               <span
                 className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
                 style={{
-                  transform: isOpen
+                  transform: menuShown
                     ? "translateY(6.5px) rotate(45deg)"
                     : "none",
                 }}
@@ -120,14 +151,14 @@ export function Navbar() {
               <span
                 className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
                 style={{
-                  opacity: isOpen ? 0 : 1,
-                  transform: isOpen ? "scaleX(0)" : "scaleX(1)",
+                  opacity: menuShown ? 0 : 1,
+                  transform: menuShown ? "scaleX(0)" : "scaleX(1)",
                 }}
               />
               <span
                 className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
                 style={{
-                  transform: isOpen
+                  transform: menuShown
                     ? "translateY(-6.5px) rotate(-45deg)"
                     : "none",
                 }}
@@ -137,19 +168,23 @@ export function Navbar() {
         </div>
       </nav>
 
+      {/* Opens instantly; fades out on close */}
       <div
         ref={menuRef}
-        className={`sm:hidden fixed inset-0 z-40 bg-background transition-opacity duration-300 ${
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
+        className={cn(
+          "sm:hidden fixed inset-0 z-40 bg-background",
+          menuShown ? "pointer-events-auto" : "pointer-events-none opacity-0",
+          isClosing &&
+            "transition-opacity duration-200 motion-reduce:transition-none",
+          isOpen && !isClosing && "opacity-100",
+          isClosing && "opacity-0",
+        )}
         aria-hidden={!isOpen}
       >
         <div className="flex h-full flex-col px-6 pt-24 pb-10">
           <div className="flex flex-1 flex-col justify-between">
             <div className="flex flex-col gap-2">
-              <Link href="/login" onClick={() => setIsOpen(false)}>
+              <Link href="/login" onClick={closeMenu}>
                 <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -160,7 +195,7 @@ export function Navbar() {
                   </div>
                 </div>
               </Link>
-              <Link href="/company/login" onClick={() => setIsOpen(false)}>
+              <Link href="/company/login" onClick={closeMenu}>
                 <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
                   <Building2 className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -172,7 +207,7 @@ export function Navbar() {
                 </div>
               </Link>
             </div>
-            <Link href="/company/register" onClick={() => setIsOpen(false)}>
+            <Link href="/company/register" onClick={closeMenu}>
               <Button className="btn-hover w-full h-12 rounded-xl font-medium text-base">
                 Register your company
                 <ArrowRight className="ml-2 h-4 w-4" />
