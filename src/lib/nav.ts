@@ -1,12 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
+  ClipboardList,
   Clock,
   LayoutDashboard,
   Inbox,
   Settings,
   Palmtree,
   Megaphone,
+  Timer,
 } from "lucide-react";
 
 export type AppRole = "employee" | "manager" | "owner";
@@ -50,6 +52,13 @@ export const NAV_ITEMS: NavItem[] = [
     mobileTab: true,
   },
   {
+    id: "emp-hours",
+    label: "Hours",
+    href: "/dashboard/hours",
+    icon: Timer,
+    roles: ["employee"],
+  },
+  {
     id: "emp-time-off",
     label: "Time off",
     href: "/dashboard/time-off",
@@ -82,6 +91,13 @@ export const NAV_ITEMS: NavItem[] = [
     mobileTab: true,
   },
   {
+    id: "mgr-timesheets",
+    label: "Timesheets",
+    href: "/company/dashboard/timesheets",
+    icon: ClipboardList,
+    roles: ["manager", "owner"],
+  },
+  {
     id: "mgr-inbox",
     label: "Inbox",
     href: "/dashboard/inbox",
@@ -89,7 +105,15 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["manager", "owner"],
     mobileTab: true,
   },
-  // Managers also work shifts — self-service Availability + Time off
+  // Managers also work shifts — self-service Hours / Availability / Time off.
+  // Owners get Hours only (no Availability / Time off nav).
+  {
+    id: "mgr-hours",
+    label: "Hours",
+    href: "/dashboard/hours",
+    icon: Timer,
+    roles: ["manager", "owner"],
+  },
   {
     id: "mgr-availability",
     label: "Availability",
@@ -132,4 +156,12 @@ export function mobileTabsForRole(role: AppRole) {
 
 export function homeHrefForRole(role: AppRole) {
   return role === "employee" ? "/dashboard" : "/company/dashboard";
+}
+
+/** Resolve shell role from auth profile; null until known (avoids nav flash). */
+export function shellRoleFromProfile(
+  role: string | null | undefined,
+): AppRole | null {
+  if (role === "owner" || role === "manager" || role === "employee") return role;
+  return null;
 }

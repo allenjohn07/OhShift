@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
+import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
 import type { CompanySettings } from "./manage-settings-modal";
@@ -58,37 +59,34 @@ function CompanyDashboard() {
   const router = useRouter();
   const [data, setData] = useState<CompanyDashboardData | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(async () => {
+    const res = await api("/dashboard/company");
+    const json = await parseApiJson<CompanyDashboardData & { error?: string }>(
+      res,
+    );
 
-    api("/dashboard/company")
-      .then(async (res) => {
-        const json = await parseApiJson<
-          CompanyDashboardData & { error?: string }
-        >(res);
-        if (cancelled) return;
+    if (res.status === 401) {
+      router.replace("/company/login");
+      return;
+    }
+    if (!res.ok || !json.profile) return;
 
-        // Only treat real auth failures as logout — not network/CORS/5xx.
-        if (res.status === 401) {
-          router.replace("/company/login");
-          return;
-        }
-        if (!res.ok || !json.profile) return;
-
-        if (json.profile.role === "employee") {
-          router.replace("/login");
-          return;
-        }
-        setData(json);
-      })
-      .catch(() => {
-        // Keep user on dashboard; transient API failures should not force login.
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    if (json.profile.role === "employee") {
+      router.replace("/login");
+      return;
+    }
+    setData(json);
   }, [api, router]);
+
+  const poll = useCallback(async () => {
+    try {
+      await load();
+    } catch {
+      // Quiet on background polls; initial failure keeps spinner until success.
+    }
+  }, [load]);
+
+  useVisiblePoll(true, poll);
 
   if (!data) {
     return <PageSpinner />;
@@ -103,6 +101,7 @@ function CompanyDashboard() {
         shifts={data.shifts}
         myShifts={data.myShifts ?? []}
         currentUser={data.profile}
+        onScheduleChanged={load}
       />
       <Footer className="mt-auto" />
     </>

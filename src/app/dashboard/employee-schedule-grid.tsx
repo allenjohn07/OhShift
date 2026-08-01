@@ -48,7 +48,7 @@ export function EmployeeScheduleGrid({
   employeeId?: string;
   employeeName: string;
 }) {
-  const [shifts] = useState<Shift[]>(initialShifts ?? []);
+  const shifts = initialShifts ?? [];
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);

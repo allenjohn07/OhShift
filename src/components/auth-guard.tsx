@@ -10,6 +10,7 @@ const SHARED_SELF_SERVICE = new Set([
   "/dashboard/availability",
   "/dashboard/time-off",
   "/dashboard/inbox",
+  "/dashboard/hours",
 ]);
 
 export function AuthGuard({

@@ -43,18 +43,25 @@ export function DashboardContent({
   employees, 
   shifts,
   myShifts,
-  currentUser
+  currentUser,
+  onScheduleChanged,
 }: { 
   userName: string, 
   company: CompanySettings, 
   employees: DashboardEmployee[] | null, 
   shifts: DashboardShift[] | null,
   myShifts: MyShift[],
-  currentUser: { id: string; role: string }
+  currentUser: { id: string; role: string },
+  onScheduleChanged?: () => void | Promise<void>,
 }) {
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [isManageSettingsOpen, setIsManageSettingsOpen] = useState(false);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+
+  const handleScheduleChanged = async () => {
+    await onScheduleChanged?.();
+    setActivityRefreshKey((k) => k + 1);
+  };
 
   return (
     <>
@@ -111,7 +118,11 @@ export function DashboardContent({
         {/* Dashboard Lower Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Team Members Area (takes 7/12 width on large screens) */}
-          <TeamMembersList employees={employees} company={company} />
+          <TeamMembersList
+            employees={employees}
+            company={company}
+            onShiftAssigned={handleScheduleChanged}
+          />
           
           {/* Employee Invitation Form (takes 5/12 width on large screens) */}
           <div className="lg:col-span-5">
@@ -120,7 +131,10 @@ export function DashboardContent({
         </div>
 
         {/* Weekly Schedule Preview */}
-        <TeamScheduleGrid shifts={shifts} onPublished={() => setActivityRefreshKey((k) => k + 1)} />
+        <TeamScheduleGrid
+          shifts={shifts}
+          onScheduleChanged={handleScheduleChanged}
+        />
 
         {/* Upcoming Team Schedule List */}
         <TodayCompanySchedule 

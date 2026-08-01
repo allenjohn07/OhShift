@@ -34,11 +34,16 @@ import {
   isNavActive,
   mobileTabsForRole,
   navItemsForRole,
+  shellRoleFromProfile,
 } from "@/lib/nav";
 import {
   usePendingTimeOffSnapshot,
   usePendingTimeOffSync,
 } from "@/hooks/use-pending-time-off";
+import {
+  usePendingTimesheetsSnapshot,
+  usePendingTimesheetsSync,
+} from "@/hooks/use-pending-timesheets";
 import {
   useInboxUnreadSnapshot,
   useInboxUnreadSync,
@@ -401,25 +406,36 @@ export function AppShell({
   role,
 }: {
   children: React.ReactNode;
+  /** Fallback only — preferred role comes from auth once loaded */
   role: AppRole;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { collapsed, toggle: toggleSidebar } = useSidebarCollapsed();
-  const isManagerShell = role === "manager" || role === "owner";
-  usePendingTimeOffSync(isManagerShell);
-  useInboxUnreadSync(Boolean(user?.profile.company_id));
+  // Prefer auth profile so pages that default role before /auth/me returns
+  // (e.g. owner → "manager") do not flash the wrong nav links.
+  const resolvedRole = shellRoleFromProfile(user?.profile.role) ?? role;
+  const isManagerShell =
+    resolvedRole === "manager" || resolvedRole === "owner";
+  usePendingTimeOffSync(isManagerShell && !loading);
+  usePendingTimesheetsSync(isManagerShell && !loading);
+  useInboxUnreadSync(Boolean(user?.profile.company_id) && !loading);
   const { pendingCount } = usePendingTimeOffSnapshot();
+  const { pendingCount: timesheetsPendingCount } =
+    usePendingTimesheetsSnapshot();
   const { total: inboxUnread } = useInboxUnreadSnapshot();
 
-  const items = navItemsForRole(role);
-  const mobileTabs = mobileTabsForRole(role);
+  const items = navItemsForRole(resolvedRole);
+  const mobileTabs = mobileTabsForRole(resolvedRole);
   const menuExtras = items.filter((item) => !item.mobileTab);
-  const homeHref = homeHrefForRole(role);
+  const homeHref = homeHrefForRole(resolvedRole);
   const badgeFor = (id: string) => {
     if (id === "mgr-requests" && pendingCount > 0) return pendingCount;
+    if (id === "mgr-timesheets" && timesheetsPendingCount > 0) {
+      return timesheetsPendingCount;
+    }
     if ((id === "emp-inbox" || id === "mgr-inbox") && inboxUnread > 0) {
       return inboxUnread;
     }
@@ -454,6 +470,15 @@ export function AppShell({
   const displayName = user?.profile.full_name || "User";
   const email = user?.email;
   const avatarUrl = user?.profile.avatar_url;
+
+  // Hold the shell until auth resolves so we never paint the wrong role's nav.
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background w-full flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden flex flex-col">

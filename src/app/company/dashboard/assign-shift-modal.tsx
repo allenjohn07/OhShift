@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Calendar, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CompanySettings } from "./manage-settings-modal";
@@ -14,13 +13,20 @@ interface Employee {
   designation?: string | null;
 }
 
-export function AssignShiftModal({ employee, company }: { employee: Employee, company: CompanySettings }) {
+export function AssignShiftModal({
+  employee,
+  company,
+  onAssigned,
+}: {
+  employee: Employee;
+  company: CompanySettings;
+  onAssigned?: () => void | Promise<void>;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const router = useRouter();
   const api = useApi();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -34,9 +40,8 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
     const startTimeStr = formData.get("startTime") as string;
     const endTimeStr = formData.get("endTime") as string;
 
-    // Combine date and time
-    const startTime = new Date(`${date}T${startTimeStr}`).toISOString();
-    const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
+    const start = new Date(`${date}T${startTimeStr}`).toISOString();
+    const end = new Date(`${date}T${endTimeStr}`).toISOString();
 
     try {
       const res = await api("/shifts", {
@@ -44,8 +49,8 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
         body: JSON.stringify({
           employeeId: employee.id,
           title,
-          startTime,
-          endTime,
+          startTime: start,
+          endTime: end,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
@@ -57,7 +62,7 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
 
       toast.success("Shift saved as draft — publish the week when ready");
       setIsOpen(false);
-      router.refresh();
+      await onAssigned?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to assign shift");
     } finally {
@@ -109,7 +114,10 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="date" className="text-sm font-medium flex items-center gap-2">
+            <label
+              htmlFor="date"
+              className="text-sm font-medium flex items-center gap-2"
+            >
               <Calendar className="w-4 h-4 text-muted-foreground" /> Date
             </label>
             <input
@@ -125,17 +133,25 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Shift Time</label>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground mr-1">Presets:</span>
+                <span className="text-xs text-muted-foreground mr-1">
+                  Presets:
+                </span>
                 <button
                   type="button"
-                  onClick={() => { setStartTime(company.morning_start); setEndTime(company.morning_end); }}
+                  onClick={() => {
+                    setStartTime(company.morning_start);
+                    setEndTime(company.morning_end);
+                  }}
                   className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
                 >
                   Morning
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setStartTime(company.evening_start); setEndTime(company.evening_end); }}
+                  onClick={() => {
+                    setStartTime(company.evening_start);
+                    setEndTime(company.evening_end);
+                  }}
                   className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
                 >
                   Evening
@@ -144,7 +160,10 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="startTime" className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                <label
+                  htmlFor="startTime"
+                  className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                >
                   <Clock className="w-3.5 h-3.5" /> Start
                 </label>
                 <input
@@ -158,7 +177,10 @@ export function AssignShiftModal({ employee, company }: { employee: Employee, co
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="endTime" className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                <label
+                  htmlFor="endTime"
+                  className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                >
                   <Clock className="w-3.5 h-3.5" /> End
                 </label>
                 <input

@@ -16,9 +16,11 @@ interface Employee {
 export function TeamMembersList({
   employees,
   company,
+  onShiftAssigned,
 }: {
   employees: Employee[] | null;
   company: CompanySettings;
+  onShiftAssigned?: () => void | Promise<void>;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -77,7 +79,11 @@ export function TeamMembersList({
                 </div>
               </div>
               <div>
-                <AssignShiftModal employee={emp} company={company} />
+                <AssignShiftModal
+                  employee={emp}
+                  company={company}
+                  onAssigned={onShiftAssigned}
+                />
               </div>
             </div>
           ))}

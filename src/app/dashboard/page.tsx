@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
+import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
@@ -49,34 +50,24 @@ function EmployeeDashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(async () => {
+    const res = await api("/dashboard/employee");
+    const json = await parseApiJson<DashboardData & { error?: string }>(res);
 
-    api("/dashboard/employee")
-      .then(async (res) => {
-        const json = await parseApiJson<DashboardData & { error?: string }>(res);
-        if (cancelled) return;
+    if (res.status === 401) {
+      router.replace("/login");
+      return;
+    }
+    if (!res.ok || !json.profile) return;
 
-        if (res.status === 401) {
-          router.replace("/login");
-          return;
-        }
-        if (!res.ok || !json.profile) return;
-
-        if (json.profile.role === "owner" || json.profile.role === "manager") {
-          router.replace("/company/dashboard");
-          return;
-        }
-        setData(json);
-      })
-      .catch(() => {
-        // Transient API failures should not force login.
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    if (json.profile.role === "owner" || json.profile.role === "manager") {
+      router.replace("/company/dashboard");
+      return;
+    }
+    setData(json);
   }, [api, router]);
+
+  useVisiblePoll(true, load);
 
   if (!data || !user) {
     return <PageSpinner />;

@@ -78,7 +78,11 @@ export const companyRoutes = new Elysia({ prefix: "/company" })
   .post("/schedule/publish", async ({ body, headers, set }) => {
     try {
       const user = await requireManager(headers.authorization ?? null);
-      const { weekStart } = body as { weekStart?: string };
+      const { weekStart, from, to } = body as {
+        weekStart?: string;
+        from?: string;
+        to?: string;
+      };
 
       if (!weekStart) {
         set.status = 400;
@@ -86,11 +90,21 @@ export const companyRoutes = new Elysia({ prefix: "/company" })
       }
 
       let range: { start: Date; end: Date };
-      try {
-        range = weekRangeFromStart(weekStart);
-      } catch {
-        set.status = 400;
-        return { error: "Invalid weekStart date" };
+      const fromDate = from ? new Date(from) : null;
+      const toDate = to ? new Date(to) : null;
+      if (fromDate && toDate && !Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime())) {
+        if (toDate <= fromDate) {
+          set.status = 400;
+          return { error: "to must be after from" };
+        }
+        range = { start: fromDate, end: toDate };
+      } else {
+        try {
+          range = weekRangeFromStart(weekStart);
+        } catch {
+          set.status = 400;
+          return { error: "Invalid weekStart date" };
+        }
       }
 
       const now = new Date();

@@ -8,6 +8,7 @@ import { employeesRoutes } from "./routes/employees";
 import { shiftsRoutes } from "./routes/shifts";
 import { availabilityRoutes } from "./routes/availability";
 import { timeOffRoutes } from "./routes/time-off";
+import { timeEntriesRoutes } from "./routes/time-entries";
 import { announcementsRoutes } from "./routes/announcements";
 import { messagesRoutes } from "./routes/messages";
 import { inboxRoutes } from "./routes/inbox";
@@ -86,7 +87,7 @@ export function buildApp(options: { adapter?: unknown } = {}) {
     })
     .get("/", () => ({
       name: "OhShift API",
-      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off, /announcements, /messages, /inbox",
+      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off, /time-entries, /announcements, /messages, /inbox",
     }))
     .use(authRoutes)
     .use(companyRoutes)
@@ -95,6 +96,7 @@ export function buildApp(options: { adapter?: unknown } = {}) {
     .use(dashboardRoutes)
     .use(availabilityRoutes)
     .use(timeOffRoutes)
+    .use(timeEntriesRoutes)
     .use(announcementsRoutes)
     .use(messagesRoutes)
     .use(inboxRoutes);

@@ -5,6 +5,10 @@ import {
   requireUser,
   verifyEmployeeInCompany,
 } from "../lib/auth-guard";
+import {
+  availabilityConflictMessage,
+  ohShiftDayOfWeek,
+} from "../lib/availability-check";
 import { prisma } from "../lib/prisma";
 import { serializeShift } from "../lib/serialize";
 import {
@@ -12,6 +16,21 @@ import {
   formatConflictMessage,
 } from "../lib/shift-conflicts";
 import { logShiftAction } from "../lib/shift-log";
+
+async function checkAvailabilityForShift(
+  employeeId: string,
+  start: Date,
+  end: Date,
+  timeZone?: string,
+): Promise<string | null> {
+  const dayOfWeek = ohShiftDayOfWeek(start, timeZone);
+  const window = await prisma.availabilityWindow.findUnique({
+    where: {
+      userId_dayOfWeek: { userId: employeeId, dayOfWeek },
+    },
+  });
+  return availabilityConflictMessage(window, start, end, timeZone);
+}
 
 export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
   .get("/mine", async ({ headers, set }) => {
@@ -37,11 +56,12 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
   .post("/", async ({ body, headers, set }) => {
     try {
       const user = await requireManager(headers.authorization ?? null);
-      const { employeeId, title, startTime, endTime } = body as {
+      const { employeeId, title, startTime, endTime, timezone } = body as {
         employeeId?: string;
         title?: string;
         startTime?: string;
         endTime?: string;
+        timezone?: string;
       };
 
       if (!employeeId || !title || !startTime || !endTime) {
@@ -63,6 +83,17 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       }
 
       const employee = await verifyEmployeeInCompany(employeeId, user.companyId!);
+
+      const availabilityError = await checkAvailabilityForShift(
+        employeeId,
+        start,
+        end,
+        timezone,
+      );
+      if (availabilityError) {
+        set.status = 400;
+        return { error: availabilityError };
+      }
 
       const conflicts = await findOverlappingShifts(employeeId, start, end);
       if (conflicts.length > 0) {
@@ -105,11 +136,12 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
   .put("/", async ({ body, headers, set }) => {
     try {
       const user = await requireManager(headers.authorization ?? null);
-      const { shiftId, title, startTime, endTime } = body as {
+      const { shiftId, title, startTime, endTime, timezone } = body as {
         shiftId?: string;
         title?: string;
         startTime?: string;
         endTime?: string;
+        timezone?: string;
       };
 
       if (!shiftId || !title || !startTime || !endTime) {
@@ -138,6 +170,17 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       if (start >= end) {
         set.status = 400;
         return { error: "End time must be after start time" };
+      }
+
+      const availabilityError = await checkAvailabilityForShift(
+        existing.employeeId,
+        start,
+        end,
+        timezone,
+      );
+      if (availabilityError) {
+        set.status = 400;
+        return { error: availabilityError };
       }
 
       const conflicts = await findOverlappingShifts(

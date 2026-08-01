@@ -2,9 +2,9 @@
 
 import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2, Send } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
+import { parseApiJson } from "@/lib/api";
 
 interface Shift {
   id: string;
@@ -15,7 +15,13 @@ interface Shift {
   users?: { full_name: string };
 }
 
-export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | null; onPublished?: () => void }) {
+export function TeamScheduleGrid({
+  shifts,
+  onScheduleChanged,
+}: {
+  shifts: Shift[] | null;
+  onScheduleChanged?: () => void | Promise<void>;
+}) {
   const api = useApi();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -23,7 +29,6 @@ export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | nu
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const router = useRouter();
 
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -144,7 +149,7 @@ export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | nu
       
       toast.success("Shift deleted successfully");
       setSelectedShift(null);
-      router.refresh();
+      await onScheduleChanged?.();
     } catch {
       toast.error("Could not delete shift");
     } finally {
@@ -174,6 +179,7 @@ export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | nu
           title,
           startTime,
           endTime,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 
@@ -185,7 +191,7 @@ export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | nu
       toast.success("Shift updated successfully");
       setIsEditing(false);
       setSelectedShift(null);
-      router.refresh();
+      await onScheduleChanged?.();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Could not update shift");
     } finally {
@@ -248,17 +254,29 @@ export function TeamScheduleGrid({ shifts, onPublished }: { shifts: Shift[] | nu
 
     setIsPublishing(true);
     try {
+      // Use the same local week bounds as the grid so drafts aren’t missed
+      // when weekStart is interpreted as UTC-only on the server.
+      const weekEndExclusive = new Date(startOfWeek);
+      weekEndExclusive.setDate(startOfWeek.getDate() + 7);
+
       const res = await api("/company/schedule/publish", {
         method: "POST",
-        body: JSON.stringify({ weekStart: weekStartIso }),
+        body: JSON.stringify({
+          weekStart: weekStartIso,
+          from: startOfWeek.toISOString(),
+          to: weekEndExclusive.toISOString(),
+        }),
       });
-      const data = await res.json();
+      const data = await parseApiJson<{
+        message?: string;
+        publishedCount?: number;
+        error?: string;
+      }>(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed to publish schedule");
       }
       toast.success(data.message || "Schedule published");
-      onPublished?.();
-      router.refresh();
+      await onScheduleChanged?.();
     } catch (err: unknown) {
       toast.error(
         err instanceof Error ? err.message : "Could not publish schedule",
