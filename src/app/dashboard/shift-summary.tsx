@@ -323,13 +323,9 @@ export function ShiftSummary({
 
                 <div className="flex items-center gap-2 shrink-0">
                   {!statusReady ? (
-                    <Button
-                      disabled
-                      className="btn-brand rounded-xl h-10 px-5"
-                      aria-label="Loading clock status"
-                    >
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Loading...
+                    </span>
                   ) : canClockOut ? (
                     <Button
                       className="btn-brand rounded-xl h-10 px-5"
