@@ -5,6 +5,8 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Lo
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
+import { AskOhShiftModal } from "./ask-ohshift-modal";
+import type { CompanySettings } from "./manage-settings-modal";
 
 interface Shift {
   id: string;
@@ -17,9 +19,11 @@ interface Shift {
 
 export function TeamScheduleGrid({
   shifts,
+  company,
   onScheduleChanged,
 }: {
   shifts: Shift[] | null;
+  company?: CompanySettings | null;
   onScheduleChanged?: () => void | Promise<void>;
 }) {
   const api = useApi();
@@ -290,9 +294,13 @@ export function TeamScheduleGrid({
     <>
       <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden mt-8">
         <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Calendar className="h-5 w-5 text-emerald-500" />
             <h2 className="font-semibold text-lg">Team Schedule</h2>
+            <AskOhShiftModal
+              onCreated={onScheduleChanged}
+              company={company}
+            />
           </div>
           
           <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto">

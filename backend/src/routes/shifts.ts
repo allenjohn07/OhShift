@@ -13,7 +13,9 @@ import { prisma } from "../lib/prisma";
 import { serializeShift } from "../lib/serialize";
 import {
   findOverlappingShifts,
+  findShiftWithSameStart,
   formatConflictMessage,
+  formatSameStartMessage,
 } from "../lib/shift-conflicts";
 import { logShiftAction } from "../lib/shift-log";
 
@@ -93,6 +95,15 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       if (availabilityError) {
         set.status = 400;
         return { error: availabilityError };
+      }
+
+      const sameStart = await findShiftWithSameStart(employeeId, start);
+      if (sameStart) {
+        set.status = 409;
+        return {
+          error: formatSameStartMessage(sameStart),
+          conflicts: [serializeShift(sameStart)],
+        };
       }
 
       const conflicts = await findOverlappingShifts(employeeId, start, end);
@@ -181,6 +192,19 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       if (availabilityError) {
         set.status = 400;
         return { error: availabilityError };
+      }
+
+      const sameStart = await findShiftWithSameStart(
+        existing.employeeId,
+        start,
+        shiftId,
+      );
+      if (sameStart) {
+        set.status = 409;
+        return {
+          error: formatSameStartMessage(sameStart),
+          conflicts: [serializeShift(sameStart)],
+        };
       }
 
       const conflicts = await findOverlappingShifts(

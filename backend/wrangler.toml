@@ -9,6 +9,11 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 NODE_ENV = "production"
 
+# Workers AI binding — powers Ask OhShift (NL shift parse) in production.
+# Free open-source models (e.g. Llama 3.2); local Bun uses REST + env tokens instead.
+[ai]
+binding = "AI"
+
 # Set secrets (do not put them in this file):
 #   bunx wrangler secret put DATABASE_URL
 #   bunx wrangler secret put DIRECT_URL

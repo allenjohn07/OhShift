@@ -129,10 +129,12 @@ function SidebarTooltip({
   label,
   children,
   enabled = true,
+  className,
 }: {
   label: string;
   children: React.ReactNode;
   enabled?: boolean;
+  className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -152,7 +154,7 @@ function SidebarTooltip({
   return (
     <div
       ref={ref}
-      className="relative"
+      className={cn("relative", className)}
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
@@ -355,7 +357,7 @@ function AccountPanel({
       <button
         type="button"
         className={cn(
-          "flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+          "flex h-9 min-w-0 w-full items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
           flush ? "px-0" : "px-2",
         )}
       >
@@ -381,55 +383,57 @@ function AccountPanel({
   );
 
   return (
-    <div className="flex items-center gap-1.5">
-      <DropdownMenu modal={false}>
-        <SidebarTooltip label={firstName} enabled={!!rail}>
-          {avatarTrigger}
-        </SidebarTooltip>
-        <DropdownMenuContent
-          className="z-[80] w-52"
-          side="top"
-          align="start"
-          sideOffset={8}
-        >
-          {(displayName || email) && (
-            <>
-              <div className="px-2 py-1.5">
-                {displayName && (
-                  <p className="text-sm font-medium truncate">{displayName}</p>
-                )}
-                {email && (
-                  <p className="text-xs text-muted-foreground truncate">{email}</p>
-                )}
-              </div>
-              <DropdownMenuSeparator />
-            </>
-          )}
-          <Link href="/profile" onClick={onNavigate}>
-            <DropdownMenuItem className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-          </Link>
-          {rail && (
-            <DropdownMenuItem onClick={toggle} className="cursor-pointer">
-              {mounted && isDark ? (
-                <Sun className="mr-2 h-4 w-4" />
-              ) : (
-                <Moon className="mr-2 h-4 w-4" />
-              )}
-              {mounted && isDark ? "Light mode" : "Dark mode"}
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem
-            onClick={onLogout}
-            className="text-red-500 focus:text-red-500 cursor-pointer focus:bg-red-500/10"
+    <div className="flex w-full min-w-0 items-center gap-1.5">
+      <div className="min-w-0 flex-1">
+        <DropdownMenu modal={false}>
+          <SidebarTooltip label={firstName} enabled={!!rail}>
+            {avatarTrigger}
+          </SidebarTooltip>
+          <DropdownMenuContent
+            className="z-[80] w-52"
+            side="top"
+            align="start"
+            sideOffset={8}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            {(displayName || email) && (
+              <>
+                <div className="px-2 py-1.5">
+                  {displayName && (
+                    <p className="text-sm font-medium truncate">{displayName}</p>
+                  )}
+                  {email && (
+                    <p className="text-xs text-muted-foreground truncate">{email}</p>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <Link href="/profile" onClick={onNavigate}>
+              <DropdownMenuItem className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+            </Link>
+            {rail && (
+              <DropdownMenuItem onClick={toggle} className="cursor-pointer">
+                {mounted && isDark ? (
+                  <Sun className="mr-2 h-4 w-4" />
+                ) : (
+                  <Moon className="mr-2 h-4 w-4" />
+                )}
+                {mounted && isDark ? "Light mode" : "Dark mode"}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              onClick={onLogout}
+              className="text-red-500 focus:text-red-500 cursor-pointer focus:bg-red-500/10"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <button
         type="button"

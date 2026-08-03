@@ -133,6 +133,7 @@ export function DashboardContent({
         {/* Weekly Schedule Preview */}
         <TeamScheduleGrid
           shifts={shifts}
+          company={company}
           onScheduleChanged={handleScheduleChanged}
         />
 

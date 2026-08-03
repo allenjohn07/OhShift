@@ -1,10 +1,16 @@
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { buildApp } from "./app";
 import { runWithPrisma } from "./lib/prisma";
+import {
+  runWithWorkersAi,
+  type WorkersAiBinding,
+} from "./lib/workers-ai";
 
 const app = buildApp({ adapter: CloudflareAdapter }).compile();
 
-type WorkerEnv = Record<string, unknown>;
+type WorkerEnv = Record<string, unknown> & {
+  AI?: WorkersAiBinding;
+};
 
 function applyEnv(env: WorkerEnv) {
   for (const [key, value] of Object.entries(env)) {
@@ -17,7 +23,9 @@ function applyEnv(env: WorkerEnv) {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     applyEnv(env);
-    return runWithPrisma(() => Promise.resolve(app.fetch(request)));
+    return runWithPrisma(() =>
+      runWithWorkersAi(env.AI, () => Promise.resolve(app.fetch(request))),
+    );
   },
 };
 
