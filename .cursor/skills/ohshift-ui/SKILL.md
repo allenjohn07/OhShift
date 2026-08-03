@@ -136,6 +136,30 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Icon wells: `rounded-xl bg-brand-soft text-brand` (or emerald for status).
 - Workspace/company eyebrow labels: `text-sm font-medium text-brand`.
 
+## Scrollable list panels
+
+For any capped-height scrollable section inside a card (Team Members, Published Schedules, future queues/lists):
+
+1. Use **`ScrollFade`** from [`src/components/scroll-fade.tsx`](src/components/scroll-fade.tsx) — do **not** invent a new fade overlay (`from-card/80` bands darken the last row).
+2. Default height: `max-h-[400px]` (override with `maxHeightClass` only when needed).
+3. Soft edges via **CSS mask** (content fades; no dark gradient overlay).
+4. Hide the native scrollbar (built into `ScrollFade`).
+5. Pass `contentKey` when the list data changes so fades recompute.
+6. Keep the card header sticky outside the scroll region; only the list body scrolls.
+
+```tsx
+import { ScrollFade } from "@/components/scroll-fade";
+
+<div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+  {/* fixed header */}
+  <ScrollFade contentKey={items.length} className="divide-y divide-border/40">
+    {items.map(...)}
+  </ScrollFade>
+</div>
+```
+
+**Don’t** stack absolute `bg-gradient-to-*` overlays for vertical list fades — use `ScrollFade`.
+
 ## Motion
 
 - Entry: `animate-fade-in` + `delay-100` … `delay-400`.
@@ -146,7 +170,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 
 **Do**
 
-- Reuse `Button`, `BrandMark`, `Footer`, `Navbar`, existing tokens.
+- Reuse `Button`, `BrandMark`, `Footer`, `Navbar`, `ScrollFade`, existing tokens.
 - Match logo gradient on primary CTAs.
 - Keep dark backgrounds neutral black.
 
@@ -157,6 +181,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Drop `w-full` on `max-w-6xl mx-auto` headers.
 - Put the global footer on login/register or any authenticated (AppShell) page.
 - Unmount the navbar during page/data loading.
+- Hand-roll dark gradient overlays for scrollable list edges.
 
 ## Key files
 
@@ -164,6 +189,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 |------|------|
 | `src/app/globals.css` | Tokens, `.btn-brand`, motion |
 | `src/components/brand-mark.tsx` | Logo mark |
+| `src/components/scroll-fade.tsx` | Scrollable list panels with soft mask fades |
 | `src/components/ui/button.tsx` | Default = brand gradient |
 | `src/components/navbar.tsx` | Top chrome |
 | `src/components/footer.tsx` | Shared footer |

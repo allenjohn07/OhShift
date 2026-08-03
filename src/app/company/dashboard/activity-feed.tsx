@@ -14,6 +14,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
+import { ScrollFade } from "@/components/scroll-fade";
 
 type PublishedShift = {
   id: string;
@@ -241,9 +242,6 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showTopFade, setShowTopFade] = useState(false);
-  const [showBottomFade, setShowBottomFade] = useState(false);
 
   const fetchLogs = useCallback(async (showUpdating = false) => {
     if (showUpdating) setRefreshing(true);
@@ -273,17 +271,6 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
       fetchLogs(true);
     }
   }, [open, refreshKey, fetchLogs]);
-
-  const updateFades = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setShowTopFade(el.scrollTop > 8);
-    setShowBottomFade(el.scrollTop + el.clientHeight < el.scrollHeight - 8);
-  }, []);
-
-  useEffect(() => {
-    updateFades();
-  }, [logs, updateFades]);
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
@@ -320,23 +307,11 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
               No schedules published yet.
             </div>
           ) : (
-            <div className="relative">
-              {showTopFade && (
-                <div className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-card/80 to-transparent z-10" />
-              )}
-              <div
-                ref={scrollRef}
-                onScroll={updateFades}
-                className="max-h-[400px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              >
-                {logs.map((log, i) => (
-                  <PublishEntry key={log.id} log={log} isLatest={i === 0} />
-                ))}
-              </div>
-              {showBottomFade && (
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/80 to-transparent z-10" />
-              )}
-            </div>
+            <ScrollFade contentKey={`${logs.length}:${open ? 1 : 0}`}>
+              {logs.map((log, i) => (
+                <PublishEntry key={log.id} log={log} isLatest={i === 0} />
+              ))}
+            </ScrollFade>
           )}
         </div>
       )}

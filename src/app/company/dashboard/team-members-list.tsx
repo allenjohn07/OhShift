@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AssignShiftModal } from "./assign-shift-modal";
 import { Search, Shield } from "lucide-react";
 import type { CompanySettings } from "./manage-settings-modal";
+import { ScrollFade } from "@/components/scroll-fade";
 
 interface Employee {
   id: string;
@@ -31,8 +32,8 @@ export function TeamMembersList({
   );
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-7 flex flex-col h-full">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4">
+    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-7 flex flex-col">
+      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4 shrink-0">
         <h2 className="font-semibold text-lg">Team Members</h2>
 
         <div className="relative max-w-xs w-full">
@@ -50,7 +51,10 @@ export function TeamMembersList({
       </div>
 
       {filteredEmployees && filteredEmployees.length > 0 ? (
-        <div className="divide-y divide-border/40 overflow-y-auto">
+        <ScrollFade
+          contentKey={`${filteredEmployees.length}:${searchQuery}`}
+          className="divide-y divide-border/40"
+        >
           {filteredEmployees.map((emp) => (
             <div
               key={emp.id}
@@ -87,7 +91,7 @@ export function TeamMembersList({
               </div>
             </div>
           ))}
-        </div>
+        </ScrollFade>
       ) : (
         <div className="p-12 text-center text-muted-foreground border-border/50 border-dashed border-2 m-6 rounded-xl bg-background/50 flex flex-col items-center justify-center">
           <p>
