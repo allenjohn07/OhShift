@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
-import { Footer } from "@/components/footer";
 import { cn } from "@/lib/utils";
 
 export function SettingsPageShell({
@@ -16,19 +15,16 @@ export function SettingsPageShell({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{title}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-            {description}
-          </p>
-        </div>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{title}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
+          {description}
+        </p>
+      </div>
 
-        <div className="space-y-6">{children}</div>
-      </main>
-      <Footer className="mt-auto" />
-    </>
+      <div className="space-y-6">{children}</div>
+    </main>
   );
 }
 

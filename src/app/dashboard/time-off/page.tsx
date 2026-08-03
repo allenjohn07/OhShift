@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Loader2, Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { Footer } from "@/components/footer";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -277,8 +276,6 @@ function TimeOffPageContent() {
           )}
         </div>
       </main>
-      <Footer className="mt-auto" />
-
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>

@@ -102,7 +102,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 ```tsx
 <AppShell role="employee"> {/* or "manager" | "owner" */}
   <AuthGuard allowedRoles={["employee"]}>
-    {/* page content + Footer */}
+    {/* page content — no Footer */}
   </AuthGuard>
 </AppShell>
 ```
@@ -120,7 +120,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 </div>
 ```
 
-- `Footer` only after content is ready (`mt-auto`).
+- **No footer** on authenticated pages (dashboards, profile, settings). Footer is marketing-only (`src/app/page.tsx`).
 
 ### Auth pages (login / register)
 
@@ -155,7 +155,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Purple-wash the dark mode page background.
 - Invent a second primary button style (flat black/navy).
 - Drop `w-full` on `max-w-6xl mx-auto` headers.
-- Put the global footer on login/register.
+- Put the global footer on login/register or any authenticated (AppShell) page.
 - Unmount the navbar during page/data loading.
 
 ## Key files

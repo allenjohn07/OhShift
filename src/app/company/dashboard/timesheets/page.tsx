@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { ClipboardList, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { Footer } from "@/components/footer";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,249 +158,246 @@ function TimesheetsContent() {
   }
 
   return (
-    <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-            Timesheets
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-            Review clocked hours. You can adjust times before approving. You
-            cannot approve your own entries.
-          </p>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+          Timesheets
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
+          Review clocked hours. You can adjust times before approving. You
+          cannot approve your own entries.
+        </p>
+      </div>
+
+      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
+          <h2 className="font-semibold">Pending</h2>
+          {pending.length > 0 && (
+            <span className="text-xs font-medium bg-brand-soft text-brand px-2 py-0.5 rounded-full">
+              {pending.length}
+            </span>
+          )}
         </div>
 
-        <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-            <h2 className="font-semibold">Pending</h2>
-            {pending.length > 0 && (
-              <span className="text-xs font-medium bg-brand-soft text-brand px-2 py-0.5 rounded-full">
-                {pending.length}
-              </span>
-            )}
-          </div>
-
-          {pending.length === 0 ? (
-            <div className="px-4 sm:px-6 py-12 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                No pending timesheets.
-              </p>
+        {pending.length === 0 ? (
+          <div className="px-4 sm:px-6 py-12 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <ClipboardList className="h-5 w-5" />
             </div>
-          ) : (
-            <ul className="divide-y divide-border/40">
-              {pending.map((entry) => {
-                const isOwn = Boolean(myId && entry.employee_id === myId);
-                const edit = edits[entry.id];
-                const previewHours =
-                  edit &&
-                  formatHours(
-                    hoursBetween(
-                      fromDatetimeLocal(edit.clockIn) ?? entry.clock_in_at,
-                      fromDatetimeLocal(edit.clockOut) ?? entry.clock_out_at,
-                    ),
-                  );
+            <p className="text-sm text-muted-foreground">
+              No pending timesheets.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {pending.map((entry) => {
+              const isOwn = Boolean(myId && entry.employee_id === myId);
+              const edit = edits[entry.id];
+              const previewHours =
+                edit &&
+                formatHours(
+                  hoursBetween(
+                    fromDatetimeLocal(edit.clockIn) ?? entry.clock_in_at,
+                    fromDatetimeLocal(edit.clockOut) ?? entry.clock_out_at,
+                  ),
+                );
 
-                return (
-                  <li key={entry.id} className="px-4 sm:px-6 py-4 space-y-3">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 space-y-1">
-                        <p className="text-sm font-semibold">
-                          {entry.employee?.full_name ?? "Employee"}
-                          {isOwn && (
-                            <span className="ml-2 text-xs font-medium text-brand">
-                              You
-                            </span>
-                          )}
-                          <span className="font-normal text-muted-foreground">
-                            {" "}
-                            · {entry.shift?.title ?? "Shift"}
-                          </span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Punched {formatDateTime(entry.punched_in_at)}
-                          {entry.punched_out_at
-                            ? ` – ${formatTime(entry.punched_out_at)}`
-                            : ""}
-                          {entry.clock_out_at
-                            ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))} punched`
-                            : ""}
-                        </p>
+              return (
+                <li key={entry.id} className="px-4 sm:px-6 py-4 space-y-3">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-sm font-semibold">
+                        {entry.employee?.full_name ?? "Employee"}
                         {isOwn && (
-                          <p className="text-xs text-muted-foreground">
-                            Another manager or the owner needs to review this.
-                          </p>
+                          <span className="ml-2 text-xs font-medium text-brand">
+                            You
+                          </span>
                         )}
-                      </div>
-                      {isOwn && (
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full self-start bg-amber-500/15 text-amber-600 dark:text-amber-400 capitalize">
-                          Pending
+                        <span className="font-normal text-muted-foreground">
+                          {" "}
+                          · {entry.shift?.title ?? "Shift"}
                         </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Punched {formatDateTime(entry.punched_in_at)}
+                        {entry.punched_out_at
+                          ? ` – ${formatTime(entry.punched_out_at)}`
+                          : ""}
+                        {entry.clock_out_at
+                          ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))} punched`
+                          : ""}
+                      </p>
+                      {isOwn && (
+                        <p className="text-xs text-muted-foreground">
+                          Another manager or the owner needs to review this.
+                        </p>
                       )}
                     </div>
+                    {isOwn && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full self-start bg-amber-500/15 text-amber-600 dark:text-amber-400 capitalize">
+                        Pending
+                      </span>
+                    )}
+                  </div>
 
-                    {!isOwn && edit && (
-                      <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-3 sm:p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">
-                              Clock in
-                            </label>
-                            <Input
-                              type="datetime-local"
-                              value={edit.clockIn}
-                              onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [entry.id]: {
-                                    ...edit,
-                                    clockIn: e.target.value,
-                                  },
-                                }))
-                              }
-                              className="h-10 rounded-xl bg-card/50 border-border/60"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">
-                              Clock out
-                            </label>
-                            <Input
-                              type="datetime-local"
-                              value={edit.clockOut}
-                              onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [entry.id]: {
-                                    ...edit,
-                                    clockOut: e.target.value,
-                                  },
-                                }))
-                              }
-                              className="h-10 rounded-xl bg-card/50 border-border/60"
-                            />
-                          </div>
-                        </div>
+                  {!isOwn && edit && (
+                    <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-3 sm:p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">
-                            Note{" "}
-                            <span className="font-normal">(optional)</span>
+                            Clock in
                           </label>
                           <Input
-                            value={edit.note}
+                            type="datetime-local"
+                            value={edit.clockIn}
                             onChange={(e) =>
                               setEdits((prev) => ({
                                 ...prev,
-                                [entry.id]: { ...edit, note: e.target.value },
+                                [entry.id]: {
+                                  ...edit,
+                                  clockIn: e.target.value,
+                                },
                               }))
                             }
-                            maxLength={500}
-                            placeholder="Adjustment reason…"
                             className="h-10 rounded-xl bg-card/50 border-border/60"
                           />
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <p className="text-sm text-muted-foreground">
-                            Approving{" "}
-                            <span className="font-medium text-foreground">
-                              {previewHours}
-                            </span>
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-xl h-9"
-                              disabled={actingId === entry.id}
-                              onClick={() => review(entry, "denied")}
-                            >
-                              Deny
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="btn-brand rounded-xl h-9"
-                              disabled={actingId === entry.id}
-                              onClick={() => review(entry, "approved")}
-                            >
-                              {actingId === entry.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Approve"
-                              )}
-                            </Button>
-                          </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">
+                            Clock out
+                          </label>
+                          <Input
+                            type="datetime-local"
+                            value={edit.clockOut}
+                            onChange={(e) =>
+                              setEdits((prev) => ({
+                                ...prev,
+                                [entry.id]: {
+                                  ...edit,
+                                  clockOut: e.target.value,
+                                },
+                              }))
+                            }
+                            className="h-10 rounded-xl bg-card/50 border-border/60"
+                          />
                         </div>
                       </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
-            <h2 className="font-semibold">Recent</h2>
-          </div>
-
-          {recent.length === 0 ? (
-            <div className="px-4 sm:px-6 py-12 text-center">
-              <p className="text-sm text-muted-foreground">
-                No reviewed timesheets yet.
-              </p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border/40">
-              {recent.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">
-                      {entry.employee?.full_name ?? "Employee"}
-                      <span className="font-normal text-muted-foreground">
-                        {" "}
-                        · {entry.shift?.title ?? "Shift"} ·{" "}
-                        {formatDateTime(entry.clock_in_at)}
-                        {entry.clock_out_at
-                          ? ` – ${formatTime(entry.clock_out_at)}`
-                          : ""}
-                        {entry.clock_out_at
-                          ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
-                          : ""}
-                      </span>
-                    </p>
-                    {entry.reviewed_by && (
-                      <p className="text-xs text-muted-foreground">
-                        Reviewed by {entry.reviewed_by.full_name}
-                      </p>
-                    )}
-                    {entry.review_note && (
-                      <p className="text-xs text-muted-foreground">
-                        Note: {entry.review_note}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
-                      STATUS_STYLES[entry.status],
-                    )}
-                  >
-                    {entry.status}
-                  </span>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Note{" "}
+                          <span className="font-normal">(optional)</span>
+                        </label>
+                        <Input
+                          value={edit.note}
+                          onChange={(e) =>
+                            setEdits((prev) => ({
+                              ...prev,
+                              [entry.id]: { ...edit, note: e.target.value },
+                            }))
+                          }
+                          maxLength={500}
+                          placeholder="Adjustment reason…"
+                          className="h-10 rounded-xl bg-card/50 border-border/60"
+                        />
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-sm text-muted-foreground">
+                          Approving{" "}
+                          <span className="font-medium text-foreground">
+                            {previewHours}
+                          </span>
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl h-9"
+                            disabled={actingId === entry.id}
+                            onClick={() => review(entry, "denied")}
+                          >
+                            Deny
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="btn-brand rounded-xl h-9"
+                            disabled={actingId === entry.id}
+                            onClick={() => review(entry, "approved")}
+                          >
+                            {actingId === entry.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Approve"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
-      <Footer className="mt-auto" />
-    </>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
+          <h2 className="font-semibold">Recent</h2>
+        </div>
+
+        {recent.length === 0 ? (
+          <div className="px-4 sm:px-6 py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No reviewed timesheets yet.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {recent.map((entry) => (
+              <li
+                key={entry.id}
+                className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-semibold">
+                    {entry.employee?.full_name ?? "Employee"}
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      · {entry.shift?.title ?? "Shift"} ·{" "}
+                      {formatDateTime(entry.clock_in_at)}
+                      {entry.clock_out_at
+                        ? ` – ${formatTime(entry.clock_out_at)}`
+                        : ""}
+                      {entry.clock_out_at
+                        ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
+                        : ""}
+                    </span>
+                  </p>
+                  {entry.reviewed_by && (
+                    <p className="text-xs text-muted-foreground">
+                      Reviewed by {entry.reviewed_by.full_name}
+                    </p>
+                  )}
+                  {entry.review_note && (
+                    <p className="text-xs text-muted-foreground">
+                      Note: {entry.review_note}
+                    </p>
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
+                    STATUS_STYLES[entry.status],
+                  )}
+                >
+                  {entry.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
   );
 }
 

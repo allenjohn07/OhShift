@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { Footer } from "@/components/footer";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/use-api";
@@ -344,234 +343,231 @@ function HoursPageContent() {
   }
 
   return (
-    <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Hours</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-            Clock in for your published shifts and review hours by week or
-            biweekly period.
-          </p>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Hours</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
+          Clock in for your published shifts and review hours by week or
+          biweekly period.
+        </p>
+      </div>
+
+      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
+          <h2 className="font-semibold">Today</h2>
         </div>
 
-        <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
-            <h2 className="font-semibold">Today</h2>
+        {todayShifts.length === 0 ? (
+          <div className="px-4 sm:px-6 py-12 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Timer className="h-5 w-5" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              No published shifts scheduled for today.
+            </p>
           </div>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {todayShifts.map((shift) => {
+              const entry = entryByShift.get(shift.id);
+              const isOpen = entry?.status === "open";
+              const canClockIn = !entry && !active;
+              const canClockOut = isOpen;
+              const now = Date.now();
+              const start = new Date(shift.start_time).getTime();
+              const end = new Date(shift.end_time).getTime();
+              const earlyOk = now >= start - 30 * 60 * 1000;
+              const notEnded = now <= end;
 
-          {todayShifts.length === 0 ? (
-            <div className="px-4 sm:px-6 py-12 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <Timer className="h-5 w-5" />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                No published shifts scheduled for today.
-              </p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border/40">
-              {todayShifts.map((shift) => {
-                const entry = entryByShift.get(shift.id);
-                const isOpen = entry?.status === "open";
-                const canClockIn = !entry && !active;
-                const canClockOut = isOpen;
-                const now = Date.now();
-                const start = new Date(shift.start_time).getTime();
-                const end = new Date(shift.end_time).getTime();
-                const earlyOk = now >= start - 30 * 60 * 1000;
-                const notEnded = now <= end;
-
-                return (
-                  <li
-                    key={shift.id}
-                    className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold">{shift.title}</p>
-                        {isOpen && (
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500">
-                            Clocked in
-                          </span>
-                        )}
-                        {entry && entry.status !== "open" && (
-                          <span
-                            className={cn(
-                              "text-xs font-semibold px-2.5 py-1 rounded-full capitalize",
-                              STATUS_STYLES[entry.status],
-                            )}
-                          >
-                            {entry.status}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        <span>
-                          {formatTime(shift.start_time)} –{" "}
-                          {formatTime(shift.end_time)}
-                        </span>
-                      </div>
-                      {entry?.clock_in_at && (
-                        <p className="text-xs text-muted-foreground">
-                          In {formatTime(entry.clock_in_at)}
-                          {entry.clock_out_at
-                            ? ` · Out ${formatTime(entry.clock_out_at)} · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
-                            : ""}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {canClockOut ? (
-                        <Button
-                          className="btn-brand rounded-xl h-10 px-4"
-                          disabled={actingShiftId === shift.id}
-                          onClick={() => clockOut(shift.id)}
-                        >
-                          {actingShiftId === shift.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Clock out"
-                          )}
-                        </Button>
-                      ) : canClockIn && earlyOk && notEnded ? (
-                        <Button
-                          className="btn-brand rounded-xl h-10 px-4"
-                          disabled={actingShiftId === shift.id}
-                          onClick={() => clockIn(shift.id)}
-                        >
-                          {actingShiftId === shift.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Clock in"
-                          )}
-                        </Button>
-                      ) : entry ? null : (
-                        <span className="text-xs text-muted-foreground">
-                          {!earlyOk
-                            ? "Available 30 min before start"
-                            : !notEnded
-                              ? "Shift ended"
-                              : active
-                                ? "Clock out of your other shift first"
-                                : null}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-semibold">Period hours</h2>
-              <span className="text-sm text-muted-foreground">
-                {formatHours(totalHours)} total
-              </span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex gap-1 p-1 rounded-xl bg-background/50 border border-border/50">
-                {(["week", "biweek"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setMode(mode)}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                      periodMode === mode
-                        ? "bg-brand-soft text-brand"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {mode === "week" ? "Weekly" : "Biweekly"}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  onClick={() => setPeriodOffset((o) => o - 1)}
-                  aria-label="Previous period"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs sm:text-sm text-muted-foreground min-w-[9rem] sm:min-w-[11rem] text-center">
-                  {headerRange}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-lg"
-                  onClick={() => setPeriodOffset((o) => o + 1)}
-                  aria-label="Next period"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {entries.length === 0 ? (
-            <div className="px-4 sm:px-6 py-12 text-center">
-              <p className="text-sm text-muted-foreground">
-                No time entries in this period.
-              </p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border/40">
-              {entries.map((entry) => (
+              return (
                 <li
-                  key={entry.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                  key={shift.id}
+                  className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">
-                      {entry.shift?.title ?? "Shift"}
-                      <span className="font-normal text-muted-foreground">
-                        {" "}
-                        · {formatEntryDate(entry.clock_in_at)}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold">{shift.title}</p>
+                      {isOpen && (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500">
+                          Clocked in
+                        </span>
+                      )}
+                      {entry && entry.status !== "open" && (
+                        <span
+                          className={cn(
+                            "text-xs font-semibold px-2.5 py-1 rounded-full capitalize",
+                            STATUS_STYLES[entry.status],
+                          )}
+                        >
+                          {entry.status}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        {formatTime(shift.start_time)} –{" "}
+                        {formatTime(shift.end_time)}
                       </span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatTime(entry.clock_in_at)}
-                      {entry.clock_out_at
-                        ? ` – ${formatTime(entry.clock_out_at)}`
-                        : " – …"}
-                      {entry.clock_out_at
-                        ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
-                        : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
-                      STATUS_STYLES[entry.status],
+                    </div>
+                    {entry?.clock_in_at && (
+                      <p className="text-xs text-muted-foreground">
+                        In {formatTime(entry.clock_in_at)}
+                        {entry.clock_out_at
+                          ? ` · Out ${formatTime(entry.clock_out_at)} · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
+                          : ""}
+                      </p>
                     )}
-                  >
-                    {entry.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  </div>
 
-        <p className="text-xs text-muted-foreground">
-          Need your schedule?{" "}
-          <Link href="/dashboard" className="text-brand hover:underline">
-            View Schedule
-          </Link>
-        </p>
-      </main>
-      <Footer className="mt-auto" />
-    </>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {canClockOut ? (
+                      <Button
+                        className="btn-brand rounded-xl h-10 px-4"
+                        disabled={actingShiftId === shift.id}
+                        onClick={() => clockOut(shift.id)}
+                      >
+                        {actingShiftId === shift.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Clock out"
+                        )}
+                      </Button>
+                    ) : canClockIn && earlyOk && notEnded ? (
+                      <Button
+                        className="btn-brand rounded-xl h-10 px-4"
+                        disabled={actingShiftId === shift.id}
+                        onClick={() => clockIn(shift.id)}
+                      >
+                        {actingShiftId === shift.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Clock in"
+                        )}
+                      </Button>
+                    ) : entry ? null : (
+                      <span className="text-xs text-muted-foreground">
+                        {!earlyOk
+                          ? "Available 30 min before start"
+                          : !notEnded
+                            ? "Shift ended"
+                            : active
+                              ? "Clock out of your other shift first"
+                              : null}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="font-semibold">Period hours</h2>
+            <span className="text-sm text-muted-foreground">
+              {formatHours(totalHours)} total
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex gap-1 p-1 rounded-xl bg-background/50 border border-border/50">
+              {(["week", "biweek"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setMode(mode)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                    periodMode === mode
+                      ? "bg-brand-soft text-brand"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {mode === "week" ? "Weekly" : "Biweekly"}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={() => setPeriodOffset((o) => o - 1)}
+                aria-label="Previous period"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs sm:text-sm text-muted-foreground min-w-[9rem] sm:min-w-[11rem] text-center">
+                {headerRange}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={() => setPeriodOffset((o) => o + 1)}
+                aria-label="Next period"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {entries.length === 0 ? (
+          <div className="px-4 sm:px-6 py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No time entries in this period.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-semibold">
+                    {entry.shift?.title ?? "Shift"}
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      · {formatEntryDate(entry.clock_in_at)}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTime(entry.clock_in_at)}
+                    {entry.clock_out_at
+                      ? ` – ${formatTime(entry.clock_out_at)}`
+                      : " – …"}
+                    {entry.clock_out_at
+                      ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
+                      : ""}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
+                    STATUS_STYLES[entry.status],
+                  )}
+                >
+                  {entry.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="text-xs text-muted-foreground">
+        Need your schedule?{" "}
+        <Link href="/dashboard" className="text-brand hover:underline">
+          View Schedule
+        </Link>
+      </p>
+    </main>
   );
 }
 

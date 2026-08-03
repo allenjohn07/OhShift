@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { Footer } from "@/components/footer";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -793,8 +792,6 @@ function InboxPageContent() {
           )}
         </div>
       </div>
-
-      <Footer className="mt-auto" />
 
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
         <DialogContent className="rounded-2xl sm:max-w-lg">

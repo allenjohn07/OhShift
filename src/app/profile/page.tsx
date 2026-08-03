@@ -8,7 +8,6 @@ import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { ProfileForm } from "./profile-form";
-import { Footer } from "@/components/footer";
 import type { AppRole } from "@/lib/nav";
 
 type ProfileData = {
@@ -62,20 +61,17 @@ function ProfilePageContent() {
   }
 
   return (
-    <>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 flex-1 w-full space-y-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Your Profile
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Update how you appear to your team.
-          </p>
-        </div>
-        <ProfileForm user={profile} />
-      </main>
-      <Footer className="mt-auto" />
-    </>
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 flex-1 w-full space-y-6">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          Your Profile
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Update how you appear to your team.
+        </p>
+      </div>
+      <ProfileForm user={profile} />
+    </main>
   );
 }
 

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
-import { Footer } from "@/components/footer";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,103 +146,100 @@ function AvailabilityEditor() {
   }
 
   return (
-    <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
-            Availability
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-            Tell your manager when you can work. This schedule repeats every
-            week.
-          </p>
-        </div>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+          Availability
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
+          Tell your manager when you can work. This schedule repeats every
+          week.
+        </p>
+      </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <ul className="divide-y divide-border/40">
-            {days.map((day, index) => (
-              <li
-                key={day.day_of_week}
-                className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
-              >
-                <div className="sm:w-28 shrink-0">
-                  <p className="text-sm font-semibold">{DAY_LABELS[index]}</p>
-                </div>
-
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-background/50 border border-border/50 self-start">
-                  <button
-                    type="button"
-                    onClick={() => updateDay(index, { is_available: true })}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                      day.is_available
-                        ? "bg-emerald-500/15 text-emerald-500"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Available
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateDay(index, { is_available: false })}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                      !day.is_available
-                        ? "bg-muted text-muted-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Unavailable
-                  </button>
-                </div>
-
-                {day.is_available ? (
-                  <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
-                    <Input
-                      type="time"
-                      value={day.start_time}
-                      onChange={(e) =>
-                        updateDay(index, { start_time: e.target.value })
-                      }
-                      className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
-                    />
-                    <span className="text-muted-foreground text-sm">–</span>
-                    <Input
-                      type="time"
-                      value={day.end_time}
-                      onChange={(e) =>
-                        updateDay(index, { end_time: e.target.value })
-                      }
-                      className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground sm:ml-auto">Off</p>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div className="border-t border-border/40 px-4 sm:px-6 py-4 flex justify-end">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-brand rounded-xl h-11 px-6 w-full sm:w-auto"
+      <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+        <ul className="divide-y divide-border/40">
+          {days.map((day, index) => (
+            <li
+              key={day.day_of_week}
+              className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
             >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
-                </>
+              <div className="sm:w-28 shrink-0">
+                <p className="text-sm font-semibold">{DAY_LABELS[index]}</p>
+              </div>
+
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-background/50 border border-border/50 self-start">
+                <button
+                  type="button"
+                  onClick={() => updateDay(index, { is_available: true })}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                    day.is_available
+                      ? "bg-emerald-500/15 text-emerald-500"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Available
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateDay(index, { is_available: false })}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                    !day.is_available
+                      ? "bg-muted text-muted-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Unavailable
+                </button>
+              </div>
+
+              {day.is_available ? (
+                <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
+                  <Input
+                    type="time"
+                    value={day.start_time}
+                    onChange={(e) =>
+                      updateDay(index, { start_time: e.target.value })
+                    }
+                    className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
+                  />
+                  <span className="text-muted-foreground text-sm">–</span>
+                  <Input
+                    type="time"
+                    value={day.end_time}
+                    onChange={(e) =>
+                      updateDay(index, { end_time: e.target.value })
+                    }
+                    className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
+                  />
+                </div>
               ) : (
-                "Save availability"
+                <p className="text-sm text-muted-foreground sm:ml-auto">Off</p>
               )}
-            </Button>
-          </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="border-t border-border/40 px-4 sm:px-6 py-4 flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn-brand rounded-xl h-11 px-6 w-full sm:w-auto"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Save availability"
+            )}
+          </Button>
         </div>
-      </main>
-      <Footer className="mt-auto" />
-    </>
+      </div>
+    </main>
   );
 }
 

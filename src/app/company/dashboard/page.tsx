@@ -10,7 +10,6 @@ import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
 import type { CompanySettings } from "./manage-settings-modal";
-import { Footer } from "@/components/footer";
 import type { AppRole } from "@/lib/nav";
 
 type CompanyDashboardData = {
@@ -93,18 +92,15 @@ function CompanyDashboard() {
   }
 
   return (
-    <>
-      <DashboardContent
-        userName={data.profile.full_name?.split(" ")[0] || "Owner"}
-        company={data.profile.companies as CompanySettings}
-        employees={data.employees}
-        shifts={data.shifts}
-        myShifts={data.myShifts ?? []}
-        currentUser={data.profile}
-        onScheduleChanged={load}
-      />
-      <Footer className="mt-auto" />
-    </>
+    <DashboardContent
+      userName={data.profile.full_name?.split(" ")[0] || "Owner"}
+      company={data.profile.companies as CompanySettings}
+      employees={data.employees}
+      shifts={data.shifts}
+      myShifts={data.myShifts ?? []}
+      currentUser={data.profile}
+      onScheduleChanged={load}
+    />
   );
 }
 
