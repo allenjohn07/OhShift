@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { IconTooltip } from "@/components/icon-tooltip"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -44,14 +45,25 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  tooltip,
+  tooltipSide = "bottom",
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /** Hover/focus tip — required for icon buttons; falls back to aria-label */
+    tooltip?: string
+    tooltipSide?: "right" | "bottom" | "top"
   }) {
   const Comp = asChild ? Slot.Root : "button"
+  const isIcon =
+    size === "icon" || size === "icon-xs" || size === "icon-sm" || size === "icon-lg"
+  const tip =
+    tooltip ??
+    (typeof props["aria-label"] === "string" ? props["aria-label"] : undefined) ??
+    (isIcon && typeof props.title === "string" ? props.title : undefined)
 
-  return (
+  const button = (
     <Comp
       data-slot="button"
       data-variant={variant}
@@ -59,6 +71,14 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
+  )
+
+  if (!tip) return button
+
+  return (
+    <IconTooltip label={tip} side={tooltipSide}>
+      {button}
+    </IconTooltip>
   )
 }
 

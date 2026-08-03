@@ -497,6 +497,7 @@ function HoursPageContent() {
                 className="h-8 w-8 rounded-lg"
                 onClick={() => setPeriodOffset((o) => o - 1)}
                 aria-label="Previous period"
+                tooltip="Previous period"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -509,6 +510,7 @@ function HoursPageContent() {
                 className="h-8 w-8 rounded-lg"
                 onClick={() => setPeriodOffset((o) => o + 1)}
                 aria-label="Next period"
+                tooltip="Next period"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

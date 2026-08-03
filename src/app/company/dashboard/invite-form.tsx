@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Send, UserPlus, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
+import { IconTooltip } from "@/components/icon-tooltip";
 import {
   Dialog,
   DialogContent,
@@ -278,6 +279,7 @@ export function InviteEmployeeForm() {
               onClick={() => void handleInviteNow()}
               disabled={isLoading || !canSubmitForm}
               className="btn-hover h-10 flex-1 rounded-xl font-medium"
+              tooltip="Invite now"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -297,6 +299,7 @@ export function InviteEmployeeForm() {
               onClick={handleAddToList}
               disabled={isLoading || !canSubmitForm}
               className="h-10 flex-1 rounded-xl font-medium"
+              tooltip="Add to list"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add to List
@@ -334,22 +337,26 @@ export function InviteEmployeeForm() {
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleEditInvitee(idx)}
-                        className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveInvitee(idx)}
-                        className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                        title="Remove"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <IconTooltip label="Edit invitee" side="top">
+                        <button
+                          type="button"
+                          onClick={() => handleEditInvitee(idx)}
+                          className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                          aria-label="Edit invitee"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </IconTooltip>
+                      <IconTooltip label="Remove invitee" side="top">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInvitee(idx)}
+                          className="p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                          aria-label="Remove invitee"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </IconTooltip>
                     </div>
                   </div>
                 </div>
@@ -361,6 +368,7 @@ export function InviteEmployeeForm() {
               onClick={() => void handleSendPending()}
               disabled={isLoading}
               className="btn-hover w-full h-10 rounded-xl font-medium"
+              tooltip="Send pending invitations"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -428,10 +436,15 @@ export function InviteEmployeeForm() {
               variant="outline"
               onClick={() => setEditingIndex(null)}
               className="h-10 rounded-xl"
+              tooltip="Cancel"
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveEdit} className="h-10 rounded-xl">
+            <Button
+              onClick={handleSaveEdit}
+              className="h-10 rounded-xl"
+              tooltip="Save invitee"
+            >
               Save Changes
             </Button>
           </DialogFooter>

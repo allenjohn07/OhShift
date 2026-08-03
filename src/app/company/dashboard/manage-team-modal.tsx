@@ -6,6 +6,7 @@ import { X, Users, Loader2, Save, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useApi } from "@/hooks/use-api";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 interface Employee {
   id: string;
@@ -135,12 +136,15 @@ export function ManageTeamModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-accent rounded-full text-muted-foreground transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <IconTooltip label="Close" side="bottom">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-accent rounded-full text-muted-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </IconTooltip>
         </div>
 
         <div className="p-6 overflow-y-auto max-h-[500px]">
@@ -204,61 +208,70 @@ export function ManageTeamModal({
                             if (e.key === "Escape") setEditingId(null);
                           }}
                         />
-                        <button
-                          onClick={() => handleSaveDesignation(emp.id)}
-                          disabled={isSaving === emp.id}
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        >
-                          {isSaving === emp.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Save className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="p-1.5 text-muted-foreground hover:bg-accent rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <IconTooltip label="Save title" side="top">
+                          <button
+                            onClick={() => handleSaveDesignation(emp.id)}
+                            disabled={isSaving === emp.id}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            aria-label="Save title"
+                          >
+                            {isSaving === emp.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                          </button>
+                        </IconTooltip>
+                        <IconTooltip label="Cancel" side="top">
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="p-1.5 text-muted-foreground hover:bg-accent rounded-lg transition-colors"
+                            aria-label="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </IconTooltip>
                       </div>
                     ) : (
-                      <div
-                        className="px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
-                        onClick={() => {
-                          setEditingId(emp.id);
-                          setEditValue(emp.designation || "");
-                        }}
-                        title="Click to edit designation"
-                      >
-                        {emp.designation ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            {emp.designation}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground italic">
-                            Add title...
-                          </span>
-                        )}
-                      </div>
+                      <IconTooltip label="Edit designation" side="top">
+                        <div
+                          className="px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
+                          onClick={() => {
+                            setEditingId(emp.id);
+                            setEditValue(emp.designation || "");
+                          }}
+                        >
+                          {emp.designation ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              {emp.designation}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground italic">
+                              Add title...
+                            </span>
+                          )}
+                        </div>
+                      </IconTooltip>
                     )}
 
                     <div className="w-px h-8 bg-border/50 mx-1 hidden sm:block" />
 
-                    <button
-                      onClick={() =>
-                        handleRemoveEmployee(emp.id, emp.full_name)
-                      }
-                      disabled={isDeleting === emp.id}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                      title="Remove Employee"
-                    >
-                      {isDeleting === emp.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
+                    <IconTooltip label="Remove employee" side="top">
+                      <button
+                        onClick={() =>
+                          handleRemoveEmployee(emp.id, emp.full_name)
+                        }
+                        disabled={isDeleting === emp.id}
+                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                        aria-label="Remove employee"
+                      >
+                        {isDeleting === emp.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </IconTooltip>
                   </div>
                 </div>
               ))}

@@ -102,6 +102,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="btn-hover h-13 px-10 text-base rounded-full font-medium"
+                tooltip="Register your company"
               >
                 <Building2 className="mr-2 h-4.5 w-4.5" />
                 Register your company
@@ -259,7 +260,10 @@ export default function LandingPage() {
                   </p>
                   <div className="flex flex-col gap-2">
                     <Link href="/company/register">
-                      <Button className="btn-hover w-full rounded-xl h-11 font-medium">
+                      <Button
+                        className="btn-hover w-full rounded-xl h-11 font-medium"
+                        tooltip="Register company"
+                      >
                         Register company
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
@@ -268,6 +272,7 @@ export default function LandingPage() {
                       <Button
                         variant="ghost"
                         className="w-full rounded-xl h-11 text-muted-foreground transition-colors duration-300 hover:text-foreground"
+                        tooltip="Company sign in"
                       >
                         Already registered? Sign in
                       </Button>
@@ -294,6 +299,7 @@ export default function LandingPage() {
                     <Button
                       variant="outline"
                       className="btn-hover w-full rounded-xl h-11 font-medium"
+                      tooltip="Employee sign in"
                     >
                       Employee sign in
                       <ArrowRight className="ml-2 h-4 w-4" />

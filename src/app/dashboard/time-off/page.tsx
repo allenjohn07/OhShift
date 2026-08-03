@@ -6,6 +6,7 @@ import { Loader2, Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -196,6 +197,7 @@ function TimeOffPageContent() {
           <Button
             onClick={openModal}
             className="btn-brand rounded-xl h-11 px-5 shrink-0 w-full sm:w-auto"
+            tooltip="Request time off"
           >
             Request time off
           </Button>
@@ -218,6 +220,7 @@ function TimeOffPageContent() {
               <Button
                 onClick={openModal}
                 className="btn-brand rounded-xl h-11 px-5"
+                tooltip="Request time off"
               >
                 Request time off
               </Button>
@@ -261,6 +264,7 @@ function TimeOffPageContent() {
                         className="rounded-xl h-8 text-muted-foreground"
                         disabled={cancellingId === req.id}
                         onClick={() => handleCancel(req.id)}
+                        tooltip="Cancel request"
                       >
                         {cancellingId === req.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -290,19 +294,24 @@ function TimeOffPageContent() {
               <label className="text-sm font-medium">Type</label>
               <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-background/50 border border-border/50">
                 {(Object.keys(TYPE_LABELS) as TimeOffType[]).map((t) => (
-                  <button
+                  <IconTooltip
                     key={t}
-                    type="button"
-                    onClick={() => setType(t)}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                      type === t
-                        ? "bg-brand-soft text-brand"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
+                    label={`Select ${TYPE_LABELS[t]}`}
+                    side="top"
                   >
-                    {TYPE_LABELS[t]}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setType(t)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                        type === t
+                          ? "bg-brand-soft text-brand"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {TYPE_LABELS[t]}
+                    </button>
+                  </IconTooltip>
                 ))}
               </div>
             </div>
@@ -363,6 +372,7 @@ function TimeOffPageContent() {
                 variant="outline"
                 className="rounded-xl"
                 onClick={() => setModalOpen(false)}
+                tooltip="Cancel"
               >
                 Cancel
               </Button>
@@ -370,6 +380,7 @@ function TimeOffPageContent() {
                 type="submit"
                 disabled={submitting}
                 className="btn-brand rounded-xl"
+                tooltip="Submit request"
               >
                 {submitting ? (
                   <>

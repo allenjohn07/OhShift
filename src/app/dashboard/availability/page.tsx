@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useApi } from "@/hooks/use-api";
@@ -169,30 +170,40 @@ function AvailabilityEditor() {
               </div>
 
               <div className="flex items-center gap-1 p-1 rounded-xl bg-background/50 border border-border/50 self-start">
-                <button
-                  type="button"
-                  onClick={() => updateDay(index, { is_available: true })}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                    day.is_available
-                      ? "bg-emerald-500/15 text-emerald-500"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                <IconTooltip
+                  label={`Mark ${DAY_LABELS[index]} available`}
+                  side="top"
                 >
-                  Available
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateDay(index, { is_available: false })}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                    !day.is_available
-                      ? "bg-muted text-muted-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => updateDay(index, { is_available: true })}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                      day.is_available
+                        ? "bg-emerald-500/15 text-emerald-500"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Available
+                  </button>
+                </IconTooltip>
+                <IconTooltip
+                  label={`Mark ${DAY_LABELS[index]} unavailable`}
+                  side="top"
                 >
-                  Unavailable
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => updateDay(index, { is_available: false })}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                      !day.is_available
+                        ? "bg-muted text-muted-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Unavailable
+                  </button>
+                </IconTooltip>
               </div>
 
               {day.is_available ? (
@@ -227,6 +238,7 @@ function AvailabilityEditor() {
             onClick={handleSave}
             disabled={saving}
             className="btn-brand rounded-xl h-11 px-6 w-full sm:w-auto"
+            tooltip="Save availability"
           >
             {saving ? (
               <>

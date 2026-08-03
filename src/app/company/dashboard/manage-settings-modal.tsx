@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 export interface CompanySettings {
   id: string;
@@ -81,12 +82,15 @@ export function ManageSettingsModal({
               Configure global schedule preferences
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <IconTooltip label="Close" side="bottom">
+            <button
+              onClick={onClose}
+              className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </IconTooltip>
         </div>
 
         <form onSubmit={handleSaveSettings} className="p-6 space-y-6">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { cn } from "@/lib/utils";
 
 export function SettingsPageShell({
@@ -74,24 +75,29 @@ export function SettingsToggleRow({
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={title}
-        onClick={() => onCheckedChange(!checked)}
-        className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer",
-          checked ? "bg-brand" : "bg-muted",
-        )}
+      <IconTooltip
+        label={checked ? `Turn off ${title}` : `Turn on ${title}`}
+        side="top"
       >
-        <span
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label={title}
+          onClick={() => onCheckedChange(!checked)}
           className={cn(
-            "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-            checked && "translate-x-5",
+            "relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer",
+            checked ? "bg-brand" : "bg-muted",
           )}
-        />
-      </button>
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+              checked && "translate-x-5",
+            )}
+          />
+        </button>
+      </IconTooltip>
     </li>
   );
 }

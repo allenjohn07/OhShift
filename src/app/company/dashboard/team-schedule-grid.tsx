@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2, Send } from "lucide-react";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
@@ -304,54 +305,63 @@ export function TeamScheduleGrid({
           </div>
           
           <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto">
-             <button 
-               onClick={() => setWeekOffset(prev => prev - 1)}
-               className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-               aria-label="Previous week"
-             >
-               <ChevronLeft className="w-4 h-4" />
-             </button>
+             <IconTooltip label="Previous week" side="bottom">
+               <button 
+                 onClick={() => setWeekOffset(prev => prev - 1)}
+                 className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                 aria-label="Previous week"
+               >
+                 <ChevronLeft className="w-4 h-4" />
+               </button>
+             </IconTooltip>
              <span className="flex-1 min-w-0 text-xs font-medium text-center select-none whitespace-nowrap overflow-hidden sm:flex-none sm:w-40 sm:whitespace-normal sm:overflow-visible sm:text-sm">
                {headerDateRange}
              </span>
-             <button 
-               onClick={() => setWeekOffset(prev => prev + 1)}
-               className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-               aria-label="Next week"
-             >
-               <ChevronRight className="w-4 h-4" />
-             </button>
+             <IconTooltip label="Next week" side="bottom">
+               <button 
+                 onClick={() => setWeekOffset(prev => prev + 1)}
+                 className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                 aria-label="Next week"
+               >
+                 <ChevronRight className="w-4 h-4" />
+               </button>
+             </IconTooltip>
              {/* Reset: icon on mobile, label on sm+ */}
-             <button 
-               onClick={() => setWeekOffset(0)}
-               title="Reset to current week"
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
-             >
-               <span>Reset</span>
-             </button>
-             <button
-               onClick={handlePublishWeek}
-               disabled={isPublishing || draftCount === 0}
-               title={
+             <IconTooltip label="Reset to current week" side="bottom">
+               <button 
+                 onClick={() => setWeekOffset(0)}
+                 className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+               >
+                 <span>Reset</span>
+               </button>
+             </IconTooltip>
+             <IconTooltip
+               label={
                  draftCount === 0
                    ? "No draft shifts this week"
                    : `Publish ${draftCount} draft shift(s)`
                }
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+               side="bottom"
              >
-               {isPublishing ? (
-                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-               ) : (
-                 <Send className="w-3.5 h-3.5" />
-               )}
-               <span className="hidden sm:inline">Publish</span>
-               {draftCount > 0 && (
-                 <span className="sm:hidden">{draftCount}</span>
-               )}
-               {draftCount > 0 && (
-                 <span className="hidden sm:inline">({draftCount})</span>
-               )}
-             </button>
+               <button
+                 onClick={handlePublishWeek}
+                 disabled={isPublishing || draftCount === 0}
+                 className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+               >
+                 {isPublishing ? (
+                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                 ) : (
+                   <Send className="w-3.5 h-3.5" />
+                 )}
+                 <span className="hidden sm:inline">Publish</span>
+                 {draftCount > 0 && (
+                   <span className="sm:hidden">{draftCount}</span>
+                 )}
+                 {draftCount > 0 && (
+                   <span className="hidden sm:inline">({draftCount})</span>
+                 )}
+               </button>
+             </IconTooltip>
           </div>
         </div>
         
@@ -427,15 +437,18 @@ export function TeamScheduleGrid({
       {selectedShift && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl border border-border/50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
-            <button 
-              onClick={() => {
-                setSelectedShift(null);
-                setIsEditing(false);
-              }}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors z-10"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <IconTooltip label="Close" side="bottom">
+              <button 
+                onClick={() => {
+                  setSelectedShift(null);
+                  setIsEditing(false);
+                }}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors z-10"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </IconTooltip>
             <div className="p-6">
                <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
                  <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
@@ -546,23 +559,27 @@ export function TeamScheduleGrid({
             <div className="p-4 border-t border-border/50 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-2">
                {!isEditing ? (
                  <>
-                   <button 
-                      onClick={handleDeleteShift}
-                      disabled={isDeleting}
-                      className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
-                    </button>
+                   <IconTooltip label="Delete shift" side="top">
+                     <button 
+                        onClick={handleDeleteShift}
+                        disabled={isDeleting}
+                        className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2"
+                      >
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
+                      </button>
+                   </IconTooltip>
                     
                     <div className="flex items-center gap-2">
-                      <button 
-                         onClick={() => setIsEditing(true)}
-                         className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors flex items-center gap-2"
-                       >
-                         <Edit2 className="w-4 h-4" />
-                         Edit
-                       </button>
+                      <IconTooltip label="Edit shift" side="top">
+                        <button 
+                           onClick={() => setIsEditing(true)}
+                           className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors flex items-center gap-2"
+                         >
+                           <Edit2 className="w-4 h-4" />
+                           Edit
+                         </button>
+                      </IconTooltip>
                       <button 
                          onClick={() => setSelectedShift(null)}
                          className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"

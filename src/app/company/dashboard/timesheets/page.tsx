@@ -314,6 +314,7 @@ function TimesheetsContent() {
                             className="rounded-xl h-9"
                             disabled={actingId === entry.id}
                             onClick={() => review(entry, "denied")}
+                            tooltip="Deny timesheet"
                           >
                             Deny
                           </Button>
@@ -322,6 +323,7 @@ function TimesheetsContent() {
                             className="btn-brand rounded-xl h-9"
                             disabled={actingId === entry.id}
                             onClick={() => review(entry, "approved")}
+                            tooltip="Approve timesheet"
                           >
                             {actingId === entry.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />

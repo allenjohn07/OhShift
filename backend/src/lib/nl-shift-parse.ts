@@ -642,9 +642,12 @@ export async function parseShiftFromPrompt(options: {
   roster: RosterMember[];
   presets?: ShiftPresets;
   self?: RosterMember | null;
+  /** When set, force this employee (e.g. Assign Shift modal). */
+  lockEmployeeId?: string | null;
 }): Promise<ParsedShiftProposal | ParseShiftFailure> {
   const { prompt, timezone, roster } = options;
   const self = options.self ?? null;
+  const lockEmployeeId = options.lockEmployeeId?.trim() || null;
   const presets: ShiftPresets = options.presets ?? {
     morning_start: "08:00",
     morning_end: "16:00",
@@ -656,10 +659,22 @@ export async function parseShiftFromPrompt(options: {
     return { error: "No team members available to assign." };
   }
 
+  if (lockEmployeeId && !roster.some((m) => m.id === lockEmployeeId)) {
+    return { error: "That person is not on your team." };
+  }
+
+  const lockedMember = lockEmployeeId
+    ? roster.find((m) => m.id === lockEmployeeId) ?? null
+    : null;
+
   const text = await runChatCompletion([
     {
       role: "system",
-      content: buildSystemPrompt(roster, timezone, presets, self),
+      content:
+        buildSystemPrompt(roster, timezone, presets, self) +
+        (lockedMember
+          ? `\n\nIMPORTANT: The manager is assigning a shift for ${lockedMember.full_name} (id ${lockedMember.id}) only. Always set employee_id to "${lockedMember.id}". Infer date/time/title from the prompt.`
+          : ""),
     },
     { role: "user", content: prompt },
   ]);
@@ -675,5 +690,11 @@ export async function parseShiftFromPrompt(options: {
   }
 
   parsed = applyPromptHeuristics(prompt, parsed, timezone, presets, self);
+  if (lockedMember) {
+    parsed.employee_id = lockedMember.id;
+    if (!parsed.title || !String(parsed.title).trim()) {
+      parsed.title = lockedMember.designation?.trim() || "Shift";
+    }
+  }
   return validateProposal(parsed, roster);
 }

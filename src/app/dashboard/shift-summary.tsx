@@ -331,6 +331,7 @@ export function ShiftSummary({
                       className="btn-brand rounded-xl h-10 px-5"
                       disabled={acting}
                       onClick={clockOut}
+                      tooltip="Clock out"
                     >
                       {acting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -343,6 +344,7 @@ export function ShiftSummary({
                       className="btn-brand rounded-xl h-10 px-5"
                       disabled={acting}
                       onClick={clockIn}
+                      tooltip="Clock in"
                     >
                       {acting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

@@ -166,6 +166,7 @@ function RequestsContent() {
                         className="rounded-xl h-9"
                         disabled={actingId === req.id}
                         onClick={() => review(req.id, "denied")}
+                        tooltip="Deny request"
                       >
                         Deny
                       </Button>
@@ -174,6 +175,7 @@ function RequestsContent() {
                         className="btn-brand rounded-xl h-9"
                         disabled={actingId === req.id}
                         onClick={() => review(req.id, "approved")}
+                        tooltip="Approve request"
                       >
                         {actingId === req.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

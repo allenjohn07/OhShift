@@ -63,6 +63,36 @@ background-image: linear-gradient(135deg, var(--brand-from), var(--brand-to));
 
 Do **not** use `bg-foreground text-background` for primary actions.
 
+## Tooltips (required)
+
+Every interactive control must expose a hover/focus tip via `IconTooltip` (`src/components/icon-tooltip.tsx`) or `Button`’s `tooltip` prop.
+
+| Control type | Requirement |
+|--------------|-------------|
+| Icon-only buttons | **Required** — short action label (e.g. “Previous week”, “Close”, “Delete shift”) |
+| Icon + short label / brand CTAs | **Required** — clarify purpose (e.g. “Assign shifts to multiple people”) |
+| Text-only primary/secondary actions | **Required** — same wording as the visible label is OK (e.g. “Approve request”) |
+| Nav links | Collapsed rail: tooltip with page name; expanded: optional |
+
+```tsx
+import { IconTooltip } from "@/components/icon-tooltip";
+import { Button } from "@/components/ui/button";
+
+<IconTooltip label="Close" side="bottom">
+  <button type="button" aria-label="Close" className="…">
+    <X className="w-5 h-5" />
+  </button>
+</IconTooltip>
+
+<Button size="icon" tooltip="Previous period" aria-label="Previous period">
+  <ChevronLeft />
+</Button>
+```
+
+- Prefer `side="bottom"` in headers, `side="top"` near footers, `side="right"` for collapsed sidebar.
+- Always set `aria-label` on icon-only buttons (tooltip is not a substitute for a11y).
+- Do **not** ship new buttons without a tooltip.
+
 ## Logo / wordmark
 
 Use `BrandMark` from `src/components/brand-mark.tsx` beside “OhShift”:

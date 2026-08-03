@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { cn } from "@/lib/utils";
 
 const MENU_CLOSE_MS = 200;
@@ -84,17 +85,26 @@ export function Navbar() {
 
           <div className="hidden sm:flex items-center gap-2">
             {mounted ? (
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
-                aria-label="Toggle theme"
+              <IconTooltip
+                label={
+                  resolvedTheme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
+                side="bottom"
               >
-                {resolvedTheme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </button>
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
+                  aria-label="Toggle theme"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </button>
+              </IconTooltip>
             ) : (
               <div className="w-9 h-9" />
             )}
@@ -103,6 +113,7 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
+                tooltip="Sign in as an employee"
                 className="btn-hover h-9 px-5 rounded-full font-medium"
               >
                 Employee Login
@@ -111,6 +122,7 @@ export function Navbar() {
             <Link href="/company/login">
               <Button
                 size="sm"
+                tooltip="Sign in as a manager or owner"
                 className="btn-hover h-9 px-5 rounded-full font-medium"
               >
                 Company Portal
@@ -120,26 +132,39 @@ export function Navbar() {
 
           <div className="flex sm:hidden items-center gap-1.5">
             {mounted ? (
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
-                aria-label="Toggle theme"
+              <IconTooltip
+                label={
+                  resolvedTheme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
+                side="bottom"
               >
-                {resolvedTheme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </button>
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
+                  aria-label="Toggle theme"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </button>
+              </IconTooltip>
             ) : (
               <div className="w-9 h-9" />
             )}
-            <button
-              onClick={toggleMenu}
-              className="relative z-60 flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px] cursor-pointer"
-              aria-label={menuShown ? "Close menu" : "Open menu"}
-              aria-expanded={isOpen}
+            <IconTooltip
+              label={menuShown ? "Close menu" : "Open menu"}
+              side="bottom"
             >
+              <button
+                onClick={toggleMenu}
+                className="relative z-60 flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px] cursor-pointer"
+                aria-label={menuShown ? "Close menu" : "Open menu"}
+                aria-expanded={isOpen}
+              >
               <span
                 className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
                 style={{
@@ -164,6 +189,7 @@ export function Navbar() {
                 }}
               />
             </button>
+            </IconTooltip>
           </div>
         </div>
       </nav>

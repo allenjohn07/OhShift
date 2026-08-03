@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
   LogOut,
@@ -18,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { BrandMark } from "@/components/brand-mark";
 import { ColdStartBanner } from "@/components/cold-start-banner";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -125,58 +125,6 @@ function useSidebarCollapsed() {
 const compactTabClass =
   "flex w-full flex-col items-center gap-1 px-2 py-2 text-[10px] font-medium rounded-xl transition-colors cursor-pointer";
 
-function SidebarTooltip({
-  label,
-  children,
-  enabled = true,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  enabled?: boolean;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-  const show = () => {
-    if (!enabled) return;
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    setPos({
-      top: rect.top + rect.height / 2,
-      left: rect.right + 10,
-    });
-  };
-
-  const hide = () => setPos(null);
-
-  return (
-    <div
-      ref={ref}
-      className={cn("relative", className)}
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
-    >
-      {children}
-      {pos &&
-        enabled &&
-        createPortal(
-          <span
-            role="tooltip"
-            className="pointer-events-none fixed z-[100] -translate-y-1/2 whitespace-nowrap rounded-md border border-border/50 bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md"
-            style={{ top: pos.top, left: pos.left }}
-          >
-            {label}
-          </span>,
-          document.body,
-        )}
-    </div>
-  );
-}
-
 function NavBadge({
   count,
   compact,
@@ -253,7 +201,7 @@ function NavLink({
           : flush
             ? "gap-3 py-2.5 text-sm font-medium"
             : // Fixed padding forever — never justify-center (that shifts icons)
-              "gap-3 px-3 py-2.5 text-sm font-medium",
+              "w-full gap-3 px-3 py-2.5 text-sm font-medium",
         active
           ? "bg-brand-soft text-brand"
           : "text-muted-foreground hover:text-foreground hover:bg-accent",
@@ -310,12 +258,13 @@ function NavLink({
 
   if (!compact && !flush) {
     return (
-      <SidebarTooltip
+      <IconTooltip
         label={count > 0 ? `${label} (${count})` : label}
         enabled={!!rail}
+        className="flex w-full"
       >
         {link}
-      </SidebarTooltip>
+      </IconTooltip>
     );
   }
 
@@ -358,7 +307,7 @@ function AccountPanel({
         type="button"
         className={cn(
           "flex h-9 min-w-0 w-full items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-          flush ? "px-0" : "px-2",
+          flush ? "px-0" : "px-2.5 pr-3",
         )}
       >
         <Avatar className="h-7 w-7 border border-border/50 shrink-0">
@@ -386,9 +335,13 @@ function AccountPanel({
     <div className="flex w-full min-w-0 items-center gap-1.5">
       <div className="min-w-0 flex-1">
         <DropdownMenu modal={false}>
-          <SidebarTooltip label={firstName} enabled={!!rail}>
+          <IconTooltip
+            label={firstName}
+            enabled={!!rail}
+            className="flex w-full min-w-0"
+          >
             {avatarTrigger}
-          </SidebarTooltip>
+          </IconTooltip>
           <DropdownMenuContent
             className="z-[80] w-52"
             side="top"
@@ -435,27 +388,35 @@ function AccountPanel({
         </DropdownMenu>
       </div>
 
-      <button
-        type="button"
-        onClick={toggle}
-        className={cn(
-          "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-opacity cursor-pointer motion-reduce:transition-none",
-          rail
-            ? "opacity-0 duration-150 pointer-events-none"
-            : "opacity-100 duration-200 delay-100",
-        )}
-        aria-label={
+      <IconTooltip
+        label={
           mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
         }
-        tabIndex={rail ? -1 : undefined}
-        aria-hidden={rail || undefined}
+        side="top"
+        enabled={!rail}
       >
-        {mounted && isDark ? (
-          <Sun className="h-4 w-4" />
-        ) : (
-          <Moon className="h-4 w-4" />
-        )}
-      </button>
+        <button
+          type="button"
+          onClick={toggle}
+          className={cn(
+            "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-opacity cursor-pointer motion-reduce:transition-none",
+            rail
+              ? "opacity-0 duration-150 pointer-events-none"
+              : "opacity-100 duration-200 delay-100",
+          )}
+          aria-label={
+            mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
+          }
+          tabIndex={rail ? -1 : undefined}
+          aria-hidden={rail || undefined}
+        >
+          {mounted && isDark ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </button>
+      </IconTooltip>
     </div>
   );
 }
@@ -580,7 +541,11 @@ export function AppShell({
           ))}
         </nav>
         <div className="shrink-0 space-y-2 border-t border-border/40 p-3">
-          <SidebarTooltip label="Expand sidebar" enabled={collapsed}>
+          <IconTooltip
+            label="Expand sidebar"
+            enabled={collapsed}
+            className="flex w-full"
+          >
             <button
               type="button"
               onClick={toggleSidebar}
@@ -599,7 +564,7 @@ export function AppShell({
                 Collapse
               </span>
             </button>
-          </SidebarTooltip>
+          </IconTooltip>
           <AccountPanel
             displayName={displayName}
             email={email}
@@ -645,14 +610,16 @@ export function AppShell({
           <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Menu</span>
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center w-9 h-9 -mr-1.5 rounded-xl hover:bg-accent cursor-pointer"
-                aria-label="Close menu"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <IconTooltip label="Close menu" side="bottom">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center w-9 h-9 -mr-1.5 rounded-xl hover:bg-accent cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </IconTooltip>
             </div>
             {menuExtras.length > 0 && (
               <nav className="space-y-1 pb-3 border-b border-border/40">
@@ -711,21 +678,23 @@ export function AppShell({
             </div>
           ))}
           <div className="flex-1 min-w-0">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className={cn(
-                compactTabClass,
-                menuActive
-                  ? "bg-brand-soft text-brand"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent",
-              )}
-              aria-label="Open menu"
-              aria-expanded={menuOpen}
-            >
-              <Menu className="h-5 w-5" />
-              <span className="leading-none">Menu</span>
-            </button>
+            <IconTooltip label="Open menu" side="top" className="flex w-full justify-center">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                className={cn(
+                  compactTabClass,
+                  menuActive
+                    ? "bg-brand-soft text-brand"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                )}
+                aria-label="Open menu"
+                aria-expanded={menuOpen}
+              >
+                <Menu className="h-5 w-5" />
+                <span className="leading-none">Menu</span>
+              </button>
+            </IconTooltip>
           </div>
         </div>
       </nav>

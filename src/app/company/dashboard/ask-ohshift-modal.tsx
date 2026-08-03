@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, X, Calendar, Clock, User } from "lucide-react";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import type { CompanySettings } from "./manage-settings-modal";
+import { ScrollFade } from "@/components/scroll-fade";
 
 type ShiftProposal = {
   employee_id: string;
@@ -14,6 +16,15 @@ type ShiftProposal = {
   start_time: string;
   end_time: string;
   interpretation: string;
+};
+
+type QueryShift = {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  users?: { full_name: string };
 };
 
 type EditFields = {
@@ -51,7 +62,6 @@ function fieldsToIso(fields: EditFields): { start: string; end: string } | null 
   const start = new Date(`${fields.date}T${fields.startTime}`);
   let end = new Date(`${fields.date}T${fields.endTime}`);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  // Overnight: end clock is earlier than start → next calendar day
   if (end <= start) {
     end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
   }
@@ -84,6 +94,10 @@ export function AskOhShiftModal({
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [proposal, setProposal] = useState<ShiftProposal | null>(null);
+  const [queryAnswer, setQueryAnswer] = useState<string | null>(null);
+  const [queryShifts, setQueryShifts] = useState<QueryShift[]>([]);
+  const [queryWindow, setQueryWindow] = useState<string | null>(null);
+  const [queryPerson, setQueryPerson] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [fields, setFields] = useState<EditFields>({
     title: "",
@@ -100,6 +114,10 @@ export function AskOhShiftModal({
   function reset() {
     setPrompt("");
     setProposal(null);
+    setQueryAnswer(null);
+    setQueryShifts([]);
+    setQueryWindow(null);
+    setQueryPerson(null);
     setIsEditing(false);
     setFields({ title: "", date: "", startTime: "", endTime: "" });
     setError(null);
@@ -113,7 +131,7 @@ export function AskOhShiftModal({
     reset();
   }
 
-  async function handleParse(e: React.FormEvent) {
+  async function handleAsk(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = prompt.trim();
     if (!trimmed) return;
@@ -121,27 +139,49 @@ export function AskOhShiftModal({
     setIsParsing(true);
     setError(null);
     setProposal(null);
+    setQueryAnswer(null);
+    setQueryShifts([]);
+    setQueryWindow(null);
+    setQueryPerson(null);
     setIsEditing(false);
 
     try {
-      const res = await api("/ai/parse-shift", {
+      const res = await api("/ai/ask", {
         method: "POST",
         body: JSON.stringify({ prompt: trimmed, timezone }),
       });
       const data = await parseApiJson<{
         error?: string;
+        kind?: "create" | "query";
         proposal?: ShiftProposal;
+        answer?: string;
+        window_label?: string;
+        person?: string | null;
+        shifts?: QueryShift[];
       }>(res);
 
-      if (!res.ok || !data.proposal) {
-        throw new Error(data.error || "Could not parse that request");
+      if (!res.ok) {
+        throw new Error(data.error || "Could not process that request");
       }
 
-      setProposal(data.proposal);
-      setFields(proposalToFields(data.proposal));
+      if (data.kind === "query") {
+        setQueryAnswer(data.answer || "No answer returned.");
+        setQueryShifts(data.shifts ?? []);
+        setQueryWindow(data.window_label ?? null);
+        setQueryPerson(data.person ?? null);
+        return;
+      }
+
+      if (data.kind === "create" && data.proposal) {
+        setProposal(data.proposal);
+        setFields(proposalToFields(data.proposal));
+        return;
+      }
+
+      throw new Error(data.error || "Could not process that request");
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Could not parse that request",
+        err instanceof Error ? err.message : "Could not process that request",
       );
     } finally {
       setIsParsing(false);
@@ -193,17 +233,21 @@ export function AskOhShiftModal({
   }
 
   const previewStartEnd = fieldsToIso(fields);
+  const showingQuery = queryAnswer !== null;
+  const showingCreate = proposal !== null;
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
-      >
-        <Sparkles className="w-4 h-4" />
-        Ask OhShift
-      </button>
+      <IconTooltip label="Ask about the schedule or create a shift" side="bottom">
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
+        >
+          <Sparkles className="w-4 h-4" />
+          Ask OhShift
+        </button>
+      </IconTooltip>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -217,17 +261,24 @@ export function AskOhShiftModal({
                 <p className="text-sm text-muted-foreground mt-1">
                   {isEditing
                     ? "Adjust the shift details, then create."
-                    : "Describe a shift in plain language — review before it is created."}
+                    : showingQuery
+                      ? "Here’s what we found."
+                      : showingCreate
+                        ? "Review before creating a draft."
+                        : "Ask about the schedule or describe a shift to create."}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isParsing || isCreating}
-                className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors disabled:opacity-50"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <IconTooltip label="Close" side="bottom">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isParsing || isCreating}
+                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors disabled:opacity-50"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </IconTooltip>
             </div>
 
             <div className="p-6 space-y-4">
@@ -237,11 +288,11 @@ export function AskOhShiftModal({
                 </div>
               )}
 
-              {!proposal ? (
-                <form onSubmit={handleParse} className="space-y-4">
+              {!showingCreate && !showingQuery ? (
+                <form onSubmit={handleAsk} className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="ask-prompt" className="text-sm font-medium">
-                      What should we schedule?
+                      Ask or schedule
                     </label>
                     <textarea
                       id="ask-prompt"
@@ -249,7 +300,7 @@ export function AskOhShiftModal({
                       onChange={(e) => setPrompt(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      placeholder="e.g. Add me to next Tuesday evening"
+                      placeholder="e.g. Who is working Tuesday this week? Or: Add me to next Friday evening"
                       className="w-full px-3 py-2.5 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring resize-none"
                       disabled={isParsing}
                       autoFocus
@@ -273,15 +324,109 @@ export function AskOhShiftModal({
                       {isParsing ? (
                         <span className="flex items-center justify-center">
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Parsing...
+                          Thinking...
                         </span>
                       ) : (
-                        "Preview"
+                        "Ask"
                       )}
                     </button>
                   </div>
                 </form>
-              ) : isEditing ? (
+              ) : showingQuery ? (
+                <div className="space-y-4">
+                  {(queryWindow || queryPerson) && (
+                    <div className="rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5 space-y-1">
+                      {queryPerson && (
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <User className="w-4 h-4 text-brand shrink-0" />
+                          {queryPerson}
+                        </p>
+                      )}
+                      {queryWindow && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 shrink-0" />
+                          {queryWindow}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-sm leading-relaxed text-foreground">
+                    {queryAnswer}
+                  </p>
+
+                  <div className="rounded-xl border border-border/50 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border/40 bg-muted/30">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        From schedule
+                        {queryShifts.length > 0
+                          ? ` (${queryShifts.length})`
+                          : ""}
+                      </p>
+                    </div>
+                    {queryShifts.length === 0 ? (
+                      <p className="px-3 py-4 text-sm text-muted-foreground">
+                        No shifts in this window.
+                      </p>
+                    ) : (
+                      <ScrollFade
+                        contentKey={queryShifts.map((s) => s.id).join(",")}
+                        maxHeightClass="max-h-56"
+                        className="divide-y divide-border/40"
+                      >
+                        {queryShifts.map((shift) => (
+                          <div key={shift.id} className="px-3 py-3 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium truncate">
+                                {shift.users?.full_name || "Team member"}
+                              </p>
+                              <span
+                                className={
+                                  shift.status === "published"
+                                    ? "text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                                }
+                              >
+                                {shift.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {shift.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 shrink-0" />
+                              {formatRange(shift.start_time, shift.end_time)}
+                            </p>
+                          </div>
+                        ))}
+                      </ScrollFade>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border/50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQueryAnswer(null);
+                        setQueryShifts([]);
+                        setQueryWindow(null);
+                        setQueryPerson(null);
+                        setError(null);
+                      }}
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                    >
+                      Ask again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="btn-brand h-10 px-6 rounded-xl text-sm font-medium"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : isEditing && proposal ? (
                 <div className="space-y-4 text-left">
                   <div className="flex items-center gap-2 text-sm rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
                     <User className="w-4 h-4 text-brand shrink-0" />
@@ -436,7 +581,7 @@ export function AskOhShiftModal({
                     </button>
                   </div>
                 </div>
-              ) : (
+              ) : proposal ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                     {proposal.interpretation}
@@ -506,7 +651,7 @@ export function AskOhShiftModal({
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

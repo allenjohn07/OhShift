@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { User, Building2, Calendar, Lock, Loader2, Link as LinkIcon, Eye, EyeOff } from "lucide-react";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -208,7 +209,12 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
               </p>
             </div>
             <div className="flex justify-end">
-              <Button type="submit" disabled={isUpdatingAvatar} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+              <Button
+                type="submit"
+                disabled={isUpdatingAvatar}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+                tooltip="Save changes"
+              >
                 {isUpdatingAvatar && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Save Changes
               </Button>
@@ -230,14 +236,16 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 <label htmlFor="currentPassword" className="text-sm font-medium">
                   Current Password
                 </label>
-                <button 
-                  type="button" 
-                  onClick={handleResetPassword}
-                  disabled={isSendingReset}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  {isSendingReset ? "Sending..." : "Forgot password?"}
-                </button>
+                <IconTooltip label="Reset password" side="top">
+                  <button 
+                    type="button" 
+                    onClick={handleResetPassword}
+                    disabled={isSendingReset}
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    {isSendingReset ? "Sending..." : "Forgot password?"}
+                  </button>
+                </IconTooltip>
               </div>
               <input
                 type="password"
@@ -262,22 +270,35 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                   minLength={6}
                   className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 pr-10"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  tabIndex={-1}
+                <IconTooltip
+                  label={showPassword ? "Hide password" : "Show password"}
+                  side="top"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </IconTooltip>
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={isUpdatingPassword} variant="destructive" className="rounded-xl">
+              <Button
+                type="submit"
+                disabled={isUpdatingPassword}
+                variant="destructive"
+                className="rounded-xl"
+                tooltip="Update password"
+              >
                 {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Update Password
               </Button>

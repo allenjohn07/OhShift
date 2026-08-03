@@ -27,7 +27,7 @@ export function ComingSoon({
           {description}
         </p>
         <Link href={backHref} className="inline-block mt-8">
-          <Button variant="outline" className="rounded-xl">
+          <Button variant="outline" className="rounded-xl" tooltip={backLabel}>
             {backLabel}
           </Button>
         </Link>

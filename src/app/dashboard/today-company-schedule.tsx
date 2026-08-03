@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 interface UserInfo {
   full_name: string;
@@ -127,30 +128,35 @@ export function TodayCompanySchedule({
 
         {/* Week pagination */}
         <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto sm:ml-auto">
-          <button
-            onClick={() => setWeekOffset((p) => p - 1)}
-            className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-            aria-label="Previous week"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+          <IconTooltip label="Previous week" side="bottom">
+            <button
+              onClick={() => setWeekOffset((p) => p - 1)}
+              className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </IconTooltip>
           <span className="flex-1 min-w-0 text-xs font-medium text-center select-none whitespace-nowrap overflow-hidden sm:flex-none sm:w-48 sm:whitespace-normal sm:overflow-visible sm:text-sm">
             {weekLabel}
           </span>
-          <button
-            onClick={() => setWeekOffset((p) => p + 1)}
-            className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-            aria-label="Next week"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setWeekOffset(0)}
-            title="Reset to current week"
-            className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span>Reset</span>
-          </button>
+          <IconTooltip label="Next week" side="bottom">
+            <button
+              onClick={() => setWeekOffset((p) => p + 1)}
+              className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Next week"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </IconTooltip>
+          <IconTooltip label="Reset to current week" side="bottom">
+            <button
+              onClick={() => setWeekOffset(0)}
+              className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>Reset</span>
+            </button>
+          </IconTooltip>
         </div>
       </div>
 

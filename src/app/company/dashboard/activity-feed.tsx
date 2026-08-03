@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { ScrollFade } from "@/components/scroll-fade";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 type PublishedShift = {
   id: string;
@@ -115,13 +116,15 @@ function ShiftDetailModal({
                 )}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <IconTooltip label="Close" side="bottom">
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </IconTooltip>
           </div>
 
           <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">

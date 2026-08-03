@@ -3,36 +3,17 @@ import {
   ApiError,
   requireManager,
   requireUser,
-  verifyEmployeeInCompany,
 } from "../lib/auth-guard";
-import {
-  availabilityConflictMessage,
-  ohShiftDayOfWeek,
-} from "../lib/availability-check";
 import { prisma } from "../lib/prisma";
 import { serializeShift } from "../lib/serialize";
 import {
-  findOverlappingShifts,
-  findShiftWithSameStart,
-  formatConflictMessage,
-  formatSameStartMessage,
-} from "../lib/shift-conflicts";
+  createDraftShift,
+  evaluateEligibility,
+  validateShiftAssignment,
+} from "../lib/shift-create";
 import { logShiftAction } from "../lib/shift-log";
 
-async function checkAvailabilityForShift(
-  employeeId: string,
-  start: Date,
-  end: Date,
-  timeZone?: string,
-): Promise<string | null> {
-  const dayOfWeek = ohShiftDayOfWeek(start, timeZone);
-  const window = await prisma.availabilityWindow.findUnique({
-    where: {
-      userId_dayOfWeek: { userId: employeeId, dayOfWeek },
-    },
-  });
-  return availabilityConflictMessage(window, start, end, timeZone);
-}
+const BULK_MAX = 50;
 
 export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
   .get("/mine", async ({ headers, set }) => {
@@ -55,6 +36,177 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       return { error: "Internal Server Error" };
     }
   })
+  .get("/eligible", async ({ headers, query, set }) => {
+    try {
+      const user = await requireManager(headers.authorization ?? null);
+      const startRaw = typeof query.start === "string" ? query.start : "";
+      const endRaw = typeof query.end === "string" ? query.end : "";
+      const timezone =
+        typeof query.timezone === "string" && query.timezone.trim()
+          ? query.timezone.trim()
+          : undefined;
+      const designationFilter =
+        typeof query.designation === "string" && query.designation.trim()
+          ? query.designation.trim()
+          : null;
+
+      if (!startRaw || !endRaw) {
+        set.status = 400;
+        return { error: "start and end are required" };
+      }
+
+      const start = new Date(startRaw);
+      const end = new Date(endRaw);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        set.status = 400;
+        return { error: "Invalid start or end time" };
+      }
+      if (start >= end) {
+        set.status = 400;
+        return { error: "End time must be after start time" };
+      }
+
+      const members = await prisma.user.findMany({
+        where: {
+          companyId: user.companyId!,
+          role: { in: ["employee", "manager"] },
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          designation: true,
+          role: true,
+        },
+        orderBy: { fullName: "asc" },
+      });
+
+      const people = await Promise.all(
+        members.map(async (m) => {
+          const { eligible, reason } = await evaluateEligibility({
+            employeeId: m.id,
+            designation: m.designation,
+            filterDesignation: designationFilter,
+            start,
+            end,
+            timezone,
+          });
+          return {
+            id: m.id,
+            full_name: m.fullName,
+            email: m.email,
+            designation: m.designation,
+            role: m.role,
+            eligible,
+            reason,
+          };
+        }),
+      );
+
+      const designations = [
+        ...new Set(
+          members
+            .map((m) => m.designation?.trim())
+            .filter((d): d is string => Boolean(d)),
+        ),
+      ].sort((a, b) => a.localeCompare(b));
+
+      return { people, designations };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        set.status = err.status;
+        return { error: err.message };
+      }
+      console.error(err);
+      set.status = 500;
+      return { error: "Internal Server Error" };
+    }
+  })
+  .post("/bulk", async ({ body, headers, set }) => {
+    try {
+      const user = await requireManager(headers.authorization ?? null);
+      const { timezone, shifts } = body as {
+        timezone?: string;
+        shifts?: Array<{
+          employeeId?: string;
+          title?: string;
+          startTime?: string;
+          endTime?: string;
+        }>;
+      };
+
+      if (!Array.isArray(shifts) || shifts.length === 0) {
+        set.status = 400;
+        return { error: "shifts array is required" };
+      }
+      if (shifts.length > BULK_MAX) {
+        set.status = 400;
+        return { error: `At most ${BULK_MAX} shifts per request` };
+      }
+
+      const results: Array<{
+        employee_id: string;
+        ok: boolean;
+        shift?: ReturnType<typeof serializeShift>;
+        error?: string;
+      }> = [];
+
+      let created = 0;
+      let failed = 0;
+
+      for (const item of shifts) {
+        const employeeId = item.employeeId?.trim() ?? "";
+        const title = item.title?.trim() ?? "";
+        if (!employeeId || !title || !item.startTime || !item.endTime) {
+          results.push({
+            employee_id: employeeId || "unknown",
+            ok: false,
+            error: "Missing required fields",
+          });
+          failed += 1;
+          continue;
+        }
+
+        const start = new Date(item.startTime);
+        const end = new Date(item.endTime);
+        const outcome = await createDraftShift({
+          companyId: user.companyId!,
+          actorId: user.id,
+          employeeId,
+          title,
+          start,
+          end,
+          timezone,
+        });
+
+        if (outcome.ok) {
+          created += 1;
+          results.push({
+            employee_id: employeeId,
+            ok: true,
+            shift: outcome.shift,
+          });
+        } else {
+          failed += 1;
+          results.push({
+            employee_id: employeeId,
+            ok: false,
+            error: outcome.error,
+          });
+        }
+      }
+
+      return { created, failed, results };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        set.status = err.status;
+        return { error: err.message };
+      }
+      console.error(err);
+      set.status = 500;
+      return { error: "Internal Server Error" };
+    }
+  })
   .post("/", async ({ body, headers, set }) => {
     try {
       const user = await requireManager(headers.authorization ?? null);
@@ -71,70 +223,22 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
         return { error: "Missing required fields" };
       }
 
-      const start = new Date(startTime);
-      const end = new Date(endTime);
-
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-        set.status = 400;
-        return { error: "Invalid start or end time" };
-      }
-
-      if (start >= end) {
-        set.status = 400;
-        return { error: "End time must be after start time" };
-      }
-
-      const employee = await verifyEmployeeInCompany(employeeId, user.companyId!);
-
-      const availabilityError = await checkAvailabilityForShift(
-        employeeId,
-        start,
-        end,
-        timezone,
-      );
-      if (availabilityError) {
-        set.status = 400;
-        return { error: availabilityError };
-      }
-
-      const sameStart = await findShiftWithSameStart(employeeId, start);
-      if (sameStart) {
-        set.status = 409;
-        return {
-          error: formatSameStartMessage(sameStart),
-          conflicts: [serializeShift(sameStart)],
-        };
-      }
-
-      const conflicts = await findOverlappingShifts(employeeId, start, end);
-      if (conflicts.length > 0) {
-        set.status = 409;
-        return {
-          error: formatConflictMessage(conflicts),
-          conflicts: conflicts.map((c) => serializeShift(c)),
-        };
-      }
-
-      const shift = await prisma.shift.create({
-        data: {
-          companyId: user.companyId!,
-          employeeId,
-          title,
-          startTime: start,
-          endTime: end,
-          status: "draft",
-        },
-      });
-
-      await logShiftAction({
+      const outcome = await createDraftShift({
         companyId: user.companyId!,
         actorId: user.id,
-        action: "created",
-        shiftId: shift.id,
-        detail: `Assigned "${title}" to ${employee.fullName} on ${start.toDateString()}`,
+        employeeId,
+        title,
+        start: new Date(startTime),
+        end: new Date(endTime),
+        timezone,
       });
 
-      return { shift: serializeShift(shift) };
+      if (!outcome.ok) {
+        set.status = outcome.status;
+        return { error: outcome.error };
+      }
+
+      return { shift: outcome.shift };
     } catch (err) {
       if (err instanceof ApiError) {
         set.status = err.status;
@@ -173,52 +277,16 @@ export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
       const start = new Date(startTime);
       const end = new Date(endTime);
 
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-        set.status = 400;
-        return { error: "Invalid start or end time" };
-      }
-
-      if (start >= end) {
-        set.status = 400;
-        return { error: "End time must be after start time" };
-      }
-
-      const availabilityError = await checkAvailabilityForShift(
-        existing.employeeId,
+      const validationError = await validateShiftAssignment({
+        employeeId: existing.employeeId,
         start,
         end,
         timezone,
-      );
-      if (availabilityError) {
-        set.status = 400;
-        return { error: availabilityError };
-      }
-
-      const sameStart = await findShiftWithSameStart(
-        existing.employeeId,
-        start,
-        shiftId,
-      );
-      if (sameStart) {
-        set.status = 409;
-        return {
-          error: formatSameStartMessage(sameStart),
-          conflicts: [serializeShift(sameStart)],
-        };
-      }
-
-      const conflicts = await findOverlappingShifts(
-        existing.employeeId,
-        start,
-        end,
-        shiftId,
-      );
-      if (conflicts.length > 0) {
-        set.status = 409;
-        return {
-          error: formatConflictMessage(conflicts),
-          conflicts: conflicts.map((c) => serializeShift(c)),
-        };
+        excludeShiftId: shiftId,
+      });
+      if (validationError) {
+        set.status = validationError.status;
+        return { error: validationError.error };
       }
 
       const shift = await prisma.shift.update({

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 export default function CompanyRegisterPage() {
   const router = useRouter();
@@ -192,18 +193,25 @@ export default function CompanyRegisterPage() {
                         required
                         className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                        tabIndex={-1}
+                      <IconTooltip
+                        label={showPassword ? "Hide password" : "Show password"}
+                        side="top"
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          tabIndex={-1}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </IconTooltip>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -223,20 +231,35 @@ export default function CompanyRegisterPage() {
                         required
                         className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
                       />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
+                      <IconTooltip
+                        label={
+                          showConfirmPassword
+                            ? "Hide password"
+                            : "Show password"
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                        tabIndex={-1}
+                        side="top"
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          tabIndex={-1}
+                          aria-label={
+                            showConfirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </IconTooltip>
                     </div>
                   </div>
                 </div>

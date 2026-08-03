@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { AssignShiftModal } from "./assign-shift-modal";
+import { BulkAssignModal } from "./bulk-assign-modal";
 import { Search, Shield } from "lucide-react";
 import type { CompanySettings } from "./manage-settings-modal";
 import { ScrollFade } from "@/components/scroll-fade";
+import { IconTooltip } from "@/components/icon-tooltip";
 
 interface Employee {
   id: string;
@@ -36,17 +38,22 @@ export function TeamMembersList({
       <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4 shrink-0">
         <h2 className="font-semibold text-lg">Team Members</h2>
 
-        <div className="relative max-w-xs w-full">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
-            <Search className="h-4 w-4" />
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-md">
+          <BulkAssignModal company={company} onAssigned={onShiftAssigned} />
+          <div className="relative flex-1 min-w-0">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
+              <Search className="h-4 w-4" />
+            </div>
+            <IconTooltip label="Search team members" side="bottom" className="w-full">
+              <input
+                type="text"
+                placeholder="Search team..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-4 rounded-xl border border-input bg-background/50 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </IconTooltip>
           </div>
-          <input
-            type="text"
-            placeholder="Search team..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-9 pl-9 pr-4 rounded-xl border border-input bg-background/50 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-          />
         </div>
       </div>
 
