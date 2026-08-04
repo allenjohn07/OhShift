@@ -290,8 +290,126 @@ export function matchEmployeeFromPrompt(
   return scored[0]?.m ?? null;
 }
 
+/**
+ * "Who is the manager?" / "Who is the owner?" — org role lookup, not schedule.
+ */
+export function isOrgRoleQuery(
+  prompt: string,
+): "managers" | "owner" | "both" | null {
+  const p = prompt.trim().toLowerCase();
+
+  const asksManagers =
+    /\bwho(?:'s|\s+is|\s+are)?\s+(?:the\s+|our\s+|my\s+|a\s+)?managers?\b/.test(
+      p,
+    ) ||
+    /\b(?:list|show|give me|tell me)\s+(?:the\s+|our\s+|my\s+)?managers?\b/.test(
+      p,
+    ) ||
+    /\bwho\s+manages\b/.test(p);
+
+  const asksOwner =
+    /\bwho(?:'s|\s+is|\s+are)?\s+(?:the\s+|our\s+|my\s+|a\s+)?owners?\b/.test(
+      p,
+    ) ||
+    /\b(?:list|show|give me|tell me)\s+(?:the\s+|our\s+|my\s+)?owners?\b/.test(
+      p,
+    ) ||
+    /\bwho\s+owns\b/.test(p);
+
+  // "who is the manager and owner" / "who is the owner and manager"
+  const bothViaAnd =
+    (asksManagers && /\band\s+(?:the\s+)?owners?\b/.test(p)) ||
+    (asksOwner && /\band\s+(?:the\s+)?managers?\b/.test(p));
+
+  if (bothViaAnd || (asksManagers && asksOwner)) return "both";
+  if (asksOwner) return "owner";
+  if (asksManagers) return "managers";
+  return null;
+}
+
+function joinNames(names: string[]): string {
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+async function runOrgRoleQuery(options: {
+  companyId: string;
+  focus: "managers" | "owner" | "both";
+}): Promise<ScheduleAskQuery> {
+  const members = await prisma.user.findMany({
+    where: {
+      companyId: options.companyId,
+      role: { in: ["owner", "manager"] },
+    },
+    select: { fullName: true, role: true },
+    orderBy: { fullName: "asc" },
+  });
+
+  const owners = members
+    .filter((m) => m.role === "owner")
+    .map((m) => m.fullName);
+  const managers = members
+    .filter((m) => m.role === "manager")
+    .map((m) => m.fullName);
+
+  const parts: string[] = [];
+
+  if (options.focus === "owner" || options.focus === "both") {
+    if (owners.length === 0) {
+      parts.push("No owner is set for this company.");
+    } else if (owners.length === 1) {
+      parts.push(`The owner is ${owners[0]}.`);
+    } else {
+      parts.push(`The owners are ${joinNames(owners)}.`);
+    }
+  }
+
+  if (options.focus === "managers" || options.focus === "both") {
+    if (managers.length === 0) {
+      if (options.focus === "both") {
+        parts.push("There are no managers assigned.");
+      } else if (owners.length === 1) {
+        parts.push(
+          `There are no managers assigned; ${owners[0]} (owner) manages the team.`,
+        );
+      } else if (owners.length > 1) {
+        parts.push(
+          `There are no managers assigned; the owners (${joinNames(owners)}) manage the team.`,
+        );
+      } else {
+        parts.push("There are no managers assigned.");
+      }
+    } else if (managers.length === 1) {
+      parts.push(`The manager is ${managers[0]}.`);
+      if (options.focus === "managers" && owners.length === 1) {
+        parts.push(`The owner is ${owners[0]}.`);
+      } else if (options.focus === "managers" && owners.length > 1) {
+        parts.push(`The owners are ${joinNames(owners)}.`);
+      }
+    } else {
+      parts.push(`The managers are ${joinNames(managers)}.`);
+      if (options.focus === "managers" && owners.length === 1) {
+        parts.push(`The owner is ${owners[0]}.`);
+      } else if (options.focus === "managers" && owners.length > 1) {
+        parts.push(`The owners are ${joinNames(owners)}.`);
+      }
+    }
+  }
+
+  return {
+    kind: "query",
+    answer: parts.join(" ").trim(),
+    window_label: "Team roles",
+    person: null,
+    shifts: [],
+  };
+}
+
 /** "Who is working Tuesday?" → whole team, not one guessed person. */
 function isTeamWideQuery(prompt: string): boolean {
+  if (isOrgRoleQuery(prompt)) return false;
   const p = prompt.trim().toLowerCase();
   return (
     /\bwho\b/.test(p) ||
@@ -858,6 +976,11 @@ export async function askSchedule(options: {
   presets: ShiftPresets;
 }): Promise<ScheduleAskResult> {
   const { prompt, companyId, timezone, roster, self, presets } = options;
+
+  const roleFocus = isOrgRoleQuery(prompt);
+  if (roleFocus) {
+    return runOrgRoleQuery({ companyId, focus: roleFocus });
+  }
 
   const preferQuery = looksLikeQuery(prompt) && !looksLikeCreate(prompt);
   const preferCreate = looksLikeCreate(prompt) && !looksLikeQuery(prompt);

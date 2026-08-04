@@ -300,7 +300,7 @@ export function AskOhShiftModal({
                       onChange={(e) => setPrompt(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      placeholder="e.g. Who is working Tuesday this week? Or: Add me to next Friday evening"
+                      placeholder="e.g. Who is the manager? Who is working Tuesday? Or: Add me to next Friday evening"
                       className="w-full px-3 py-2.5 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring resize-none"
                       disabled={isParsing}
                       autoFocus
