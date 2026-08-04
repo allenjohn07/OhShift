@@ -75,8 +75,15 @@ function Button({
 
   if (!tip) return button
 
+  const fullWidth =
+    typeof className === "string" && /\bw-full\b/.test(className)
+
   return (
-    <IconTooltip label={tip} side={tooltipSide}>
+    <IconTooltip
+      label={tip}
+      side={tooltipSide}
+      className={cn(fullWidth && "flex w-full min-w-0")}
+    >
       {button}
     </IconTooltip>
   )

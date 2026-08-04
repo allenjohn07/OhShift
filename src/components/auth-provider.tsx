@@ -67,15 +67,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const res = await apiFetch("/auth/me", { token });
-    const data = await parseApiJson<{ user: AuthUser | null }>(res);
+    try {
+      const res = await apiFetch("/auth/me", { token });
+      const data = await parseApiJson<{ user: AuthUser | null }>(res);
 
-    if (!data.user) {
+      if (!data.user) {
+        applySession(null, null);
+        return;
+      }
+
+      applySession(data.user, token);
+    } catch {
       applySession(null, null);
-      return;
     }
-
-    applySession(data.user, token);
   }, [applySession]);
 
   useEffect(() => {
@@ -101,6 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         applySession(data.user, token);
+      } catch {
+        // API down / network — stay logged out; don't leave an unhandled rejection
+        if (!cancelled) applySession(null, null);
       } finally {
         if (!cancelled) setLoading(false);
       }
