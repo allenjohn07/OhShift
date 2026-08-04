@@ -1,11 +1,27 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
+/** True only for mouse/trackpad desktops — not phones/tablets (tap would open tips). */
+function useDesktopHoverTooltips() {
+  const [ok, setOk] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const sync = () => setOk(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  return ok;
+}
+
 /**
  * Hover/focus tooltip (same pattern as the collapsed sidebar).
+ * Disabled on touch / coarse-pointer devices so taps don't sticky-open tips.
  * `side`: where the tip sits relative to the trigger — sidebar uses "right".
  */
 export function IconTooltip({
@@ -22,6 +38,8 @@ export function IconTooltip({
   side?: "right" | "bottom" | "top";
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const desktopHover = useDesktopHoverTooltips();
+  const active = enabled && desktopHover;
   const [pos, setPos] = useState<{
     top: number;
     left: number;
@@ -29,7 +47,7 @@ export function IconTooltip({
   } | null>(null);
 
   const show = () => {
-    if (!enabled) return;
+    if (!active) return;
     const rect = ref.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -62,14 +80,14 @@ export function IconTooltip({
     <div
       ref={ref}
       className={cn("relative inline-flex max-w-full", className)}
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
+      onMouseEnter={active ? show : undefined}
+      onMouseLeave={active ? hide : undefined}
+      onFocus={active ? show : undefined}
+      onBlur={active ? hide : undefined}
     >
       {children}
       {pos &&
-        enabled &&
+        active &&
         createPortal(
           <span
             role="tooltip"

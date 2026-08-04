@@ -92,6 +92,7 @@ import { Button } from "@/components/ui/button";
 - Prefer `side="bottom"` in headers, `side="top"` near footers, `side="right"` for collapsed sidebar.
 - Always set `aria-label` on icon-only buttons (tooltip is not a substitute for a11y).
 - Do **not** ship new buttons without a tooltip.
+- Tooltips are **desktop-only** (`hover: hover` + `pointer: fine`). They stay off on phones/tablets so taps don’t sticky-open tips; `aria-label` still covers a11y.
 
 ## Logo / wordmark
 
