@@ -68,3 +68,7 @@ Do **not** add WebSockets/SSE unless product explicitly asks — Workers-friendl
 If runtime config is needed, ask the user to confirm values in their local env files — do not open those files.
 
 **Never commit** secrets, JWT keys, database URLs, or API keys.
+
+## Commits
+
+The user commits. Agents **must not** run `git commit` / `git push` unless the user explicitly asks in that message. When a change is ready, give a suggested commit message and leave committing to them. See `.cursor/rules/commits.mdc`.

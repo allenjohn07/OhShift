@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 
 const ROUNDS = 12;
@@ -11,6 +12,7 @@ export async function verifyPassword(password: string, hash: string | null) {
   return bcrypt.compare(password, hash);
 }
 
+/** Cryptographically secure temp password / invite code (8 hex chars). */
 export function generateTempPassword() {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
+  return randomBytes(4).toString("hex").toUpperCase();
 }

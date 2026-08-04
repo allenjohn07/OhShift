@@ -1,0 +1,29 @@
+---
+description: Never auto-commit — suggest a message; user commits
+alwaysApply: true
+---
+
+# Commits — user owns git
+
+## Do not commit or push
+
+- **Never** run `git commit`, `git push`, or create commits/PRs unless the user **explicitly** asks you to perform that git action in the current message.
+- Prefer that the **user** commits. Default workflow: finish the code change → give a commit message → stop.
+
+## When work leaves uncommitted changes
+
+At the end of the task (or when the user asks for a commit message), provide a ready-to-paste message:
+
+1. Concise, imperative, focused on **why** (match recent `git log` style).
+2. Prefer a single short subject line; add a body only if needed.
+3. Present it in a fenced code block they can copy, e.g.:
+
+```
+fix: use crypto for temp passwords and invite codes
+```
+
+Do **not** stage or commit after giving the message unless they clearly ask you to commit.
+
+## If they explicitly ask you to commit
+
+Only then follow the repo’s commit protocol (status/diff/log, stage relevant files, HEREDOC message, no secrets, no amend/force unless allowed). Still do not push unless they ask to push.
