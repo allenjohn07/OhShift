@@ -326,42 +326,30 @@ export function TeamScheduleGrid({
                  <ChevronRight className="w-4 h-4" />
                </button>
              </IconTooltip>
-             {/* Reset: icon on mobile, label on sm+ */}
-             <IconTooltip label="Reset to current week" side="bottom">
-               <button 
-                 onClick={() => setWeekOffset(0)}
-                 className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
-               >
-                 <span>Reset</span>
-               </button>
-             </IconTooltip>
-             <IconTooltip
-               label={
-                 draftCount === 0
-                   ? "No draft shifts this week"
-                   : `Publish ${draftCount} draft shift(s)`
-               }
-               side="bottom"
+             <button
+               onClick={() => setWeekOffset(0)}
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
-               <button
-                 onClick={handlePublishWeek}
-                 disabled={isPublishing || draftCount === 0}
-                 className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-               >
-                 {isPublishing ? (
-                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                 ) : (
-                   <Send className="w-3.5 h-3.5" />
-                 )}
-                 <span className="hidden sm:inline">Publish</span>
-                 {draftCount > 0 && (
-                   <span className="sm:hidden">{draftCount}</span>
-                 )}
-                 {draftCount > 0 && (
-                   <span className="hidden sm:inline">({draftCount})</span>
-                 )}
-               </button>
-             </IconTooltip>
+               <span>Reset</span>
+             </button>
+             <button
+               onClick={handlePublishWeek}
+               disabled={isPublishing || draftCount === 0}
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+             >
+               {isPublishing ? (
+                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
+               ) : (
+                 <Send className="w-3.5 h-3.5" />
+               )}
+               <span className="hidden sm:inline">Publish</span>
+               {draftCount > 0 && (
+                 <span className="sm:hidden">{draftCount}</span>
+               )}
+               {draftCount > 0 && (
+                 <span className="hidden sm:inline">({draftCount})</span>
+               )}
+             </button>
           </div>
         </div>
         
@@ -559,28 +547,24 @@ export function TeamScheduleGrid({
             <div className="p-4 border-t border-border/50 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-2">
                {!isEditing ? (
                  <>
-                   <IconTooltip label="Delete shift" side="top">
-                     <button 
-                        onClick={handleDeleteShift}
-                        disabled={isDeleting}
-                        className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
-                      </button>
-                   </IconTooltip>
-                    
+                   <button
+                      onClick={handleDeleteShift}
+                      disabled={isDeleting}
+                      className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2"
+                    >
+                      {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
+                    </button>
+
                     <div className="flex items-center gap-2">
-                      <IconTooltip label="Edit shift" side="top">
-                        <button 
-                           onClick={() => setIsEditing(true)}
-                           className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors flex items-center gap-2"
-                         >
-                           <Edit2 className="w-4 h-4" />
-                           Edit
-                         </button>
-                      </IconTooltip>
-                      <button 
+                      <button
+                         onClick={() => setIsEditing(true)}
+                         className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors flex items-center gap-2"
+                       >
+                         <Edit2 className="w-4 h-4" />
+                         Edit
+                       </button>
+                      <button
                          onClick={() => setSelectedShift(null)}
                          className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"
                        >

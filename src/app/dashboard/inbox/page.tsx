@@ -14,7 +14,6 @@ import {
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import { IconTooltip } from "@/components/icon-tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -431,7 +430,6 @@ function InboxPageContent() {
                 <Button
                   className="btn-brand rounded-xl"
                   onClick={() => openCompose()}
-                  tooltip="New announcement"
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
                   New announcement
@@ -442,7 +440,6 @@ function InboxPageContent() {
                   variant="outline"
                   className="rounded-xl"
                   onClick={handleMarkAllRead}
-                  tooltip="Mark all read"
                 >
                   Mark all read
                 </Button>
@@ -451,7 +448,6 @@ function InboxPageContent() {
                 <Button
                   className="btn-brand rounded-xl"
                   onClick={openNewDm}
-                  tooltip="New message"
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
                   New message
@@ -461,48 +457,44 @@ function InboxPageContent() {
           </div>
 
           <div className="flex gap-1 p-1 rounded-xl border border-border/50 bg-card/40 w-fit mb-6">
-            <IconTooltip label="Announcements" side="bottom">
-              <button
-                type="button"
-                onClick={() => setTab("announcements")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
-                  tab === "announcements"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Megaphone className="h-4 w-4" />
-                Announcements
-                {unreadAnnouncements > 0 && (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
-                    {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
-                  </span>
-                )}
-              </button>
-            </IconTooltip>
-            <IconTooltip label="Messages" side="bottom">
-              <button
-                type="button"
-                onClick={() => setTab("messages")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
-                  tab === "messages"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Messages
-                {conversations.some((c) => c.unread_count > 0) && (
-                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
-                    {conversations.reduce((n, c) => n + c.unread_count, 0) > 99
-                      ? "99+"
-                      : conversations.reduce((n, c) => n + c.unread_count, 0)}
-                  </span>
-                )}
-              </button>
-            </IconTooltip>
+            <button
+              type="button"
+              onClick={() => setTab("announcements")}
+              className={cn(
+                "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                tab === "announcements"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Megaphone className="h-4 w-4" />
+              Announcements
+              {unreadAnnouncements > 0 && (
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
+                  {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("messages")}
+              className={cn(
+                "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                tab === "messages"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Messages
+              {conversations.some((c) => c.unread_count > 0) && (
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
+                  {conversations.reduce((n, c) => n + c.unread_count, 0) > 99
+                    ? "99+"
+                    : conversations.reduce((n, c) => n + c.unread_count, 0)}
+                </span>
+              )}
+            </button>
           </div>
 
           {tab === "announcements" && (
@@ -532,16 +524,11 @@ function InboxPageContent() {
                         unread && "border-brand/40",
                       )}
                     >
-                      <IconTooltip
-                        label={open ? "Collapse announcement" : "Expand announcement"}
-                        side="bottom"
-                        className="w-full"
+                      <button
+                        type="button"
+                        onClick={() => handleExpandAnnouncement(ann)}
+                        className="w-full text-left px-4 sm:px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleExpandAnnouncement(ann)}
-                          className="w-full text-left px-4 sm:px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                        >
                         <div className="flex items-start gap-3">
                           {unread && (
                             <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand" />
@@ -567,8 +554,7 @@ function InboxPageContent() {
                             </p>
                           </div>
                         </div>
-                        </button>
-                      </IconTooltip>
+                      </button>
                       {open && (
                         <div className="px-4 sm:px-5 pb-4 border-t border-border/40 pt-3">
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -582,7 +568,6 @@ function InboxPageContent() {
                                   size="sm"
                                   className="rounded-xl"
                                   onClick={() => openCompose(ann)}
-                                  tooltip="Edit announcement"
                                 >
                                   <Pencil className="h-3.5 w-3.5 mr-1.5" />
                                   Edit
@@ -596,7 +581,6 @@ function InboxPageContent() {
                                 onClick={() =>
                                   handleDeleteAnnouncement(ann.id)
                                 }
-                                tooltip="Delete announcement"
                               >
                                 {deletingId === ann.id ? (
                                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -635,22 +619,17 @@ function InboxPageContent() {
                     </div>
                   ) : (
                     conversations.map((c) => (
-                      <IconTooltip
+                      <button
                         key={c.id}
-                        label={`Message ${c.other.full_name}`}
-                        side="right"
-                        className="w-full"
+                        type="button"
+                        onClick={() => openConversation(c.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors border-b border-border/30 last:border-0",
+                          activeId === c.id
+                            ? "bg-brand-soft/60"
+                            : "hover:bg-muted/30",
+                        )}
                       >
-                        <button
-                          type="button"
-                          onClick={() => openConversation(c.id)}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors border-b border-border/30 last:border-0",
-                            activeId === c.id
-                              ? "bg-brand-soft/60"
-                              : "hover:bg-muted/30",
-                          )}
-                        >
                         <Avatar className="h-9 w-9 shrink-0">
                           {c.other.avatar_url && (
                             <AvatarImage src={c.other.avatar_url} />
@@ -681,8 +660,7 @@ function InboxPageContent() {
                             )}
                           </div>
                         </div>
-                        </button>
-                      </IconTooltip>
+                      </button>
                     ))
                   )}
                 </div>
@@ -801,7 +779,6 @@ function InboxPageContent() {
                         type="submit"
                         disabled={sending || !draft.trim()}
                         className="btn-brand rounded-xl shrink-0 h-11 px-5"
-                        tooltip="Send message"
                       >
                         {sending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -862,7 +839,6 @@ function InboxPageContent() {
                 variant="outline"
                 className="rounded-xl"
                 onClick={() => setComposeOpen(false)}
-                tooltip="Cancel"
               >
                 Cancel
               </Button>
@@ -870,7 +846,6 @@ function InboxPageContent() {
                 type="submit"
                 disabled={savingAnnouncement}
                 className="btn-brand rounded-xl"
-                tooltip={editing ? "Save changes" : "Post announcement"}
               >
                 {savingAnnouncement ? (
                   <>
@@ -903,18 +878,13 @@ function InboxPageContent() {
               </p>
             ) : (
               directory.map((m) => (
-                <IconTooltip
+                <button
                   key={m.id}
-                  label={`Message ${m.full_name}`}
-                  side="right"
-                  className="w-full"
+                  type="button"
+                  disabled={startingDm}
+                  onClick={() => handleStartDm(m.id)}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <button
-                    type="button"
-                    disabled={startingDm}
-                    onClick={() => handleStartDm(m.id)}
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer disabled:opacity-50"
-                  >
                   <Avatar className="h-9 w-9">
                     {m.avatar_url && <AvatarImage src={m.avatar_url} />}
                     <AvatarFallback className="text-xs">
@@ -927,8 +897,7 @@ function InboxPageContent() {
                       {m.role}
                     </p>
                   </div>
-                  </button>
-                </IconTooltip>
+                </button>
               ))
             )}
           </div>

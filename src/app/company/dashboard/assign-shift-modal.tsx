@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import type { CompanySettings } from "./manage-settings-modal";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
-import { IconTooltip } from "@/components/icon-tooltip";
 
 interface Employee {
   id: string;
@@ -144,14 +143,12 @@ export function AssignShiftModal({
 
   if (!isOpen) {
     return (
-      <IconTooltip label="Assign a shift to this person" side="bottom">
-        <button
-          onClick={open}
-          className="text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
-        >
-          Assign Shift
-        </button>
-      </IconTooltip>
+      <button
+        onClick={open}
+        className="text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
+      >
+        Assign Shift
+      </button>
     );
   }
 
@@ -262,30 +259,26 @@ export function AssignShiftModal({
                 <span className="text-xs text-muted-foreground mr-1">
                   Presets:
                 </span>
-                <IconTooltip label="Apply morning hours" side="top">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStartTime(company.morning_start);
-                      setEndTime(company.morning_end);
-                    }}
-                    className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
-                  >
-                    Morning
-                  </button>
-                </IconTooltip>
-                <IconTooltip label="Apply evening hours" side="top">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStartTime(company.evening_start);
-                      setEndTime(company.evening_end);
-                    }}
-                    className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
-                  >
-                    Evening
-                  </button>
-                </IconTooltip>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartTime(company.morning_start);
+                    setEndTime(company.morning_end);
+                  }}
+                  className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
+                >
+                  Morning
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartTime(company.evening_start);
+                    setEndTime(company.evening_end);
+                  }}
+                  className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                >
+                  Evening
+                </button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

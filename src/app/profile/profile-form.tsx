@@ -213,7 +213,6 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 type="submit"
                 disabled={isUpdatingAvatar}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
-                tooltip="Save changes"
               >
                 {isUpdatingAvatar && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Save Changes
@@ -297,7 +296,6 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 disabled={isUpdatingPassword}
                 variant="destructive"
                 className="rounded-xl"
-                tooltip="Update password"
               >
                 {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Update Password

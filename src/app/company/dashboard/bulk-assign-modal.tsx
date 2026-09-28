@@ -292,35 +292,27 @@ export function BulkAssignModal({
 
   if (!isOpen) {
     return (
-      <IconTooltip label="Assign shifts to multiple people" side="bottom">
-        <button
-          type="button"
-          onClick={open}
-          className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
-        >
-          <Users className="w-4 h-4" />
-          <span className="hidden sm:inline">Assign shifts</span>
-        </button>
-      </IconTooltip>
+      <button
+        type="button"
+        onClick={open}
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
+      >
+        <Users className="w-4 h-4" />
+        <span className="hidden sm:inline">Assign shifts</span>
+      </button>
     );
   }
 
-  const allEligibleSelected =
-    eligiblePeople.length > 0 &&
-    eligiblePeople.every((p) => selected.has(p.id));
-
   return (
     <>
-      <IconTooltip label="Assign shifts to multiple people" side="bottom">
-        <button
-          type="button"
-          onClick={open}
-          className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
-        >
-          <Users className="w-4 h-4" />
-          <span className="hidden sm:inline">Assign shifts</span>
-        </button>
-      </IconTooltip>
+      <button
+        type="button"
+        onClick={open}
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
+      >
+        <Users className="w-4 h-4" />
+        <span className="hidden sm:inline">Assign shifts</span>
+      </button>
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] border border-border/50 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
@@ -377,30 +369,26 @@ export function BulkAssignModal({
                     <span className="text-xs text-muted-foreground mr-1">
                       Presets:
                     </span>
-                    <IconTooltip label="Apply morning hours" side="top">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStartTime(company.morning_start);
-                          setEndTime(company.morning_end);
-                        }}
-                        className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
-                      >
-                        Morning
-                      </button>
-                    </IconTooltip>
-                    <IconTooltip label="Apply evening hours" side="top">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStartTime(company.evening_start);
-                          setEndTime(company.evening_end);
-                        }}
-                        className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
-                      >
-                        Evening
-                      </button>
-                    </IconTooltip>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartTime(company.morning_start);
+                        setEndTime(company.morning_end);
+                      }}
+                      className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
+                    >
+                      Morning
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartTime(company.evening_start);
+                        setEndTime(company.evening_end);
+                      }}
+                      className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                    >
+                      Evening
+                    </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -481,24 +469,15 @@ export function BulkAssignModal({
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                   )}
                 </h3>
-                <IconTooltip
-                  label={
-                    allEligibleSelected
-                      ? "Clear selection"
-                      : "Select all eligible"
-                  }
-                  side="top"
+                <button
+                  type="button"
+                  onClick={selectAllEligible}
+                  disabled={eligiblePeople.length === 0}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline disabled:opacity-40 disabled:no-underline"
                 >
-                  <button
-                    type="button"
-                    onClick={selectAllEligible}
-                    disabled={eligiblePeople.length === 0}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline disabled:opacity-40 disabled:no-underline"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    Select all eligible
-                  </button>
-                </IconTooltip>
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Select all eligible
+                </button>
               </div>
 
               {people.length === 0 && !isFetching ? (

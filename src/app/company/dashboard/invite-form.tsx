@@ -279,7 +279,6 @@ export function InviteEmployeeForm() {
               onClick={() => void handleInviteNow()}
               disabled={isLoading || !canSubmitForm}
               className="btn-hover h-10 flex-1 rounded-xl font-medium"
-              tooltip="Invite now"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -299,7 +298,6 @@ export function InviteEmployeeForm() {
               onClick={handleAddToList}
               disabled={isLoading || !canSubmitForm}
               className="h-10 flex-1 rounded-xl font-medium"
-              tooltip="Add to list"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add to List
@@ -368,7 +366,6 @@ export function InviteEmployeeForm() {
               onClick={() => void handleSendPending()}
               disabled={isLoading}
               className="btn-hover w-full h-10 rounded-xl font-medium"
-              tooltip="Send pending invitations"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -436,14 +433,12 @@ export function InviteEmployeeForm() {
               variant="outline"
               onClick={() => setEditingIndex(null)}
               className="h-10 rounded-xl"
-              tooltip="Cancel"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveEdit}
               className="h-10 rounded-xl"
-              tooltip="Save invitee"
             >
               Save Changes
             </Button>

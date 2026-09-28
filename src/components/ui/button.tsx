@@ -58,10 +58,13 @@ function Button({
   const Comp = asChild ? Slot.Root : "button"
   const isIcon =
     size === "icon" || size === "icon-xs" || size === "icon-sm" || size === "icon-lg"
-  const tip =
-    tooltip ??
-    (typeof props["aria-label"] === "string" ? props["aria-label"] : undefined) ??
-    (isIcon && typeof props.title === "string" ? props.title : undefined)
+  // Tooltips are reserved for icon-only buttons — a button with visible
+  // label text doesn't need its own text repeated back in a tooltip.
+  const tip = isIcon
+    ? (tooltip ??
+      (typeof props["aria-label"] === "string" ? props["aria-label"] : undefined) ??
+      (typeof props.title === "string" ? props.title : undefined))
+    : undefined
 
   const button = (
     <Comp

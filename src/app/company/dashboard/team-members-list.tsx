@@ -6,7 +6,6 @@ import { BulkAssignModal } from "./bulk-assign-modal";
 import { Search, Shield } from "lucide-react";
 import type { CompanySettings } from "./manage-settings-modal";
 import { ScrollFade } from "@/components/scroll-fade";
-import { IconTooltip } from "@/components/icon-tooltip";
 
 interface Employee {
   id: string;
@@ -44,15 +43,13 @@ export function TeamMembersList({
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
               <Search className="h-4 w-4" />
             </div>
-            <IconTooltip label="Search team members" side="bottom" className="w-full">
-              <input
-                type="text"
-                placeholder="Search team..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-9 pr-4 rounded-xl border border-input bg-background/50 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-              />
-            </IconTooltip>
+            <input
+              type="text"
+              placeholder="Search team..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-9 pl-9 pr-4 rounded-xl border border-input bg-background/50 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+            />
           </div>
         </div>
       </div>

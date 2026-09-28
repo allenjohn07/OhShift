@@ -233,25 +233,23 @@ export function ManageTeamModal({
                         </IconTooltip>
                       </div>
                     ) : (
-                      <IconTooltip label="Edit designation" side="top">
-                        <div
-                          className="px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
-                          onClick={() => {
-                            setEditingId(emp.id);
-                            setEditValue(emp.designation || "");
-                          }}
-                        >
-                          {emp.designation ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                              {emp.designation}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground italic">
-                              Add title...
-                            </span>
-                          )}
-                        </div>
-                      </IconTooltip>
+                      <div
+                        className="px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
+                        onClick={() => {
+                          setEditingId(emp.id);
+                          setEditValue(emp.designation || "");
+                        }}
+                      >
+                        {emp.designation ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            {emp.designation}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            Add title...
+                          </span>
+                        )}
+                      </div>
                     )}
 
                     <div className="w-px h-8 bg-border/50 mx-1 hidden sm:block" />

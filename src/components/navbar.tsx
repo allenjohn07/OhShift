@@ -113,7 +113,6 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                tooltip="Sign in as an employee"
                 className="btn-hover h-9 px-5 rounded-full font-medium"
               >
                 Employee Login
@@ -122,7 +121,6 @@ export function Navbar() {
             <Link href="/company/login">
               <Button
                 size="sm"
-                tooltip="Sign in as a manager or owner"
                 className="btn-hover h-9 px-5 rounded-full font-medium"
               >
                 Company Portal
@@ -166,7 +164,7 @@ export function Navbar() {
                 aria-expanded={isOpen}
               >
               <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                className="block w-4 h-[1.5px] bg-foreground rounded-full origin-center"
                 style={{
                   transform: menuShown
                     ? "translateY(6.5px) rotate(45deg)"
@@ -174,14 +172,13 @@ export function Navbar() {
                 }}
               />
               <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300"
+                className="block w-4 h-[1.5px] bg-foreground rounded-full"
                 style={{
                   opacity: menuShown ? 0 : 1,
-                  transform: menuShown ? "scaleX(0)" : "scaleX(1)",
                 }}
               />
               <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full transition-all duration-300 origin-center"
+                className="block w-4 h-[1.5px] bg-foreground rounded-full origin-center"
                 style={{
                   transform: menuShown
                     ? "translateY(-6.5px) rotate(-45deg)"

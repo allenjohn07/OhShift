@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { Users, Calendar, Settings } from "lucide-react";
-
-import { IconTooltip } from "@/components/icon-tooltip";
 import { TeamMembersList } from "./team-members-list";
 import { InviteEmployeeForm } from "./invite-form";
 import { TeamScheduleGrid } from "@/app/company/dashboard/team-schedule-grid";
@@ -83,28 +81,26 @@ export function DashboardContent({
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <IconTooltip label="Manage team" side="bottom" className="flex w-full min-w-0">
-            <div 
-              onClick={() => setIsManageTeamOpen(true)}
-              className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4 cursor-pointer hover:bg-card/60 hover:border-brand/40 transition-all group"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setIsManageTeamOpen(true);
-                }
-              }}
-            >
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand group-hover:scale-110 transition-transform shrink-0">
-                <Users className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Total Team</p>
-                <p className="text-2xl font-bold mt-1">{employees?.length || 0}</p>
-              </div>
+          <div
+            onClick={() => setIsManageTeamOpen(true)}
+            className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4 cursor-pointer hover:bg-card/60 hover:border-brand/40 transition-all group"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setIsManageTeamOpen(true);
+              }
+            }}
+          >
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand group-hover:scale-110 transition-transform shrink-0">
+              <Users className="h-5 w-5" />
             </div>
-          </IconTooltip>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Total Team</p>
+              <p className="text-2xl font-bold mt-1">{employees?.length || 0}</p>
+            </div>
+          </div>
           <div className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
               <Calendar className="h-5 w-5" />
@@ -121,9 +117,7 @@ export function DashboardContent({
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-muted-foreground">Manage Setup</p>
-              <IconTooltip label="View settings" side="top">
-                <p onClick={() => setIsManageSettingsOpen(true)} className="text-sm font-medium mt-1 text-foreground underline underline-offset-4 cursor-pointer hover:text-brand transition-colors">View Settings</p>
-              </IconTooltip>
+              <p onClick={() => setIsManageSettingsOpen(true)} className="text-sm font-medium mt-1 text-foreground underline underline-offset-4 cursor-pointer hover:text-brand transition-colors">View Settings</p>
             </div>
           </div>
         </div>

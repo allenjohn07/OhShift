@@ -238,16 +238,14 @@ export function AskOhShiftModal({
 
   return (
     <>
-      <IconTooltip label="Ask about the schedule or create a shift" side="bottom">
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
-        >
-          <Sparkles className="w-4 h-4" />
-          Ask OhShift
-        </button>
-      </IconTooltip>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
+      >
+        <Sparkles className="w-4 h-4" />
+        Ask OhShift
+      </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
