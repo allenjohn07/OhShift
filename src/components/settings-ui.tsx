@@ -2,7 +2,7 @@ import { Link } from "@/lib/navigation";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
-import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 export function SettingsPageShell({
   title,
@@ -77,24 +77,9 @@ export function SettingsToggleRow({
         label={checked ? `Turn off ${title}` : `Turn on ${title}`}
         side="top"
       >
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={title}
-          onClick={() => onCheckedChange(!checked)}
-          className={cn(
-            "relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer",
-            checked ? "bg-brand" : "bg-muted",
-          )}
-        >
-          <span
-            className={cn(
-              "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-              checked && "translate-x-5",
-            )}
-          />
-        </button>
+        <span>
+          <Switch checked={checked} onCheckedChange={onCheckedChange} label={title} />
+        </span>
       </IconTooltip>
     </li>
   );

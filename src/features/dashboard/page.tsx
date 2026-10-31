@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
@@ -75,15 +76,11 @@ function EmployeeDashboard() {
   const companyName = profile.companies?.name || "Your company";
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
-      <header className="pb-2">
-        <p className="text-sm text-muted-foreground mb-1.5">
-          {companyName} · {todayLabel()}
-        </p>
-        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-          {greeting(profile.full_name ?? "")}
-        </h1>
-      </header>
+    <PageMain>
+      <PageHeader
+        eyebrow={`${companyName} · ${todayLabel()}`}
+        title={greeting(profile.full_name ?? "")}
+      />
 
       <ShiftSummary initialShifts={data.shifts} employeeId={user.id} />
       <EmployeeScheduleGrid
@@ -92,7 +89,7 @@ function EmployeeDashboard() {
         employeeName={profile.full_name ?? ""}
       />
       <DayAgenda shifts={data.companyShifts} currentUserId={user.id} />
-    </main>
+    </PageMain>
   );
 }
 

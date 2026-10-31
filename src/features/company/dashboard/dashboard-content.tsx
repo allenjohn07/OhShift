@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Link } from "@/lib/navigation";
+import { PageHeader, PageMain } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -154,24 +155,20 @@ export function DashboardContent({
 
   return (
     <>
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 overflow-x-clip w-full">
-        <header className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm text-muted-foreground mb-1.5">
-              {company.name} · {todayLabel()}
-            </p>
-            <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-              {greeting(userName)}
-            </h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
-              <UserPlus className="h-4 w-4" />
-              Invite
-            </Button>
-            <BulkAssignModal company={company} onAssigned={handleScheduleChanged} />
-          </div>
-        </header>
+      <PageMain>
+        <PageHeader
+          eyebrow={`${company.name} · ${todayLabel()}`}
+          title={greeting(userName)}
+          actions={
+            <>
+              <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
+                <UserPlus className="h-4 w-4" />
+                Invite
+              </Button>
+              <BulkAssignModal company={company} onAssigned={handleScheduleChanged} />
+            </>
+          }
+        />
 
         {/* Manager's own shifts — only for managers, not owners */}
         {currentUser.role === "manager" && (
@@ -226,7 +223,7 @@ export function DashboardContent({
             className="lg:col-span-2"
           />
         </div>
-      </main>
+      </PageMain>
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="sm:max-w-md">

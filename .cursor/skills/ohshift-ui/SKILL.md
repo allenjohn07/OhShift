@@ -107,7 +107,7 @@ Gap between mark and title: **`gap-1.5`** (tight). Favicon: `index.html` `<link 
 
 ## Layout gutters
 
-Authenticated pages: `max-w-6xl` for dashboards/grids, `max-w-4xl` for list/settings pages, with `px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12`. Marketing uses `max-w-6xl px-4 sm:px-6`.
+Authenticated pages: wrap content in `PageMain` and start with `PageHeader` (`src/components/page.tsx`) — one width (`max-w-6xl`) and gutter for every AppShell page, so pages line up with the Overview. Don't hand-write `<main className="max-w-…">`. Use a `lg:grid-cols-5` split (3 + 2) to fill the width instead of narrowing the page. Marketing uses `max-w-6xl px-4 sm:px-6`.
 
 ```tsx
 <div className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12">

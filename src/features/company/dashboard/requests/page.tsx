@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Inbox, Loader2 } from "lucide-react";
+import { CalendarDays, Inbox, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { PageHeader, PageMain } from "@/components/page";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import type {
   PendingTimeOffStatus,
   PendingTimeOffType,
 } from "@/lib/pending-time-off-store";
+import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<PendingTimeOffType, string> = {
@@ -27,9 +29,17 @@ const TYPE_LABELS: Record<PendingTimeOffType, string> = {
 
 const STATUS_STYLES: Record<PendingTimeOffStatus, string> = {
   pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  approved: "bg-emerald-500/15 text-emerald-500",
-  denied: "bg-red-500/15 text-red-500",
+  approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  denied: "bg-destructive/10 text-destructive",
   cancelled: "bg-muted text-muted-foreground",
+};
+
+/** Notion tag colors per time-off type. */
+const TYPE_STYLES: Record<PendingTimeOffType, string> = {
+  vacation: "bg-[#d3e5ef] text-[#183347] dark:bg-[#1f3a52] dark:text-[#b9dcf3]",
+  sick: "bg-[#ffe2dd] text-[#5d1715] dark:bg-[#4a2321] dark:text-[#f5c2bd]",
+  personal: "bg-[#e8deee] text-[#412454] dark:bg-[#3a2a4a] dark:text-[#ddc7f0]",
+  other: "bg-[#e3e2e0] text-[#32302c] dark:bg-[#373737] dark:text-[#d4d4d4]",
 };
 
 function formatRange(start: string, end: string) {
@@ -50,6 +60,58 @@ function formatRange(start: string, end: string) {
     ...opts,
     year: "numeric",
   }).format(e)}`;
+}
+
+function dayCount(start: string, end: string) {
+  const ms =
+    new Date(`${end}T00:00:00.000Z`).getTime() -
+    new Date(`${start}T00:00:00.000Z`).getTime();
+  return Math.round(ms / 86_400_000) + 1;
+}
+
+function timeAgo(iso?: string | null) {
+  if (!iso) return null;
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function PersonAvatar({ name }: { name: string }) {
+  return (
+    <span
+      className={cn(
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+        getEmployeeColor(name),
+      )}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
+function TypeTag({ type }: { type: PendingTimeOffType }) {
+  return (
+    <span
+      className={cn(
+        "rounded-sm px-1.5 py-0.5 text-xs font-medium",
+        TYPE_STYLES[type],
+      )}
+    >
+      {TYPE_LABELS[type]}
+    </span>
+  );
 }
 
 function RequestsContent() {
@@ -89,152 +151,143 @@ function RequestsContent() {
   }
 
   return (
-    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
-      <div>
-        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-          Requests
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-          Approve or deny time-off from your team.
-        </p>
-      </div>
+    <PageMain>
+      <PageHeader
+        eyebrow={user?.profile.companies?.name ?? "Time off"}
+        title="Requests"
+        description="Approve or deny time-off from your team. Approved days block shifts from being assigned."
+      />
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-          <h2 className="font-semibold">Pending</h2>
-          {pending.length > 0 && (
-            <span className="text-xs font-medium bg-brand-soft text-brand px-1.5 py-0.5 rounded-sm">
+      <div className="grid items-start gap-6 lg:grid-cols-5">
+        {/* Pending */}
+        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-3">
+          <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
+            <h2 className="font-semibold">Pending</h2>
+            <span className="text-sm text-muted-foreground tabular-nums">
               {pending.length}
             </span>
-          )}
-        </div>
-
-        {pending.length === 0 ? (
-          <div className="px-4 sm:px-6 py-12 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <Inbox className="h-5 w-5" />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              No pending time-off requests.
-            </p>
           </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {pending.map((req) => {
-              const isOwn = Boolean(myId && req.employee_id === myId);
-              return (
-                <li
-                  key={req.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">
-                      {req.employee?.full_name ?? "Employee"}
-                      {isOwn && (
-                        <span className="ml-2 text-xs font-medium text-brand">
-                          You
-                        </span>
-                      )}
-                      <span className="font-normal text-muted-foreground">
-                        {" "}
-                        · {TYPE_LABELS[req.type]} ·{" "}
-                        {formatRange(req.start_date, req.end_date)}
-                      </span>
-                    </p>
-                    {req.note && (
-                      <p className="text-sm text-muted-foreground">
-                        Note: {req.note}
-                      </p>
-                    )}
-                    {isOwn && (
-                      <p className="text-xs text-muted-foreground">
-                        Another manager or the owner needs to review this.
-                      </p>
-                    )}
-                  </div>
-                  {isOwn ? (
-                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm self-start bg-amber-500/15 text-amber-600 dark:text-amber-400 capitalize">
-                      Pending
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-md h-9"
-                        disabled={actingId === req.id}
-                        onClick={() => review(req.id, "denied")}
-                      >
-                        Deny
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="btn-brand rounded-md h-9"
-                        disabled={actingId === req.id}
-                        onClick={() => review(req.id, "approved")}
-                      >
-                        {actingId === req.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Approve"
+
+          {pending.length === 0 ? (
+            <div className="px-5 py-14 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Inbox className="h-5 w-5" />
+              </div>
+              <p className="text-sm font-medium">All caught up</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                New time-off requests from your team will show up here.
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {pending.map((req) => {
+                const name = req.employee?.full_name ?? "Employee";
+                const isOwn = Boolean(myId && req.employee_id === myId);
+                const days = dayCount(req.start_date, req.end_date);
+                const requested = timeAgo(req.created_at);
+                return (
+                  <li key={req.id} className="flex gap-3 px-4 py-4 sm:px-5">
+                    <PersonAvatar name={name} />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-sm font-medium">{name}</span>
+                        {isOwn && (
+                          <span className="rounded-sm bg-brand-soft px-1 text-[10px] font-medium text-brand">
+                            You
+                          </span>
                         )}
-                      </Button>
+                        <TypeTag type={req.type} />
+                        {requested && (
+                          <span className="text-xs text-muted-foreground">
+                            requested {requested}
+                          </span>
+                        )}
+                      </div>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        {formatRange(req.start_date, req.end_date)}
+                        <span>· {days} day{days === 1 ? "" : "s"}</span>
+                      </p>
+                      {req.note && (
+                        <p className="border-l-2 border-border pl-2.5 text-sm text-foreground/80">
+                          {req.note}
+                        </p>
+                      )}
+                      {isOwn ? (
+                        <p className="pt-1 text-xs text-muted-foreground">
+                          Another manager or the owner needs to review this.
+                        </p>
+                      ) : (
+                        <div className="flex gap-2 pt-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={actingId === req.id}
+                            onClick={() => review(req.id, "denied")}
+                          >
+                            Deny
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={actingId === req.id}
+                            onClick={() => review(req.id, "approved")}
+                          >
+                            {actingId === req.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Approve"
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
-          <h2 className="font-semibold">Recent</h2>
-        </div>
-
-        {recent.length === 0 ? (
-          <div className="px-4 sm:px-6 py-10 text-center">
-            <p className="text-sm text-muted-foreground">
+        {/* Recently reviewed */}
+        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-2">
+          <div className="border-b border-border px-4 py-3 sm:px-5">
+            <h2 className="font-semibold">Recently reviewed</h2>
+          </div>
+          {recent.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
               Reviewed requests will show up here.
             </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {recent.map((req) => (
-              <li
-                key={req.id}
-                className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {req.employee?.full_name ?? "Employee"}
-                    <span className="font-normal text-muted-foreground">
-                      {" "}
-                      · {TYPE_LABELS[req.type]} ·{" "}
-                      {formatRange(req.start_date, req.end_date)}
+          ) : (
+            <ul className="divide-y divide-border">
+              {recent.map((req) => {
+                const name = req.employee?.full_name ?? "Employee";
+                return (
+                  <li key={req.id} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                    <PersonAvatar name={name} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {TYPE_LABELS[req.type]} ·{" "}
+                        {formatRange(req.start_date, req.end_date)}
+                        {req.reviewed_by && ` · by ${req.reviewed_by.full_name}`}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-sm px-1.5 py-0.5 text-xs font-medium capitalize",
+                        STATUS_STYLES[req.status],
+                      )}
+                    >
+                      {req.status}
                     </span>
-                  </p>
-                  {req.reviewed_by && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      by {req.reviewed_by.full_name}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize self-start",
-                    STATUS_STYLES[req.status],
-                  )}
-                >
-                  {req.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
+    </PageMain>
   );
 }
 
