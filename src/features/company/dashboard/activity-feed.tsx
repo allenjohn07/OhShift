@@ -93,15 +93,15 @@ function ShiftDetailModal({
       }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
+      <div className="absolute inset-0 bg-black/60" aria-hidden />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-popover rounded-lg shadow-popover overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-border/40 bg-card">
+        <div className="px-6 py-5 border-b border-border bg-card">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-brand-soft text-brand shrink-0">
+              <div className="p-2 rounded-lg bg-brand-soft text-brand shrink-0">
                 <Send className="w-4 h-4" />
               </div>
               <div>
@@ -144,7 +144,7 @@ function ShiftDetailModal({
             No shift details available.
           </div>
         ) : (
-          <div className="overflow-y-auto max-h-[60vh] divide-y divide-border/40">
+          <div className="overflow-y-auto max-h-[60vh] divide-y divide-border">
             {log.shifts.map((shift) => (
               <div
                 key={shift.id}
@@ -169,7 +169,7 @@ function ShiftDetailModal({
         )}
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border/40 bg-muted/20 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-border bg-muted/20 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {log.shifts.length} shift{log.shifts.length !== 1 ? "s" : ""} published
           </span>
@@ -191,10 +191,10 @@ function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
 
   return (
     <>
-      <div className="border-b border-border/40 last:border-0">
+      <div className="border-b border-border last:border-0">
         <button
           onClick={() => setModalOpen(true)}
-          className="w-full px-4 sm:px-6 py-3 flex items-start gap-3 hover:bg-card/60 transition-colors text-left"
+          className="w-full px-4 sm:px-6 py-3 flex items-start gap-3 hover:bg-accent transition-colors text-left"
         >
           <div className="mt-0.5 p-1.5 rounded-lg shrink-0 bg-brand-soft text-brand">
             <Send className="w-3.5 h-3.5" />
@@ -274,12 +274,12 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
   }, [open, refreshKey, fetchLogs]);
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <button
         onClick={() => setOpen((p) => !p)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="w-full border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2 hover:bg-card/80 transition-colors"
+        className="w-full border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2 hover:bg-accent transition-colors"
       >
         <Activity className="h-4 w-4 text-brand shrink-0" />
         <h2 className="font-semibold">Published Schedules</h2>

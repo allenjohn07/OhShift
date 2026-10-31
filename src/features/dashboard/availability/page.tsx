@@ -144,9 +144,9 @@ function AvailabilityEditor() {
   }
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
       <div>
-        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
           Availability
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
@@ -155,8 +155,8 @@ function AvailabilityEditor() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <ul className="divide-y divide-border/40">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <ul className="divide-y divide-border">
           {days.map((day, index) => (
             <li
               key={day.day_of_week}
@@ -166,7 +166,7 @@ function AvailabilityEditor() {
                 <p className="text-sm font-semibold">{DAY_LABELS[index]}</p>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-background/50 border border-border/50 self-start">
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-background border border-border self-start">
                 <button
                   type="button"
                   onClick={() => updateDay(index, { is_available: true })}
@@ -201,7 +201,7 @@ function AvailabilityEditor() {
                     onChange={(e) =>
                       updateDay(index, { start_time: e.target.value })
                     }
-                    className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
+                    className="h-10 w-[8.5rem] rounded-md bg-card border-border"
                   />
                   <span className="text-muted-foreground text-sm">–</span>
                   <Input
@@ -210,7 +210,7 @@ function AvailabilityEditor() {
                     onChange={(e) =>
                       updateDay(index, { end_time: e.target.value })
                     }
-                    className="h-10 w-[8.5rem] rounded-xl bg-card/50 border-border/60"
+                    className="h-10 w-[8.5rem] rounded-md bg-card border-border"
                   />
                 </div>
               ) : (
@@ -220,11 +220,11 @@ function AvailabilityEditor() {
           ))}
         </ul>
 
-        <div className="border-t border-border/40 px-4 sm:px-6 py-4 flex justify-end">
+        <div className="border-t border-border px-4 sm:px-6 py-4 flex justify-end">
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="btn-brand rounded-xl h-11 px-6 w-full sm:w-auto"
+            className="btn-brand rounded-md h-9 px-6 w-full sm:w-auto"
           >
             {saving ? (
               <>

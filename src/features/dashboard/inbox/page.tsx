@@ -412,11 +412,11 @@ function InboxPageContent() {
   return (
     <>
       <div className="flex-1 w-full">
-        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-8">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
             <div>
-              <p className="text-sm font-medium text-brand mb-1">Team</p>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              <p className="text-sm text-muted-foreground mb-1.5">Team</p>
+              <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
                 Inbox
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -426,7 +426,7 @@ function InboxPageContent() {
             <div className="flex items-center gap-2">
               {tab === "announcements" && canManage && (
                 <Button
-                  className="btn-brand rounded-xl"
+                  className="btn-brand rounded-md"
                   onClick={() => openCompose()}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
@@ -436,7 +436,7 @@ function InboxPageContent() {
               {tab === "announcements" && unreadAnnouncements > 0 && (
                 <Button
                   variant="outline"
-                  className="rounded-xl"
+                  className="rounded-lg"
                   onClick={handleMarkAllRead}
                 >
                   Mark all read
@@ -444,7 +444,7 @@ function InboxPageContent() {
               )}
               {tab === "messages" && (
                 <Button
-                  className="btn-brand rounded-xl"
+                  className="btn-brand rounded-md"
                   onClick={openNewDm}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
@@ -454,7 +454,7 @@ function InboxPageContent() {
             </div>
           </div>
 
-          <div className="flex gap-1 p-1 rounded-xl border border-border/50 bg-card/40 w-fit mb-6">
+          <div className="flex gap-1 p-1 rounded-lg border border-border bg-card w-fit mb-6">
             <button
               type="button"
               onClick={() => setTab("announcements")}
@@ -498,8 +498,8 @@ function InboxPageContent() {
           {tab === "announcements" && (
             <div className="space-y-3">
               {announcements.length === 0 ? (
-                <div className="rounded-2xl border border-border/50 bg-card/40 px-6 py-16 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand">
+                <div className="rounded-lg border border-border bg-card px-6 py-16 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
                     <Megaphone className="h-5 w-5" />
                   </div>
                   <p className="font-medium">No announcements yet</p>
@@ -518,7 +518,7 @@ function InboxPageContent() {
                     <div
                       key={ann.id}
                       className={cn(
-                        "rounded-2xl border border-border/50 bg-card/40 overflow-hidden transition-colors",
+                        "rounded-lg border border-border bg-card overflow-hidden transition-colors",
                         unread && "border-brand/40",
                       )}
                     >
@@ -554,7 +554,7 @@ function InboxPageContent() {
                         </div>
                       </button>
                       {open && (
-                        <div className="px-4 sm:px-5 pb-4 border-t border-border/40 pt-3">
+                        <div className="px-4 sm:px-5 pb-4 border-t border-border pt-3">
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">
                             {ann.body}
                           </p>
@@ -564,7 +564,7 @@ function InboxPageContent() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="rounded-xl"
+                                  className="rounded-lg"
                                   onClick={() => openCompose(ann)}
                                 >
                                   <Pencil className="h-3.5 w-3.5 mr-1.5" />
@@ -574,7 +574,7 @@ function InboxPageContent() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="rounded-xl text-red-500 hover:text-red-500"
+                                className="rounded-lg text-red-500 hover:text-red-500"
                                 disabled={deletingId === ann.id}
                                 onClick={() =>
                                   handleDeleteAnnouncement(ann.id)
@@ -599,15 +599,15 @@ function InboxPageContent() {
           )}
 
           {tab === "messages" && (
-            <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden min-h-[28rem] sm:min-h-[32rem] flex flex-col md:flex-row">
+            <div className="rounded-lg border border-border bg-card overflow-hidden min-h-[28rem] sm:min-h-[32rem] flex flex-col md:flex-row">
               {/* Conversation list */}
               <div
                 className={cn(
-                  "md:w-80 md:border-r border-border/50 flex flex-col shrink-0",
+                  "md:w-80 md:border-r border-border flex flex-col shrink-0",
                   activeId ? "hidden md:flex" : "flex",
                 )}
               >
-                <div className="px-4 py-3 border-b border-border/40">
+                <div className="px-4 py-3 border-b border-border">
                   <p className="text-sm font-medium">Conversations</p>
                 </div>
                 <div className="flex-1 overflow-y-auto max-h-[40vh] md:max-h-none">
@@ -622,7 +622,7 @@ function InboxPageContent() {
                         type="button"
                         onClick={() => openConversation(c.id)}
                         className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors border-b border-border/30 last:border-0",
+                          "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors border-b border-border last:border-0",
                           activeId === c.id
                             ? "bg-brand-soft/60"
                             : "hover:bg-muted/30",
@@ -674,7 +674,7 @@ function InboxPageContent() {
                 {!activeId ? (
                   <div className="flex-1 flex items-center justify-center p-8 text-center">
                     <div>
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
                         <MessageSquare className="h-5 w-5" />
                       </div>
                       <p className="font-medium">Select a conversation</p>
@@ -685,11 +685,11 @@ function InboxPageContent() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-border/40">
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-border">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="md:hidden rounded-xl shrink-0"
+                        className="md:hidden rounded-lg shrink-0"
                         onClick={() => setActiveId(null)}
                         aria-label="Back to conversations"
                         tooltip="Back to conversations"
@@ -736,7 +736,7 @@ function InboxPageContent() {
                             >
                               <div
                                 className={cn(
-                                  "max-w-[85%] sm:max-w-[70%] rounded-2xl px-3.5 py-2 text-sm",
+                                  "max-w-[85%] sm:max-w-[70%] rounded-lg px-3.5 py-2 text-sm",
                                   mine
                                     ? "bg-brand text-brand-foreground rounded-br-md"
                                     : "bg-muted/60 text-foreground rounded-bl-md",
@@ -764,19 +764,19 @@ function InboxPageContent() {
 
                     <form
                       onSubmit={handleSend}
-                      className="flex gap-2 p-3 sm:p-4 border-t border-border/40"
+                      className="flex gap-2 p-3 sm:p-4 border-t border-border"
                     >
                       <Input
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         maxLength={MSG_MAX}
                         placeholder="Write a message…"
-                        className="h-11 rounded-xl bg-card/50 border-border/60"
+                        className="h-11 rounded-md bg-card border-border"
                       />
                       <Button
                         type="submit"
                         disabled={sending || !draft.trim()}
-                        className="btn-brand rounded-xl shrink-0 h-11 px-5"
+                        className="btn-brand rounded-md shrink-0 h-9 px-5"
                       >
                         {sending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -794,7 +794,7 @@ function InboxPageContent() {
       </div>
 
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-lg">
+        <DialogContent className="rounded-lg sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Edit announcement" : "New announcement"}
@@ -814,7 +814,7 @@ function InboxPageContent() {
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={TITLE_MAX}
                 placeholder="Schedule update for next week"
-                className="h-11 rounded-xl bg-card/50 border-border/60"
+                className="h-11 rounded-md bg-card border-border"
               />
             </div>
             <div className="space-y-2">
@@ -828,14 +828,14 @@ function InboxPageContent() {
                 rows={5}
                 maxLength={BODY_MAX}
                 placeholder="Share details with your team…"
-                className="w-full rounded-xl border border-border/60 bg-card/50 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               />
             </div>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-lg"
                 onClick={() => setComposeOpen(false)}
               >
                 Cancel
@@ -843,7 +843,7 @@ function InboxPageContent() {
               <Button
                 type="submit"
                 disabled={savingAnnouncement}
-                className="btn-brand rounded-xl"
+                className="btn-brand rounded-md"
               >
                 {savingAnnouncement ? (
                   <>
@@ -862,7 +862,7 @@ function InboxPageContent() {
       </Dialog>
 
       <Dialog open={newDmOpen} onOpenChange={setNewDmOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-md">
+        <DialogContent className="rounded-lg sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New message</DialogTitle>
             <DialogDescription>
@@ -881,7 +881,7 @@ function InboxPageContent() {
                   type="button"
                   disabled={startingDm}
                   onClick={() => handleStartDm(m.id)}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer disabled:opacity-50"
+                  className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Avatar className="h-9 w-9">
                     {m.avatar_url && <AvatarImage src={m.avatar_url} />}

@@ -62,12 +62,12 @@ export function DashboardContent({
 
   return (
     <>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 sm:space-y-8 overflow-x-clip w-full">
+      <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-8 sm:space-y-10 overflow-x-clip w-full">
         <div>
-          <p className="text-sm font-medium text-brand mb-1">
-            {company.name} Workspace
+          <p className="text-sm text-muted-foreground mb-1.5">
+            {company.name}
           </p>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+          <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
             Welcome back, {userName}
           </h1>
         </div>
@@ -77,47 +77,51 @@ export function DashboardContent({
           <ShiftSummary initialShifts={myShifts} employeeId={currentUser.id} />
         )}
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
+        {/* Quick stats — Notion-style property tiles */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            type="button"
             onClick={() => setIsManageTeamOpen(true)}
-            className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4 cursor-pointer hover:bg-card/60 hover:border-brand/40 transition-all group"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setIsManageTeamOpen(true);
-              }
-            }}
+            className="group w-full rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-accent/60 cursor-pointer"
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand group-hover:scale-110 transition-transform shrink-0">
-              <Users className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Total Team</p>
-              <p className="text-2xl font-bold mt-1">{employees?.length || 0}</p>
-            </div>
+            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              Team
+            </span>
+            <span className="mt-1 block text-2xl font-semibold tabular-nums">
+              {employees?.length || 0}
+            </span>
+            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+              Manage team →
+            </span>
+          </button>
+          <div className="w-full rounded-lg border border-border bg-card px-4 py-3.5">
+            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              Shifts scheduled
+            </span>
+            <span className="mt-1 block text-2xl font-semibold tabular-nums">
+              {shifts?.length || 0}
+            </span>
+            <span className="text-xs text-muted-foreground">All time</span>
           </div>
-          <div className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">Shifts Scheduled (All Time)</p>
-              <p className="text-2xl font-bold mt-1">{shifts?.length || 0}</p>
-            </div>
-          </div>
-
-          <div className="w-full rounded-2xl border border-border/50 bg-card/40 p-6 flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-soft text-brand shrink-0">
-              <Settings className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">Manage Setup</p>
-              <p onClick={() => setIsManageSettingsOpen(true)} className="text-sm font-medium mt-1 text-foreground underline underline-offset-4 cursor-pointer hover:text-brand transition-colors">View Settings</p>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsManageSettingsOpen(true)}
+            className="group w-full rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-accent/60 cursor-pointer"
+          >
+            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+              <Settings className="h-3.5 w-3.5" />
+              Shift presets
+            </span>
+            <span className="mt-1 block text-sm font-medium tabular-nums">
+              {company.morning_start}–{company.morning_end} ·{" "}
+              {company.evening_start}–{company.evening_end}
+            </span>
+            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+              Edit settings →
+            </span>
+          </button>
         </div>
 
         {/* Dashboard Lower Section */}

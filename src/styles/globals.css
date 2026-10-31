@@ -30,66 +30,79 @@
   --color-brand-soft: var(--brand-soft);
   --color-brand-from: var(--brand-from);
   --color-brand-to: var(--brand-to);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --color-sidebar: var(--sidebar);
+  --shadow-popover: var(--shadow-popover);
+  /* Notion-like scale: controls 6px, surfaces 8px. */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: var(--radius);
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 14px;
+  --radius-4xl: 16px;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0.012 285);
-  --foreground: oklch(0.2 0.04 277);
-  --card: oklch(0.995 0.008 285);
-  --card-foreground: oklch(0.2 0.04 277);
-  --popover: oklch(0.995 0.008 285);
-  --popover-foreground: oklch(0.2 0.04 277);
-  --primary: oklch(0.45 0.2 275);
-  --primary-foreground: oklch(0.98 0.01 285);
-  --secondary: oklch(0.95 0.025 277);
-  --secondary-foreground: oklch(0.32 0.08 277);
-  --muted: oklch(0.95 0.02 277);
-  --muted-foreground: oklch(0.48 0.04 277);
-  --accent: oklch(0.945 0.035 277);
-  --accent-foreground: oklch(0.32 0.1 277);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.88 0.03 277);
-  --input: oklch(0.88 0.03 277);
-  --ring: oklch(0.55 0.2 277);
-  --brand: oklch(0.55 0.22 277);
-  --brand-foreground: oklch(0.99 0.01 285);
-  --brand-soft: oklch(0.94 0.05 277);
+  /* Notion-style neutrals; logo purple only for accents. */
+  --radius: 0.375rem;
+  --background: #ffffff;
+  --foreground: #37352f;
+  --card: #ffffff;
+  --card-foreground: #37352f;
+  --popover: #ffffff;
+  --popover-foreground: #37352f;
+  --primary: #5b4beb;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f7f5;
+  --secondary-foreground: #37352f;
+  --muted: #f7f7f5;
+  --muted-foreground: #787774;
+  --accent: rgba(55, 53, 47, 0.06);
+  --accent-foreground: #37352f;
+  --destructive: #e03e3e;
+  --border: rgba(55, 53, 47, 0.09);
+  --input: rgba(55, 53, 47, 0.16);
+  --ring: rgba(91, 75, 235, 0.4);
+  --sidebar: #f7f7f5;
+  --brand: #5b4beb;
+  --brand-foreground: #ffffff;
+  --brand-soft: rgba(91, 75, 235, 0.08);
   --brand-from: #6d5cff;
   --brand-to: #4634d6;
+  --shadow-popover:
+    0 0 0 1px rgba(15, 15, 15, 0.05), 0 3px 6px rgba(15, 15, 15, 0.1),
+    0 9px 24px rgba(15, 15, 15, 0.2);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.68 0.18 277);
-  --primary-foreground: oklch(0.16 0.05 277);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.2 277);
-  --brand: oklch(0.68 0.18 277);
-  --brand-foreground: oklch(0.99 0.01 285);
-  --brand-soft: oklch(0.27 0.06 277);
+  --background: #191919;
+  --foreground: #e6e6e5;
+  --card: #202020;
+  --card-foreground: #e6e6e5;
+  --popover: #252525;
+  --popover-foreground: #e6e6e5;
+  --primary: #7a6bff;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #e6e6e5;
+  --muted: #202020;
+  --muted-foreground: #9b9b9b;
+  --accent: rgba(255, 255, 255, 0.055);
+  --accent-foreground: #e6e6e5;
+  --destructive: #ff6b6b;
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: rgba(122, 107, 255, 0.45);
+  --sidebar: #202020;
+  --brand: #7a6bff;
+  --brand-foreground: #ffffff;
+  --brand-soft: rgba(122, 107, 255, 0.16);
   --brand-from: #7a6bff;
   --brand-to: #4634d6;
+  --shadow-popover:
+    0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 6px rgba(0, 0, 0, 0.3),
+    0 9px 24px rgba(0, 0, 0, 0.45);
 }
 
 @layer base {
@@ -103,6 +116,11 @@
 
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--brand) 22%, transparent);
   }
 
   button:not(:disabled),
@@ -123,7 +141,7 @@
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(6px);
   }
 
   to {
@@ -133,7 +151,7 @@
 }
 
 .animate-fade-in {
-  animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .delay-100 {
@@ -160,61 +178,46 @@
   animation-delay: 600ms;
 }
 
-/* Button hover effect */
+/* Light press feedback for non-<Button> controls */
 .btn-hover {
-  transition: opacity 0.2s ease, transform 0.15s ease;
-}
-
-.btn-hover:hover {
-  opacity: 0.85;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-hover:active {
-  transform: scale(0.97);
+  opacity: 0.8;
 }
 
-/* Brand gradient CTA — matches logo (#6D5CFF → #4634D6) */
+/* Primary action — flat logo purple (Notion-style, no gradient/glow) */
 .btn-brand,
 .btn-primary {
-  background-image: linear-gradient(
-    135deg,
-    var(--brand-from) 0%,
-    var(--brand-to) 100%
-  );
+  background-color: var(--brand);
+  background-image: none;
   color: var(--brand-foreground);
   cursor: pointer;
-  box-shadow: 0 1px 2px oklch(0.4 0.18 277 / 0.28);
-  transition:
-    filter 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-brand:hover,
 .btn-primary:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 4px 14px oklch(0.45 0.2 277 / 0.35);
+  background-color: color-mix(in oklab, var(--brand) 88%, black);
 }
 
 .btn-brand:active,
 .btn-primary:active {
-  transform: scale(0.97);
-  filter: brightness(0.96);
+  background-color: color-mix(in oklab, var(--brand) 80%, black);
 }
 
 .btn-brand:disabled,
 .btn-primary:disabled {
-  opacity: 0.55;
-  filter: none;
-  box-shadow: none;
+  opacity: 0.5;
 }
 
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(8px);
   transition:
-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
@@ -228,5 +231,74 @@
     opacity: 1;
     transform: none;
     transition: none;
+  }
+}
+/* ── Landing feature scenes (src/features/landing/feature-scenes.tsx) ── */
+.scene * {
+  animation-duration: 6s;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+/* Appear, hold, fade — staggered via animation-delay */
+@keyframes scene-pop {
+  0%, 8% { opacity: 0; transform: translateY(4px) scale(0.96); }
+  16%, 82% { opacity: 1; transform: none; }
+  92%, 100% { opacity: 0; transform: none; }
+}
+
+@keyframes scene-slide-in {
+  0%, 18% { opacity: 0; transform: translateX(14px); }
+  30%, 82% { opacity: 1; transform: none; }
+  92%, 100% { opacity: 0; transform: none; }
+}
+
+@keyframes scene-fill {
+  0%, 10% { transform: scaleX(0); }
+  55%, 85% { transform: scaleX(1); }
+  95%, 100% { transform: scaleX(1); opacity: 0; }
+}
+
+@keyframes scene-travel {
+  0%, 12% { left: 0%; opacity: 0; }
+  18% { opacity: 1; }
+  48% { left: 100%; opacity: 1; }
+  54%, 100% { left: 100%; opacity: 0; }
+}
+
+@keyframes scene-arrive {
+  0%, 48% { opacity: 0; transform: scale(0.9); }
+  56%, 86% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+
+@keyframes scene-scan {
+  0%, 26% { transform: translateY(0); }
+  33%, 59% { transform: translateY(100%); }
+  66%, 92% { transform: translateY(200%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes scene-ring {
+  0% { transform: scale(0.6); opacity: 0.55; }
+  70%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+@keyframes scene-zap {
+  0%, 100% { transform: scale(1); }
+  8% { transform: scale(1.12) rotate(-4deg); }
+  16% { transform: scale(1); }
+}
+
+@keyframes scene-streak {
+  0% { transform: translateX(-130%); opacity: 0; }
+  20% { opacity: 1; }
+  60%, 100% { transform: translateX(130%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene * {
+    animation: none !important;
   }
 }

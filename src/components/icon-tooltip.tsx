@@ -89,7 +89,7 @@ export function IconTooltip({
         createPortal(
           <span
             role="tooltip"
-            className="pointer-events-none fixed z-[100] whitespace-nowrap rounded-md border border-border/50 bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md"
+            className="pointer-events-none fixed z-[100] whitespace-nowrap rounded-sm bg-[#0f0f0f] px-2 py-1 text-xs font-medium text-white/90 shadow-popover dark:bg-[#3a3a3a]"
             style={{
               top: pos.top,
               left: pos.left,

@@ -293,7 +293,7 @@ export function BulkAssignModal({
       <button
         type="button"
         onClick={open}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-md shrink-0"
       >
         <Users className="w-4 h-4" />
         <span className="hidden sm:inline">Assign shifts</span>
@@ -306,15 +306,15 @@ export function BulkAssignModal({
       <button
         type="button"
         onClick={open}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-xl shrink-0"
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-md shrink-0"
       >
         <Users className="w-4 h-4" />
         <span className="hidden sm:inline">Assign shifts</span>
       </button>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] border border-border/50 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
-          <div className="p-6 border-b border-border/50 flex items-start justify-between gap-3 shrink-0">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+        <div className="bg-popover w-full max-w-lg rounded-lg shadow-popover overflow-hidden max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+          <div className="p-6 border-b border-border flex items-start justify-between gap-3 shrink-0">
             <div>
               <h2 className="text-xl font-semibold">Assign shifts</h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -326,7 +326,7 @@ export function BulkAssignModal({
                 type="button"
                 onClick={close}
                 disabled={isLoading}
-                className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors disabled:opacity-50"
+                className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors disabled:opacity-50"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -336,7 +336,7 @@ export function BulkAssignModal({
 
           <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
+              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-100 dark:border-red-500/20">
                 {error}
               </div>
             )}
@@ -356,7 +356,7 @@ export function BulkAssignModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
 
@@ -402,7 +402,7 @@ export function BulkAssignModal({
                       id="bulk-start"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                     />
                   </div>
                   <div className="space-y-2">
@@ -417,7 +417,7 @@ export function BulkAssignModal({
                       id="bulk-end"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                     />
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export function BulkAssignModal({
                   id="bulk-designation"
                   value={designation}
                   onChange={(e) => setDesignation(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="">All designations</option>
                   {designations.map((d) => (
@@ -454,7 +454,7 @@ export function BulkAssignModal({
                   value={sharedTitle}
                   onChange={(e) => setSharedTitle(e.target.value)}
                   placeholder={designation || "Shift"}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </section>
@@ -483,11 +483,11 @@ export function BulkAssignModal({
                   No team members to show for this window.
                 </p>
               ) : (
-                <div className="rounded-xl border border-border/50 overflow-hidden">
+                <div className="rounded-lg border border-border overflow-hidden">
                   <ScrollFade
                     contentKey={`${people.length}:${designation}:${date}:${startTime}:${endTime}`}
                     maxHeightClass="max-h-64"
-                    className="divide-y divide-border/40"
+                    className="divide-y divide-border"
                   >
                     {people.map((person) => {
                       const isSelected = selected.has(person.id);
@@ -616,11 +616,11 @@ export function BulkAssignModal({
             </p>
           </div>
 
-          <div className="p-6 pt-4 flex items-center justify-end gap-3 border-t border-border/50 shrink-0">
+          <div className="p-6 pt-4 flex items-center justify-end gap-3 border-t border-border shrink-0">
             <button
               type="button"
               onClick={close}
-              className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+              className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
               disabled={isLoading}
             >
               Cancel
@@ -629,7 +629,7 @@ export function BulkAssignModal({
               type="button"
               onClick={onCreate}
               disabled={isLoading || selectedCount === 0}
-              className="btn-brand h-10 px-6 rounded-xl text-sm font-medium disabled:opacity-50"
+              className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">

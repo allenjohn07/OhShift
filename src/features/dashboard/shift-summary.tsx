@@ -267,7 +267,7 @@ export function ShiftSummary({
           const status = getStatus(todayShift);
           const cfg = statusConfig[status];
           return (
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6 sm:p-8 overflow-hidden">
+            <div className="rounded-lg border border-border bg-card p-6 sm:p-8 overflow-hidden">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex flex-col gap-3 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -275,17 +275,17 @@ export function ShiftSummary({
                       Today&apos;s Shift: {todayShift.title}
                     </h2>
                     <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.className}`}
+                      className={`text-xs font-medium px-1.5 py-0.5 rounded-sm ${cfg.className}`}
                     >
                       {cfg.label}
                     </span>
                     {statusReady && isOpen && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500">
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-500">
                         Clocked in
                       </span>
                     )}
                     {statusReady && entry && entry.status !== "open" && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         {entry.status}
                       </span>
                     )}
@@ -326,7 +326,7 @@ export function ShiftSummary({
                     </span>
                   ) : canClockOut ? (
                     <Button
-                      className="btn-brand rounded-xl h-10 px-5"
+                      className="btn-brand rounded-md h-9 px-5"
                       disabled={acting}
                       onClick={clockOut}
                     >
@@ -338,7 +338,7 @@ export function ShiftSummary({
                     </Button>
                   ) : canClockIn ? (
                     <Button
-                      className="btn-brand rounded-xl h-10 px-5"
+                      className="btn-brand rounded-md h-9 px-5"
                       disabled={acting}
                       onClick={clockIn}
                     >
@@ -365,7 +365,7 @@ export function ShiftSummary({
           );
         })()
       ) : (
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-8 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2">
               <Calendar className="h-6 w-6" />
@@ -379,12 +379,12 @@ export function ShiftSummary({
         </div>
       )}
 
-      <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
           <Clock className="h-4 w-4 text-emerald-500" />
           <h2 className="font-semibold">Upcoming Shifts</h2>
           {upcomingShifts.length > 0 && (
-            <span className="ml-auto text-xs font-medium bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full">
+            <span className="ml-auto text-xs font-medium bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-sm">
               {upcomingShifts.length} shift
               {upcomingShifts.length > 1 ? "s" : ""}
             </span>
@@ -395,7 +395,7 @@ export function ShiftSummary({
             No upcoming shifts scheduled.
           </div>
         ) : (
-          <div className="divide-y divide-border/40">
+          <div className="divide-y divide-border">
             {upcomingShifts.map((shift) => {
               const shiftStart = new Date(shift.start_time);
               const isThisWeek = shiftStart <= endOfWeek;
@@ -417,11 +417,11 @@ export function ShiftSummary({
                       {formatTime(shift.start_time)} –{" "}
                       {formatTime(shift.end_time)}
                     </span>
-                    <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+                    <span className="ml-1 text-xs font-medium px-1.5 py-0.5 rounded-sm bg-blue-500/15 text-blue-400">
                       Upcoming
                     </span>
                     {isThisWeek && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400">
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-violet-500/15 text-violet-400">
                         This Week
                       </span>
                     )}

@@ -1,7 +1,7 @@
 import { Link } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, User, Building2, Sun, Moon } from "lucide-react";
-import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { ArrowRight, Building2, Moon, Sun, User } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
@@ -10,23 +10,46 @@ import { cn } from "@/lib/utils";
 
 const MENU_CLOSE_MS = 200;
 
+/** In-page sections on the landing page (plain anchors). */
+const SECTION_LINKS = [
+  { href: "/#features", label: "Features" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#roles", label: "For teams" },
+];
+
 function subscribe() {
   return () => {};
+}
+
+function ThemeToggle() {
+  const { setTheme, resolvedTheme } = useTheme();
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
+  if (!mounted) return <div className="h-8 w-8" />;
+  const label =
+    resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  return (
+    <IconTooltip label={label} side="bottom">
+      <button
+        type="button"
+        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+        aria-label={label}
+      >
+        {resolvedTheme === "dark" ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )}
+      </button>
+    </IconTooltip>
+  );
 }
 
 /** Marketing navbar — for logged-out visitors only (landing / auth). */
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const { setTheme, resolvedTheme } = useTheme();
-  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const menuShown = isOpen || isClosing;
-
-  const openMenu = () => {
-    setIsClosing(false);
-    setIsOpen(true);
-  };
 
   const closeMenu = () => {
     if (!isOpen || isClosing) return;
@@ -36,12 +59,15 @@ export function Navbar() {
 
   const toggleMenu = () => {
     if (isOpen) closeMenu();
-    else openMenu();
+    else {
+      setIsClosing(false);
+      setIsOpen(true);
+    }
   };
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 640) {
+      if (window.innerWidth >= 768) {
         setIsOpen(false);
         setIsClosing(false);
       }
@@ -58,142 +84,98 @@ export function Navbar() {
 
   useEffect(() => {
     const prev = document.body.style.overflow;
-    if (menuShown) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = prev || "";
-    }
+    document.body.style.overflow = menuShown ? "hidden" : prev || "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [menuShown]);
 
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  };
-
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
-          <Link href="/" className="flex items-center gap-1.5 group">
-            <BrandMark size={22} />
-            <span className="text-lg font-semibold tracking-tight">OhShift</span>
-          </Link>
-
-          <div className="hidden sm:flex items-center gap-2">
-            {mounted ? (
-              <IconTooltip
-                label={
-                  resolvedTheme === "dark"
-                    ? "Switch to light mode"
-                    : "Switch to dark mode"
-                }
-                side="bottom"
-              >
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
-                  aria-label="Toggle theme"
-                >
-                  {resolvedTheme === "dark" ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
-                  )}
-                </button>
-              </IconTooltip>
-            ) : (
-              <div className="w-9 h-9" />
-            )}
-
-            <Link href="/login">
-              <Button
-                variant="outline"
-                size="sm"
-                className="btn-hover h-9 px-5 rounded-full font-medium"
-              >
-                Employee Login
-              </Button>
+      <nav className="fixed top-0 left-0 right-0 z-50 w-full border-b border-transparent bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2">
+              <BrandMark size={22} />
+              <span className="text-[15px] font-semibold tracking-tight">
+                OhShift
+              </span>
             </Link>
-            <Link href="/company/login">
-              <Button
-                size="sm"
-                className="btn-hover h-9 px-5 rounded-full font-medium"
-              >
-                Company Portal
-              </Button>
+            <div className="hidden md:flex items-center gap-0.5">
+              {SECTION_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden md:flex items-center gap-1">
+            <ThemeToggle />
+            <Link
+              href="/login"
+              className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Employee login
+            </Link>
+            <Link
+              href="/company/login"
+              className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Company login
+            </Link>
+            <Link href="/company/register" className="ml-1">
+              <Button size="sm">Register your company</Button>
             </Link>
           </div>
 
-          <div className="flex sm:hidden items-center gap-1.5">
-            {mounted ? (
-              <IconTooltip
-                label={
-                  resolvedTheme === "dark"
-                    ? "Switch to light mode"
-                    : "Switch to dark mode"
-                }
-                side="bottom"
-              >
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 border border-border/50 cursor-pointer"
-                  aria-label="Toggle theme"
-                >
-                  {resolvedTheme === "dark" ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
-                  )}
-                </button>
-              </IconTooltip>
-            ) : (
-              <div className="w-9 h-9" />
-            )}
+          <div className="flex md:hidden items-center gap-1">
+            <ThemeToggle />
             <IconTooltip
               label={menuShown ? "Close menu" : "Open menu"}
               side="bottom"
             >
               <button
+                type="button"
                 onClick={toggleMenu}
-                className="relative z-60 flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors duration-200 gap-[5px] cursor-pointer"
+                className="relative z-60 flex h-8 w-8 flex-col items-center justify-center gap-[5px] rounded-md transition-colors hover:bg-accent cursor-pointer"
                 aria-label={menuShown ? "Close menu" : "Open menu"}
                 aria-expanded={isOpen}
               >
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full origin-center"
-                style={{
-                  transform: menuShown
-                    ? "translateY(6.5px) rotate(45deg)"
-                    : "none",
-                }}
-              />
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full"
-                style={{
-                  opacity: menuShown ? 0 : 1,
-                }}
-              />
-              <span
-                className="block w-4 h-[1.5px] bg-foreground rounded-full origin-center"
-                style={{
-                  transform: menuShown
-                    ? "translateY(-6.5px) rotate(-45deg)"
-                    : "none",
-                }}
-              />
-            </button>
+                <span
+                  className="block h-[1.5px] w-4 origin-center rounded-full bg-foreground"
+                  style={{
+                    transform: menuShown
+                      ? "translateY(6.5px) rotate(45deg)"
+                      : "none",
+                  }}
+                />
+                <span
+                  className="block h-[1.5px] w-4 rounded-full bg-foreground"
+                  style={{ opacity: menuShown ? 0 : 1 }}
+                />
+                <span
+                  className="block h-[1.5px] w-4 origin-center rounded-full bg-foreground"
+                  style={{
+                    transform: menuShown
+                      ? "translateY(-6.5px) rotate(-45deg)"
+                      : "none",
+                  }}
+                />
+              </button>
             </IconTooltip>
           </div>
         </div>
       </nav>
 
-      {/* Opens instantly; fades out on close */}
+      {/* Mobile menu — opens instantly; fades out on close */}
       <div
-        ref={menuRef}
         className={cn(
-          "sm:hidden fixed inset-0 z-40 bg-background",
+          "md:hidden fixed inset-0 z-40 bg-background",
           menuShown ? "pointer-events-auto" : "pointer-events-none opacity-0",
           isClosing &&
             "transition-opacity duration-200 motion-reduce:transition-none",
@@ -202,43 +184,47 @@ export function Navbar() {
         )}
         aria-hidden={!isOpen}
       >
-        <div className="flex h-full flex-col px-6 pt-24 pb-10">
+        <div className="flex h-full flex-col px-4 pt-20 pb-10">
           <div className="flex flex-1 flex-col justify-between">
-            <div className="flex flex-col gap-2">
-              <Link href="/login" onClick={closeMenu}>
-                <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-base font-medium">Employee Login</div>
-                    <div className="text-sm text-muted-foreground">
-                      Sign in to view your schedule
-                    </div>
-                  </div>
-                </div>
+            <div className="flex flex-col">
+              {SECTION_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={closeMenu}
+                  className="border-b border-border px-2 py-3.5 text-lg font-medium"
+                >
+                  {link.label}
+                </a>
+              ))}
+              <Link
+                href="/login"
+                onClick={closeMenu}
+                className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+              >
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-lg font-medium">Employee login</span>
               </Link>
-              <Link href="/company/login" onClick={closeMenu}>
-                <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card/40 px-5 py-5 transition-colors duration-200 hover:bg-accent">
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-base font-medium">Company Portal</div>
-                    <div className="text-sm text-muted-foreground">
-                      Manage your team and schedules
-                    </div>
-                  </div>
-                </div>
+              <Link
+                href="/company/login"
+                onClick={closeMenu}
+                className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+              >
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-lg font-medium">Company login</span>
               </Link>
             </div>
             <Link href="/company/register" onClick={closeMenu}>
-              <Button className="btn-hover w-full h-12 rounded-xl font-medium text-base">
+              <Button size="lg" className="w-full h-11 text-base">
                 Register your company
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="h-16 w-full shrink-0" />
+      <div className="h-14 w-full shrink-0" />
       <ColdStartBanner />
     </>
   );

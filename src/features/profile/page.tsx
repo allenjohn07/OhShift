@@ -59,7 +59,7 @@ function ProfilePageContent() {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 flex-1 w-full space-y-6">
+    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 flex-1 w-full space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
           Your Profile

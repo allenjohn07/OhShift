@@ -81,15 +81,6 @@ export default function EmployeeLoginPage() {
     <>
       <ColdStartBanner />
       <div className="min-h-dvh bg-background flex flex-col relative">
-        <div className="fixed inset-0 -z-10">
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-              backgroundSize: "32px 32px",
-            }}
-          />
-        </div>
 
         <div className="h-16 shrink-0 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
@@ -112,7 +103,7 @@ export default function EmployeeLoginPage() {
                   OhShift
                 </span>
               </Link>
-              <h1 className="text-2xl font-semibold tracking-tight">
+              <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
                 Employee Sign In
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -120,7 +111,7 @@ export default function EmployeeLoginPage() {
               </p>
             </div>
 
-            <div className="animate-fade-in delay-100 flex items-start gap-3 rounded-xl bg-accent/50 border border-border/50 p-4">
+            <div className="animate-fade-in delay-100 flex items-start gap-3 rounded-lg bg-accent/50 border border-border p-4">
               <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Your account is created when your company invites you. Use the
@@ -133,7 +124,7 @@ export default function EmployeeLoginPage() {
               className="space-y-5 animate-fade-in delay-200"
             >
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
+                <Label htmlFor="email">
                   Email
                 </Label>
                 <Input
@@ -143,12 +134,12 @@ export default function EmployeeLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                  className="h-9"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label htmlFor="password">
                     Password
                   </Label>
                   <button
@@ -167,7 +158,7 @@ export default function EmployeeLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
+                    className="h-9 pr-10"
                   />
                   <IconTooltip
                     label={showPassword ? "Hide password" : "Show password"}
@@ -193,12 +184,12 @@ export default function EmployeeLoginPage() {
 
               <Button
                 type="submit"
-                className="btn-hover w-full h-11 rounded-xl font-medium"
+                className="w-full h-9 font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Signing in...
                   </span>
                 ) : (
@@ -215,7 +206,7 @@ export default function EmployeeLoginPage() {
                 By signing in, you agree to our Terms of Service and Privacy
                 Policy.
               </p>
-              <div className="h-px bg-border/50" />
+              <div className="h-px bg-border" />
               <p className="text-sm text-muted-foreground">
                 Managing a team?{" "}
                 <Link

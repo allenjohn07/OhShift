@@ -31,14 +31,14 @@ export function TeamMembersList({
   );
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden lg:col-span-7 flex flex-col">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4 shrink-0">
-        <h2 className="font-semibold text-lg">Team Members</h2>
+    <div className="rounded-lg border border-border bg-card overflow-hidden lg:col-span-7 flex flex-col">
+      <div className="border-b border-border px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4 shrink-0">
+        <h2 className="font-semibold">Team members</h2>
 
         <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-md">
           <BulkAssignModal company={company} onAssigned={onShiftAssigned} />
           <div className="relative flex-1 min-w-0">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
+            <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none text-muted-foreground">
               <Search className="h-4 w-4" />
             </div>
             <input
@@ -46,7 +46,7 @@ export function TeamMembersList({
               placeholder="Search team..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-4 rounded-xl border border-input bg-background/50 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring dark:bg-white/[0.03]"
             />
           </div>
         </div>
@@ -55,12 +55,12 @@ export function TeamMembersList({
       {filteredEmployees && filteredEmployees.length > 0 ? (
         <ScrollFade
           contentKey={`${filteredEmployees.length}:${searchQuery}`}
-          className="divide-y divide-border/40"
+          className="divide-y divide-border"
         >
           {filteredEmployees.map((emp) => (
             <div
               key={emp.id}
-              className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-card/60 transition-colors"
+              className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-accent/60 transition-colors"
             >
               <div>
                 <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ export function TeamMembersList({
           ))}
         </ScrollFade>
       ) : (
-        <div className="p-12 text-center text-muted-foreground border-border/50 border-dashed border-2 m-6 rounded-xl bg-background/50 flex flex-col items-center justify-center">
+        <div className="p-12 text-center text-muted-foreground border-border border-dashed border-2 m-6 rounded-lg bg-background flex flex-col items-center justify-center">
           <p>
             {employees && employees.length === 0
               ? `You haven't added any employees yet.`

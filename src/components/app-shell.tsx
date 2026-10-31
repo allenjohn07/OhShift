@@ -120,7 +120,7 @@ function useSidebarCollapsed() {
 }
 
 const compactTabClass =
-  "flex w-full flex-col items-center gap-1 px-2 py-2 text-[10px] font-medium rounded-xl transition-colors cursor-pointer";
+  "flex w-full flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium rounded-md transition-colors cursor-pointer";
 
 function NavBadge({
   count,
@@ -139,7 +139,7 @@ function NavBadge({
     return (
       <span
         className={cn(
-          "absolute flex items-center justify-center rounded-full bg-brand text-[9px] font-bold leading-none text-brand-foreground",
+          "absolute flex items-center justify-center rounded-full bg-brand text-[9px] font-semibold leading-none text-brand-foreground",
           corner
             ? "-right-1 -top-1 h-4 min-w-4 px-0.5"
             : "-right-2 -top-1.5 h-4 min-w-4 px-0.5",
@@ -151,7 +151,7 @@ function NavBadge({
   }
 
   return (
-    <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft px-1.5 text-[10px] font-bold text-brand">
+    <span className="ml-auto flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-sm bg-brand-soft px-1 text-[11px] font-medium tabular-nums text-brand">
       {text}
     </span>
   );
@@ -192,16 +192,20 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center rounded-xl transition-colors cursor-pointer",
+        "group/nav flex items-center rounded-md transition-colors cursor-pointer",
         compact
           ? compactTabClass
           : flush
-            ? "gap-3 py-2.5 text-sm font-medium"
+            ? "gap-2.5 px-2 py-2 text-sm"
             : // Fixed padding forever — never justify-center (that shifts icons)
-              "w-full gap-3 px-3 py-2.5 text-sm font-medium",
-        active
-          ? "bg-brand-soft text-brand"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+              "h-8 w-full gap-2.5 px-3 text-sm",
+        compact
+          ? active
+            ? "text-brand"
+            : "text-muted-foreground hover:text-foreground"
+          : active
+            ? "bg-accent font-medium text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent",
       )}
       aria-current={active ? "page" : undefined}
       aria-label={ariaLabel}
@@ -212,7 +216,12 @@ function NavLink({
           compact ? "h-5 w-5" : "h-4 w-4",
         )}
       >
-        <Icon className={cn(compact ? "h-5 w-5" : "h-4 w-4")} />
+        <Icon
+          className={cn(
+            compact ? "h-5 w-5" : "h-4 w-4",
+            !compact && active && "text-brand",
+          )}
+        />
         {compact && <NavBadge count={count} compact />}
         {!compact && !flush && count > 0 && (
           <span
@@ -303,13 +312,13 @@ function AccountPanel({
       <button
         type="button"
         className={cn(
-          "flex h-9 min-w-0 w-full items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-          flush ? "px-0" : "px-2.5 pr-3",
+          "flex h-8 min-w-0 w-full items-center gap-2 rounded-md text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+          flush ? "px-1" : "px-2 pr-3",
         )}
       >
-        <Avatar className="h-7 w-7 border border-border/50 shrink-0">
+        <Avatar className="h-6 w-6 shrink-0 rounded-sm">
           <AvatarImage src={avatarUrl || ""} alt={displayName} />
-          <AvatarFallback className="bg-brand-soft text-brand font-medium text-[10px]">
+          <AvatarFallback className="rounded-sm bg-brand-soft text-brand font-medium text-[10px]">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -376,7 +385,8 @@ function AccountPanel({
             )}
             <DropdownMenuItem
               onClick={onLogout}
-              className="text-red-500 focus:text-red-500 cursor-pointer focus:bg-red-500/10"
+              variant="destructive"
+              className="cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
@@ -396,7 +406,7 @@ function AccountPanel({
           type="button"
           onClick={toggle}
           className={cn(
-            "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-opacity cursor-pointer motion-reduce:transition-none",
+            "flex shrink-0 items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-opacity cursor-pointer motion-reduce:transition-none",
             rail
               ? "opacity-0 duration-150 pointer-events-none"
               : "opacity-100 duration-200 delay-100",
@@ -487,6 +497,7 @@ export function AppShell({
   const displayName = user?.profile.full_name || "User";
   const email = user?.email;
   const avatarUrl = user?.profile.avatar_url;
+  const companyName = user?.profile.companies?.name;
 
   // Hold the shell until auth resolves so we never paint the wrong role's nav.
   if (loading) {
@@ -502,29 +513,39 @@ export function AppShell({
       {/* Desktop sidebar — width + label opacity only; icons never move or resize */}
       <aside
         className={cn(
-          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col overflow-hidden border-r border-border/40 bg-background transition-[width]",
+          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col overflow-hidden border-r border-border bg-sidebar transition-[width]",
           SIDEBAR_EASE,
           collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W,
         )}
       >
-        <div className="flex h-16 shrink-0 items-center gap-1.5 border-b border-border/40 px-5">
+        {/* Workspace header (Notion-style) */}
+        <div className="shrink-0 px-3 pt-3 pb-2">
           <Link
             href={homeHref}
-            className="inline-flex min-w-0 items-center gap-1.5"
+            className="flex h-9 min-w-0 items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-accent"
           >
-            <BrandMark size={22} />
+            <span className="flex h-6 w-7 shrink-0 items-center justify-center">
+              <BrandMark size={20} />
+            </span>
             <span
               className={cn(
-                "text-lg font-semibold tracking-tight",
+                "flex min-w-0 flex-col leading-tight",
                 sidebarLabelClass(collapsed),
               )}
               aria-hidden={collapsed || undefined}
             >
-              OhShift
+              <span className="truncate text-sm font-semibold">
+                {companyName || "OhShift"}
+              </span>
+              {companyName && (
+                <span className="truncate text-[11px] text-muted-foreground">
+                  OhShift workspace
+                </span>
+              )}
             </span>
           </Link>
         </div>
-        <nav className="flex-1 space-y-1 overflow-x-hidden overflow-y-auto p-3">
+        <nav className="flex-1 space-y-px overflow-x-hidden overflow-y-auto px-3 pb-3">
           {items.map((item) => (
             <NavLink
               key={item.id}
@@ -537,7 +558,7 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div className="shrink-0 space-y-2 border-t border-border/40 p-3">
+        <div className="shrink-0 space-y-px border-t border-border p-3">
           <IconTooltip
             label="Expand sidebar"
             enabled={collapsed}
@@ -546,7 +567,7 @@ export function AppShell({
             <button
               type="button"
               onClick={toggleSidebar}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+              className="flex h-8 w-full items-center gap-2.5 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? (
@@ -573,11 +594,13 @@ export function AppShell({
       </aside>
 
       {/* Mobile top bar */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-50 h-16 border-b border-border/40 backdrop-blur-xl bg-background/70">
+      <header className="md:hidden fixed top-0 inset-x-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-full items-center px-4 sm:px-6">
-          <Link href={homeHref} className="inline-flex items-center gap-1.5">
-            <BrandMark size={22} />
-            <span className="text-lg font-semibold tracking-tight">OhShift</span>
+          <Link href={homeHref} className="inline-flex min-w-0 items-center gap-2">
+            <BrandMark size={20} />
+            <span className="truncate text-sm font-semibold">
+              {companyName || "OhShift"}
+            </span>
           </Link>
         </div>
       </header>
@@ -594,13 +617,13 @@ export function AppShell({
       >
         <button
           type="button"
-          className="absolute inset-0 bg-black/50 cursor-pointer"
+          className="absolute inset-0 bg-black/40 cursor-pointer"
           aria-label="Close menu"
           onClick={() => setMenuOpen(false)}
         />
         <div
           className={cn(
-            "absolute inset-x-0 bottom-0 rounded-t-2xl border border-border/40 bg-background shadow-xl transition-transform duration-200",
+            "absolute inset-x-0 bottom-0 rounded-t-xl bg-popover shadow-popover transition-transform duration-200",
             menuOpen ? "translate-y-0" : "translate-y-full",
           )}
         >
@@ -611,7 +634,7 @@ export function AppShell({
                 <button
                   type="button"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center w-9 h-9 -mr-1.5 rounded-xl hover:bg-accent cursor-pointer"
+                  className="flex items-center justify-center w-8 h-8 -mr-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
                   aria-label="Close menu"
                 >
                   <X className="h-4 w-4" />
@@ -619,7 +642,7 @@ export function AppShell({
               </IconTooltip>
             </div>
             {menuExtras.length > 0 && (
-              <nav className="space-y-1 pb-3 border-b border-border/40">
+              <nav className="space-y-px pb-3 border-b border-border">
                 {menuExtras.map((item) => (
                   <NavLink
                     key={item.id}
@@ -646,7 +669,7 @@ export function AppShell({
         </div>
       </div>
 
-      <div className="h-16 w-full shrink-0 md:hidden" />
+      <div className="h-12 w-full shrink-0 md:hidden" />
       <ColdStartBanner />
 
       <div
@@ -660,7 +683,7 @@ export function AppShell({
       </div>
 
       {/* Mobile bottom tabs */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background/95 backdrop-blur">
         <div className="flex gap-1 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {mobileTabs.map((item) => (
             <div key={item.id} className="flex-1 min-w-0">
@@ -682,8 +705,8 @@ export function AppShell({
                 className={cn(
                   compactTabClass,
                   menuActive
-                    ? "bg-brand-soft text-brand"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    ? "text-brand"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
                 aria-label="Open menu"
                 aria-expanded={menuOpen}

@@ -17,9 +17,9 @@ export function ComingSoon({
   backLabel?: string;
 }) {
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 flex-1">
-      <div className="rounded-2xl border border-border/50 bg-card/40 px-6 py-16 sm:py-20 text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand">
+    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 flex-1">
+      <div className="rounded-lg border border-border bg-card px-6 py-16 sm:py-20 text-center">
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
           <Icon className="h-6 w-6" />
         </div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{title}</h1>
@@ -27,7 +27,7 @@ export function ComingSoon({
           {description}
         </p>
         <Link href={backHref} className="inline-block mt-8">
-          <Button variant="outline" className="rounded-xl">
+          <Button variant="outline" className="rounded-lg">
             {backLabel}
           </Button>
         </Link>

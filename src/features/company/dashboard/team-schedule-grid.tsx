@@ -6,6 +6,7 @@ import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { AskOhShiftModal } from "./ask-ohshift-modal";
 import type { CompanySettings } from "./manage-settings-modal";
+import { getEmployeeColor } from "@/lib/tag-colors";
 
 interface Shift {
   id: string;
@@ -123,22 +124,6 @@ export function TeamScheduleGrid({
     }
   };
 
-  // Color hashing by employee name
-  const getEmployeeColor = (name: string = "") => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const colorIndex = Math.abs(hash) % 5;
-    const colors = [
-      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 ring-emerald-500/50",
-      "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 ring-blue-500/50",
-      "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 ring-violet-500/50",
-      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 ring-amber-500/50",
-      "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 ring-rose-500/50"
-    ];
-    return colors[colorIndex];
-  };
 
   const handleDeleteShift = async () => {
     if (!selectedShift) return;
@@ -291,8 +276,8 @@ export function TeamScheduleGrid({
 
   return (
     <>
-      <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden mt-8">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+      <div className="rounded-lg border border-border bg-card overflow-hidden mt-8">
+        <div className="border-b border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Calendar className="h-5 w-5 text-emerald-500" />
             <h2 className="font-semibold text-lg">Team Schedule</h2>
@@ -302,7 +287,7 @@ export function TeamScheduleGrid({
             />
           </div>
           
-          <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto">
+          <div className="flex w-full items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto sm:w-auto">
              <IconTooltip label="Previous week" side="bottom">
                <button 
                  onClick={() => setWeekOffset(prev => prev - 1)}
@@ -326,14 +311,14 @@ export function TeamScheduleGrid({
              </IconTooltip>
              <button
                onClick={() => setWeekOffset(0)}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-accent border border-border rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
                <span>Reset</span>
              </button>
              <button
                onClick={handlePublishWeek}
                disabled={isPublishing || draftCount === 0}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-lg ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-md ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
              >
                {isPublishing ? (
                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -360,7 +345,7 @@ export function TeamScheduleGrid({
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
           >
-            <div className="min-w-[560px] rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
+            <div className="min-w-[560px] rounded-lg border border-border bg-card overflow-hidden">
               <div className="grid grid-cols-7 gap-px bg-border/30">
                 {[
                   ["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"],
@@ -393,7 +378,7 @@ export function TeamScheduleGrid({
                           <div 
                              key={shift.id} 
                              onClick={() => setSelectedShift(shift)}
-                             className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg relative z-10 cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all ${getEmployeeColor(shift.users?.full_name)} ${shift.status === "draft" ? "border-dashed opacity-80" : ""}`}>
+                             className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-sm relative z-10 cursor-pointer border border-transparent transition-[filter] hover:brightness-95 dark:hover:brightness-125 ${getEmployeeColor(shift.users?.full_name)} ${shift.status === "draft" ? "border-dashed border-current/40 opacity-75" : ""}`}>
                             <span className="block truncate">{formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}</span>
                             <span className="opacity-80 block truncate mt-0.5">
                               {shift.users?.full_name?.split(' ')[0]}: {shift.title}
@@ -421,15 +406,15 @@ export function TeamScheduleGrid({
 
       {/* Shift Details Dialog */}
       {selectedShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl border border-border/50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+          <div className="bg-popover w-full max-w-sm rounded-lg shadow-popover animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
             <IconTooltip label="Close" side="bottom">
               <button 
                 onClick={() => {
                   setSelectedShift(null);
                   setIsEditing(false);
                 }}
-                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors z-10"
+                className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors z-10"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -455,7 +440,7 @@ export function TeamScheduleGrid({
                        name="title"
                        required
                        defaultValue={selectedShift.title}
-                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                      />
                    </div>
                    <div className="space-y-2">
@@ -468,7 +453,7 @@ export function TeamScheduleGrid({
                        name="date"
                        required
                        defaultValue={new Date(selectedShift.start_time).toISOString().split('T')[0]}
-                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                      />
                    </div>
                    <div className="grid grid-cols-2 gap-3">
@@ -482,7 +467,7 @@ export function TeamScheduleGrid({
                          name="startTime"
                          required
                          defaultValue={new Date(selectedShift.start_time).toTimeString().substring(0, 5)}
-                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                        />
                      </div>
                      <div className="space-y-2">
@@ -495,7 +480,7 @@ export function TeamScheduleGrid({
                          name="endTime"
                          required
                          defaultValue={new Date(selectedShift.end_time).toTimeString().substring(0, 5)}
-                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                        />
                      </div>
                    </div>
@@ -542,13 +527,13 @@ export function TeamScheduleGrid({
                  </div>
                )}
             </div>
-            <div className="p-4 border-t border-border/50 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-2">
+            <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex items-center justify-between gap-2">
                {!isEditing ? (
                  <>
                    <button
                       onClick={handleDeleteShift}
                       disabled={isDeleting}
-                      className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2"
+                      className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors flex items-center gap-2"
                     >
                       {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
@@ -557,14 +542,14 @@ export function TeamScheduleGrid({
                     <div className="flex items-center gap-2">
                       <button
                          onClick={() => setIsEditing(true)}
-                         className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors flex items-center gap-2"
+                         className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors flex items-center gap-2"
                        >
                          <Edit2 className="w-4 h-4" />
                          Edit
                        </button>
                       <button
                          onClick={() => setSelectedShift(null)}
-                         className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"
+                         className="px-4 py-2 text-sm font-medium btn-brand rounded-md"
                        >
                          Close
                        </button>
@@ -574,7 +559,7 @@ export function TeamScheduleGrid({
                  <>
                    <button 
                       onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                       disabled={isSaving}
                     >
                       Cancel
@@ -583,7 +568,7 @@ export function TeamScheduleGrid({
                       type="submit"
                       form="edit-shift-form"
                       disabled={isSaving}
-                      className="px-4 py-2 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded-md transition-colors flex items-center gap-2"
                     >
                       {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                       {isSaving ? "Saving..." : "Save Changes"}

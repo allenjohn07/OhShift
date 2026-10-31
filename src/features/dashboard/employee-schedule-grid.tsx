@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { getEmployeeColor } from "@/lib/tag-colors";
 
 interface Shift {
   id: string;
@@ -24,20 +25,6 @@ const formatDateLabel = (date: Date) => {
   }).format(date);
 };
 
-function getEmployeeColor(name: string = "") {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 ring-emerald-500/50",
-    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 ring-blue-500/50",
-    "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 ring-violet-500/50",
-    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 ring-amber-500/50",
-    "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 ring-rose-500/50",
-  ];
-  return colors[Math.abs(hash) % 5];
-}
 
 export function EmployeeScheduleGrid({
   initialShifts,
@@ -172,14 +159,14 @@ export function EmployeeScheduleGrid({
   const headerDateRange = `${formatDateLabel(startOfWeek)} - ${formatDateLabel(endOfWeek)}, ${startOfWeek.getFullYear()}`;
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="border-b border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-emerald-500" />
           <h2 className="font-semibold text-lg">Your Schedule</h2>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto">
+        <div className="flex items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto">
            <IconTooltip label="Previous week" side="bottom">
              <button 
                onClick={() => setWeekOffset(prev => prev - 1)}
@@ -204,7 +191,7 @@ export function EmployeeScheduleGrid({
            <IconTooltip label="Reset to current week" side="bottom">
              <button 
                onClick={() => setWeekOffset(0)}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-accent border border-border rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
              >
                <span>Reset</span>
              </button>
@@ -219,7 +206,7 @@ export function EmployeeScheduleGrid({
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
       >
-        <div className="min-w-[560px] rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
+        <div className="min-w-[560px] rounded-lg border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-7 gap-px bg-border/30">
             {[["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"], ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]].map(([full, short]) => (
               <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card">
@@ -248,7 +235,7 @@ export function EmployeeScheduleGrid({
                     <div 
                       key={shift.id} 
                       onClick={() => setSelectedShift(shift)}
-                      className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg cursor-pointer hover:ring-2 ring-offset-1 ring-offset-card transition-all relative z-10 ${getEmployeeColor(employeeName)}`}
+                      className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-sm cursor-pointer border border-transparent transition-[filter] hover:brightness-95 dark:hover:brightness-125 relative z-10 ${getEmployeeColor(employeeName)}`}
                     >
                       {formatTime(shift.start_time).replace(":00", "").toLowerCase()} – {formatTime(shift.end_time).replace(":00", "").toLowerCase()}
                       <br />
@@ -269,12 +256,12 @@ export function EmployeeScheduleGrid({
 
       {/* Shift Details Dialog */}
       {selectedShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl border border-border/50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+          <div className="bg-popover w-full max-w-sm rounded-lg shadow-popover animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
             <IconTooltip label="Close" side="bottom">
               <button 
                 onClick={() => setSelectedShift(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors z-10"
+                className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors z-10"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -323,10 +310,10 @@ export function EmployeeScheduleGrid({
                   </div>
                </div>
             </div>
-            <div className="p-4 border-t border-border/50 bg-black/5 dark:bg-white/5 flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex items-center justify-end gap-2">
                <button 
                  onClick={() => setSelectedShift(null)}
-                 className="px-4 py-2 text-sm font-medium btn-brand rounded-xl"
+                 className="px-4 py-2 text-sm font-medium btn-brand rounded-md"
                >
                  Close
                </button>

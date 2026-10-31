@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { getEmployeeColor } from "@/lib/tag-colors";
 
 interface UserInfo {
   full_name: string;
@@ -23,20 +24,6 @@ function formatTime(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-function getEmployeeColor(name: string = "") {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
-    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-    "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20",
-    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-    "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
-  ];
-  return colors[Math.abs(hash) % 5];
-}
 
 /** Returns the Monday of the week containing the given date (UTC). */
 function startOfWeekUtc(date: Date): Date {
@@ -116,16 +103,16 @@ export function TodayCompanySchedule({
   }
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 bg-card">
+      <div className="border-b border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 bg-card">
         <div className="flex items-center gap-2 shrink-0">
           <Users className="h-5 w-5 text-emerald-500 shrink-0" />
           <h2 className="font-semibold text-lg whitespace-nowrap">Team Schedule</h2>
         </div>
 
         {/* Week pagination */}
-        <div className="flex w-full items-center gap-1 sm:gap-2 bg-background/50 border border-border/50 rounded-xl p-1 self-start sm:self-auto sm:w-auto sm:ml-auto">
+        <div className="flex w-full items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto sm:w-auto sm:ml-auto">
           <IconTooltip label="Previous week" side="bottom">
             <button
               onClick={() => setWeekOffset((p) => p - 1)}
@@ -150,7 +137,7 @@ export function TodayCompanySchedule({
           <IconTooltip label="Reset to current week" side="bottom">
             <button
               onClick={() => setWeekOffset(0)}
-              className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-card/80 border border-border/50 rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-accent border border-border rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <span>Reset</span>
             </button>
@@ -166,7 +153,7 @@ export function TodayCompanySchedule({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border/40">
+            <thead className="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border">
               <tr>
                 <th scope="col" className="px-4 sm:px-6 py-3 font-medium">Team Member</th>
                 <th scope="col" className="px-4 sm:px-6 py-3 font-medium">Shift / Role</th>
@@ -176,11 +163,11 @@ export function TodayCompanySchedule({
             {dayOrder.map((dayLabel) => {
               const isToday = dayLabel === "Today";
               return (
-                <tbody key={dayLabel} className="divide-y divide-border/40">
+                <tbody key={dayLabel} className="divide-y divide-border">
                   <tr>
                     <td
                       colSpan={3}
-                      className={`px-4 sm:px-6 py-2.5 font-semibold text-xs border-y border-border/40 uppercase tracking-wider ${
+                      className={`px-4 sm:px-6 py-2.5 font-semibold text-xs border-y border-border uppercase tracking-wider ${
                         isToday
                           ? "text-emerald-500 dark:text-emerald-400 bg-emerald-500/5"
                           : "text-muted-foreground bg-accent/30"

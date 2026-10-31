@@ -341,23 +341,23 @@ function HoursPageContent() {
   }
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
       <div>
-        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Hours</h1>
+        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">Hours</h1>
         <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
           Clock in for your published shifts and review hours by week or
           biweekly period.
         </p>
       </div>
 
-      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
           <h2 className="font-semibold">Today</h2>
         </div>
 
         {todayShifts.length === 0 ? (
           <div className="px-4 sm:px-6 py-12 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <Timer className="h-5 w-5" />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -365,7 +365,7 @@ function HoursPageContent() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/40">
+          <ul className="divide-y divide-border">
             {todayShifts.map((shift) => {
               const entry = entryByShift.get(shift.id);
               const isOpen = entry?.status === "open";
@@ -386,14 +386,14 @@ function HoursPageContent() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{shift.title}</p>
                       {isOpen && (
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500">
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-500">
                           Clocked in
                         </span>
                       )}
                       {entry && entry.status !== "open" && (
                         <span
                           className={cn(
-                            "text-xs font-semibold px-2.5 py-1 rounded-full capitalize",
+                            "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize",
                             STATUS_STYLES[entry.status],
                           )}
                         >
@@ -421,7 +421,7 @@ function HoursPageContent() {
                   <div className="flex items-center gap-2 shrink-0">
                     {canClockOut ? (
                       <Button
-                        className="btn-brand rounded-xl h-10 px-4"
+                        className="btn-brand rounded-md h-9 px-4"
                         disabled={actingShiftId === shift.id}
                         onClick={() => clockOut(shift.id)}
                       >
@@ -433,7 +433,7 @@ function HoursPageContent() {
                       </Button>
                     ) : canClockIn && earlyOk && notEnded ? (
                       <Button
-                        className="btn-brand rounded-xl h-10 px-4"
+                        className="btn-brand rounded-md h-9 px-4"
                         disabled={actingShiftId === shift.id}
                         onClick={() => clockIn(shift.id)}
                       >
@@ -462,8 +462,8 @@ function HoursPageContent() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="font-semibold">Period hours</h2>
             <span className="text-sm text-muted-foreground">
@@ -471,7 +471,7 @@ function HoursPageContent() {
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1 p-1 rounded-xl bg-background/50 border border-border/50">
+            <div className="flex gap-1 p-1 rounded-lg bg-background border border-border">
               {(["week", "biweek"] as const).map((mode) => (
                 <button
                   key={mode}
@@ -523,7 +523,7 @@ function HoursPageContent() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/40">
+          <ul className="divide-y divide-border">
             {entries.map((entry) => (
               <li
                 key={entry.id}
@@ -549,7 +549,7 @@ function HoursPageContent() {
                 </div>
                 <span
                   className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
+                    "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize self-start",
                     STATUS_STYLES[entry.status],
                   )}
                 >

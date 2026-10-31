@@ -89,9 +89,9 @@ function RequestsContent() {
   }
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
       <div>
-        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
           Requests
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
@@ -99,11 +99,11 @@ function RequestsContent() {
         </p>
       </div>
 
-      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
           <h2 className="font-semibold">Pending</h2>
           {pending.length > 0 && (
-            <span className="text-xs font-medium bg-brand-soft text-brand px-2 py-0.5 rounded-full">
+            <span className="text-xs font-medium bg-brand-soft text-brand px-1.5 py-0.5 rounded-sm">
               {pending.length}
             </span>
           )}
@@ -111,7 +111,7 @@ function RequestsContent() {
 
         {pending.length === 0 ? (
           <div className="px-4 sm:px-6 py-12 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <Inbox className="h-5 w-5" />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ function RequestsContent() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/40">
+          <ul className="divide-y divide-border">
             {pending.map((req) => {
               const isOwn = Boolean(myId && req.employee_id === myId);
               return (
@@ -153,7 +153,7 @@ function RequestsContent() {
                     )}
                   </div>
                   {isOwn ? (
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full self-start bg-amber-500/15 text-amber-600 dark:text-amber-400 capitalize">
+                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm self-start bg-amber-500/15 text-amber-600 dark:text-amber-400 capitalize">
                       Pending
                     </span>
                   ) : (
@@ -161,7 +161,7 @@ function RequestsContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl h-9"
+                        className="rounded-md h-9"
                         disabled={actingId === req.id}
                         onClick={() => review(req.id, "denied")}
                       >
@@ -169,7 +169,7 @@ function RequestsContent() {
                       </Button>
                       <Button
                         size="sm"
-                        className="btn-brand rounded-xl h-9"
+                        className="btn-brand rounded-md h-9"
                         disabled={actingId === req.id}
                         onClick={() => review(req.id, "approved")}
                       >
@@ -188,8 +188,8 @@ function RequestsContent() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
           <h2 className="font-semibold">Recent</h2>
         </div>
 
@@ -200,7 +200,7 @@ function RequestsContent() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/40">
+          <ul className="divide-y divide-border">
             {recent.map((req) => (
               <li
                 key={req.id}
@@ -223,7 +223,7 @@ function RequestsContent() {
                 </div>
                 <span
                   className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-full capitalize self-start",
+                    "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize self-start",
                     STATUS_STYLES[req.status],
                   )}
                 >

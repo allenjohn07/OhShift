@@ -180,10 +180,10 @@ function TimeOffPageContent() {
 
   return (
     <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 flex-1">
+      <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+            <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
               Time off
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
@@ -193,20 +193,20 @@ function TimeOffPageContent() {
           </div>
           <Button
             onClick={openModal}
-            className="btn-brand rounded-xl h-11 px-5 shrink-0 w-full sm:w-auto"
+            className="btn-brand rounded-md h-9 px-5 shrink-0 w-full sm:w-auto"
           >
             Request time off
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden">
-          <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
             <h2 className="font-semibold">Upcoming & past</h2>
           </div>
 
           {requests.length === 0 ? (
             <div className="px-4 sm:px-6 py-16 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
                 <Palmtree className="h-6 w-6" />
               </div>
               <p className="font-medium">No requests yet</p>
@@ -215,13 +215,13 @@ function TimeOffPageContent() {
               </p>
               <Button
                 onClick={openModal}
-                className="btn-brand rounded-xl h-11 px-5"
+                className="btn-brand rounded-md h-9 px-5"
               >
                 Request time off
               </Button>
             </div>
           ) : (
-            <ul className="divide-y divide-border/40">
+            <ul className="divide-y divide-border">
               {requests.map((req) => (
                 <li
                   key={req.id}
@@ -246,7 +246,7 @@ function TimeOffPageContent() {
                   <div className="flex items-center gap-2 shrink-0 self-start">
                     <span
                       className={cn(
-                        "text-xs font-semibold px-2.5 py-1 rounded-full capitalize",
+                        "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize",
                         STATUS_STYLES[req.status],
                       )}
                     >
@@ -256,7 +256,7 @@ function TimeOffPageContent() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="rounded-xl h-8 text-muted-foreground"
+                        className="rounded-md h-8 text-muted-foreground"
                         disabled={cancellingId === req.id}
                         onClick={() => handleCancel(req.id)}
                       >
@@ -275,7 +275,7 @@ function TimeOffPageContent() {
         </div>
       </main>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-md">
+        <DialogContent className="rounded-lg sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Request time off</DialogTitle>
             <DialogDescription>
@@ -286,7 +286,7 @@ function TimeOffPageContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Type</label>
-              <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-background/50 border border-border/50">
+              <div className="flex flex-wrap gap-1.5 p-1 rounded-lg bg-background border border-border">
                 {(Object.keys(TYPE_LABELS) as TimeOffType[]).map((t) => (
                   <button
                     key={t}
@@ -321,7 +321,7 @@ function TimeOffPageContent() {
                       setEndDate(e.target.value);
                     }
                   }}
-                  className="h-10 rounded-xl bg-card/50 border-border/60"
+                  className="h-10 rounded-md bg-card border-border"
                 />
               </div>
               <div className="space-y-2">
@@ -335,7 +335,7 @@ function TimeOffPageContent() {
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="h-10 rounded-xl bg-card/50 border-border/60"
+                  className="h-10 rounded-md bg-card border-border"
                 />
               </div>
             </div>
@@ -351,7 +351,7 @@ function TimeOffPageContent() {
                 rows={3}
                 maxLength={500}
                 placeholder="Anything your manager should know…"
-                className="w-full rounded-xl border border-border/60 bg-card/50 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               />
             </div>
 
@@ -359,7 +359,7 @@ function TimeOffPageContent() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-lg"
                 onClick={() => setModalOpen(false)}
               >
                 Cancel
@@ -367,7 +367,7 @@ function TimeOffPageContent() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="btn-brand rounded-xl"
+                className="btn-brand rounded-md"
               >
                 {submitting ? (
                   <>

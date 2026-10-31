@@ -239,16 +239,16 @@ export function AskOhShiftModal({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
+        className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-md"
       >
         <Sparkles className="w-4 h-4" />
         Ask OhShift
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-border/50 animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border/50 flex items-start justify-between gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+          <div className="bg-popover w-full max-w-md rounded-lg shadow-popover overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-brand" />
@@ -269,7 +269,7 @@ export function AskOhShiftModal({
                   type="button"
                   onClick={handleClose}
                   disabled={isParsing || isCreating}
-                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors disabled:opacity-50"
+                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors disabled:opacity-50"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
@@ -279,7 +279,7 @@ export function AskOhShiftModal({
 
             <div className="p-6 space-y-4">
               {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
+                <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-100 dark:border-red-500/20">
                   {error}
                 </div>
               )}
@@ -297,17 +297,17 @@ export function AskOhShiftModal({
                       rows={3}
                       maxLength={500}
                       placeholder="e.g. Who is the manager? Who is working Tuesday? Or: Add me to next Friday evening"
-                      className="w-full px-3 py-2.5 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                      className="w-full px-3 py-2.5 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring resize-none"
                       disabled={isParsing}
                       autoFocus
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border/50">
+                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                       disabled={isParsing}
                     >
                       Cancel
@@ -315,7 +315,7 @@ export function AskOhShiftModal({
                     <button
                       type="submit"
                       disabled={isParsing || !prompt.trim()}
-                      className="btn-brand h-10 px-6 rounded-xl text-sm font-medium disabled:opacity-50"
+                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {isParsing ? (
                         <span className="flex items-center justify-center">
@@ -331,7 +331,7 @@ export function AskOhShiftModal({
               ) : showingQuery ? (
                 <div className="space-y-4">
                   {(queryWindow || queryPerson) && (
-                    <div className="rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5 space-y-1">
+                    <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 space-y-1">
                       {queryPerson && (
                         <p className="text-sm font-medium flex items-center gap-2">
                           <User className="w-4 h-4 text-brand shrink-0" />
@@ -351,8 +351,8 @@ export function AskOhShiftModal({
                     {queryAnswer}
                   </p>
 
-                  <div className="rounded-xl border border-border/50 overflow-hidden">
-                    <div className="px-3 py-2 border-b border-border/40 bg-muted/30">
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border bg-muted/30">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         From schedule
                         {queryShifts.length > 0
@@ -368,7 +368,7 @@ export function AskOhShiftModal({
                       <ScrollFade
                         contentKey={queryShifts.map((s) => s.id).join(",")}
                         maxHeightClass="max-h-56"
-                        className="divide-y divide-border/40"
+                        className="divide-y divide-border"
                       >
                         {queryShifts.map((shift) => (
                           <div key={shift.id} className="px-3 py-3 space-y-1.5">
@@ -399,7 +399,7 @@ export function AskOhShiftModal({
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border/50">
+                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border">
                     <button
                       type="button"
                       onClick={() => {
@@ -409,14 +409,14 @@ export function AskOhShiftModal({
                         setQueryPerson(null);
                         setError(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                     >
                       Ask again
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="btn-brand h-10 px-6 rounded-xl text-sm font-medium"
+                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium"
                     >
                       Done
                     </button>
@@ -424,7 +424,7 @@ export function AskOhShiftModal({
                 </div>
               ) : isEditing && proposal ? (
                 <div className="space-y-4 text-left">
-                  <div className="flex items-center gap-2 text-sm rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
+                  <div className="flex items-center gap-2 text-sm rounded-md border border-border bg-muted/30 px-3 py-2.5">
                     <User className="w-4 h-4 text-brand shrink-0" />
                     <span className="font-medium">{proposal.employee_name}</span>
                   </div>
@@ -441,7 +441,7 @@ export function AskOhShiftModal({
                         setFields((f) => ({ ...f, title: e.target.value }))
                       }
                       required
-                      className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                     />
                   </div>
 
@@ -460,7 +460,7 @@ export function AskOhShiftModal({
                         setFields((f) => ({ ...f, date: e.target.value }))
                       }
                       required
-                      className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                     />
                   </div>
 
@@ -520,7 +520,7 @@ export function AskOhShiftModal({
                             }))
                           }
                           required
-                          className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                         />
                       </div>
                       <div className="space-y-2">
@@ -541,13 +541,13 @@ export function AskOhShiftModal({
                             }))
                           }
                           required
-                          className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border/50">
+                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
                     <button
                       type="button"
                       onClick={() => {
@@ -555,7 +555,7 @@ export function AskOhShiftModal({
                         setError(null);
                         setFields(proposalToFields(proposal));
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                       disabled={isCreating}
                     >
                       Cancel
@@ -564,7 +564,7 @@ export function AskOhShiftModal({
                       type="button"
                       onClick={handleConfirm}
                       disabled={isCreating}
-                      className="btn-brand h-10 px-6 rounded-xl text-sm font-medium disabled:opacity-50"
+                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {isCreating ? (
                         <span className="flex items-center justify-center">
@@ -583,7 +583,7 @@ export function AskOhShiftModal({
                     {proposal.interpretation}
                   </p>
 
-                  <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+                  <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-brand shrink-0" />
                       <span className="font-medium">
@@ -604,7 +604,7 @@ export function AskOhShiftModal({
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border/50">
+                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border">
                     <button
                       type="button"
                       onClick={() => {
@@ -612,7 +612,7 @@ export function AskOhShiftModal({
                         setIsEditing(false);
                         setError(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                       disabled={isCreating}
                     >
                       Back
@@ -624,7 +624,7 @@ export function AskOhShiftModal({
                           setIsEditing(true);
                           setError(null);
                         }}
-                        className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+                        className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                         disabled={isCreating}
                       >
                         Edit
@@ -633,7 +633,7 @@ export function AskOhShiftModal({
                         type="button"
                         onClick={handleConfirm}
                         disabled={isCreating}
-                        className="btn-brand h-10 px-6 rounded-xl text-sm font-medium disabled:opacity-50"
+                        className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
                       >
                         {isCreating ? (
                           <span className="flex items-center justify-center">

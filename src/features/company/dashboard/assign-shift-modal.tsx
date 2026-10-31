@@ -143,7 +143,7 @@ export function AssignShiftModal({
     return (
       <button
         onClick={open}
-        className="text-sm font-medium btn-brand px-3 py-1.5 rounded-lg"
+        className="h-7 px-2.5 rounded-md border border-input bg-background text-[13px] font-medium text-foreground transition-colors hover:bg-accent dark:bg-transparent"
       >
         Assign Shift
       </button>
@@ -151,9 +151,9 @@ export function AssignShiftModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-border/50 animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-border/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+      <div className="bg-popover w-full max-w-md rounded-lg shadow-popover overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-border">
           <h2 className="text-xl font-semibold">Assign Shift</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Setting schedule for {employee.full_name}
@@ -162,12 +162,12 @@ export function AssignShiftModal({
 
         <form onSubmit={onSubmit} className="p-6 space-y-4 text-left">
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
+            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-100 dark:border-red-500/20">
               {error}
             </div>
           )}
 
-          <div className="rounded-xl border border-border/50 bg-muted/20 overflow-hidden">
+          <div className="rounded-lg border border-border bg-muted/20 overflow-hidden">
             <button
               type="button"
               onClick={() => setAiOpen((v) => !v)}
@@ -182,14 +182,14 @@ export function AssignShiftModal({
               </span>
             </button>
             {aiOpen && (
-              <div className="px-3 pb-3 space-y-2 border-t border-border/40">
+              <div className="px-3 pb-3 space-y-2 border-t border-border">
                 <textarea
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   rows={2}
                   maxLength={500}
                   placeholder={`e.g. Next Tuesday evening for ${employee.full_name.split(" ")[0]}`}
-                  className="mt-2 w-full px-3 py-2 rounded-xl border border-input bg-transparent text-sm shadow-xs resize-none focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="mt-2 w-full px-3 py-2 rounded-md border border-input bg-transparent text-sm resize-none focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                   disabled={isAiLoading || isLoading}
                 />
                 <div className="flex justify-end">
@@ -197,7 +197,7 @@ export function AssignShiftModal({
                     type="button"
                     onClick={fillWithAi}
                     disabled={isAiLoading || isLoading || !aiPrompt.trim()}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium btn-brand h-8 px-3 rounded-lg disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium btn-brand h-8 px-3 rounded-md disabled:opacity-50"
                   >
                     {isAiLoading ? (
                       <>
@@ -228,7 +228,7 @@ export function AssignShiftModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Cook, Server, Manager"
-              className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -246,7 +246,7 @@ export function AssignShiftModal({
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -294,7 +294,7 @@ export function AssignShiftModal({
                   required
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
               <div className="space-y-2">
@@ -311,17 +311,17 @@ export function AssignShiftModal({
                   required
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-transparent text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-border/50 mt-6">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-border mt-6">
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-xl transition-colors"
+              className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
               disabled={isLoading || isAiLoading}
             >
               Cancel
@@ -329,7 +329,7 @@ export function AssignShiftModal({
             <button
               type="submit"
               disabled={isLoading || isAiLoading}
-              className="btn-brand h-10 px-6 rounded-xl text-sm font-medium"
+              className="btn-brand h-9 px-6 rounded-md text-sm font-medium"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">

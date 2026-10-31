@@ -120,8 +120,8 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       {/* Left Column - Profile Summary */}
       <div className="md:col-span-1 space-y-6">
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col items-center text-center">
-          <Avatar className="h-24 w-24 border-2 border-border/50 mb-4 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-6 flex flex-col items-center text-center">
+          <Avatar className="h-24 w-24 border-2 border-border mb-4">
             <AvatarImage src={user.avatar_url || ""} alt={user.full_name || "User"} />
             <AvatarFallback className="bg-brand-soft text-brand text-2xl font-medium">
               {initials}
@@ -134,7 +134,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6 space-y-4">
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
           <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">About</h3>
           
           <div className="flex items-center gap-3">
@@ -181,7 +181,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
       {/* Right Column - Forms */}
       <div className="md:col-span-2 space-y-6">
         {/* Avatar Settings */}
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
               <LinkIcon className="w-5 h-5 text-emerald-500" />
@@ -200,7 +200,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 placeholder="https://example.com/avatar.jpg"
                 defaultValue={user.avatar_url || ""}
                 required
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-emerald-500"
+                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-emerald-500"
               />
               <p className="text-xs text-muted-foreground">
                 Provide a valid image URL for your profile picture.
@@ -210,7 +210,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
               <Button
                 type="submit"
                 disabled={isUpdatingAvatar}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
               >
                 {isUpdatingAvatar && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Save Changes
@@ -220,7 +220,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
         </div>
 
         {/* Security Settings */}
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="p-2 bg-rose-500/10 rounded-lg shrink-0">
               <Lock className="w-5 h-5 text-rose-500" />
@@ -250,7 +250,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 name="currentPassword"
                 placeholder="••••••••"
                 required
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500"
+                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500"
               />
             </div>
             <div className="space-y-2">
@@ -265,7 +265,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 pr-10"
+                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 pr-10"
                 />
                 <IconTooltip
                   label={showPassword ? "Hide password" : "Show password"}
@@ -293,7 +293,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 type="submit"
                 disabled={isUpdatingPassword}
                 variant="destructive"
-                className="rounded-xl"
+                className="rounded-lg"
               >
                 {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Update Password

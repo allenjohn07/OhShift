@@ -68,9 +68,9 @@ export function ManageSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-border/50 animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-border/50 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+      <div className="bg-popover w-full max-w-md rounded-lg shadow-popover overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-border flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Settings className="w-5 h-5 text-violet-500" /> 
@@ -83,7 +83,7 @@ export function ManageSettingsModal({
           <IconTooltip label="Close" side="bottom">
             <button
               onClick={onClose}
-              className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-accent transition-colors"
+              className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -94,7 +94,7 @@ export function ManageSettingsModal({
         <form onSubmit={handleSaveSettings} className="p-6 space-y-6">
           
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground/90 border-b border-border/40 pb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground/90 border-b border-border pb-2">
               <Clock className="w-4 h-4 text-emerald-500" />
               Morning Shift Presets
             </h3>
@@ -106,7 +106,7 @@ export function ManageSettingsModal({
                   required
                   value={morningStart}
                   onChange={(e) => setMorningStart(e.target.value)}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -116,14 +116,14 @@ export function ManageSettingsModal({
                   required
                   value={morningEnd}
                   onChange={(e) => setMorningEnd(e.target.value)}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-md"
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground/90 border-b border-border/40 pb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground/90 border-b border-border pb-2">
               <Clock className="w-4 h-4 text-blue-500" />
               Evening Shift Presets
             </h3>
@@ -135,7 +135,7 @@ export function ManageSettingsModal({
                   required
                   value={eveningStart}
                   onChange={(e) => setEveningStart(e.target.value)}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -145,26 +145,26 @@ export function ManageSettingsModal({
                   required
                   value={eveningEnd}
                   onChange={(e) => setEveningEnd(e.target.value)}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-md"
                 />
               </div>
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-border/50">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-border">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="h-10 px-4 rounded-xl"
+              className="h-10 px-4 rounded-md"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="h-10 px-6 rounded-xl btn-hover"
+              className="h-10 px-6 rounded-md btn-hover"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Settings"}
             </Button>

@@ -74,12 +74,12 @@ function EmployeeDashboard() {
   const companyName = profile.companies?.name || "Your Company";
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-12 space-y-6 sm:space-y-8 flex-1">
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 sm:space-y-8 flex-1">
       <div>
-        <p className="text-sm font-medium text-brand mb-1">
+        <p className="text-sm text-muted-foreground mb-1.5">
           {companyName} Team
         </p>
-        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">
+        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
           Welcome back, {profile.full_name}
         </h1>
       </div>

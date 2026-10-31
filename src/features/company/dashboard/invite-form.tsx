@@ -202,8 +202,8 @@ export function InviteEmployeeForm() {
   const canSubmitForm = Boolean(fullName.trim() && email.trim());
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/40 overflow-hidden h-full flex flex-col">
-      <div className="border-b border-border/40 px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
+    <div className="rounded-lg border border-border bg-card overflow-hidden h-full flex flex-col">
+      <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
         <UserPlus className="h-5 w-5 text-emerald-500" />
         <h2 className="font-semibold text-lg">Invite Employee</h2>
       </div>
@@ -225,7 +225,7 @@ export function InviteEmployeeForm() {
               placeholder="e.g. John Doe"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="h-10 rounded-xl bg-card/50 border-border/60 transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
+              className="h-10 rounded-md bg-card border-border transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
             />
           </div>
 
@@ -245,7 +245,7 @@ export function InviteEmployeeForm() {
                   void handleInviteNow();
                 }
               }}
-              className="h-10 rounded-xl bg-card/50 border-border/60 transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
+              className="h-10 rounded-md bg-card border-border transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
             />
           </div>
 
@@ -267,7 +267,7 @@ export function InviteEmployeeForm() {
                   void handleInviteNow();
                 }
               }}
-              className="h-10 rounded-xl bg-card/50 border-border/60 transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
+              className="h-10 rounded-md bg-card border-border transition-all focus-visible:ring-1 focus-visible:ring-foreground/30"
             />
           </div>
 
@@ -276,7 +276,7 @@ export function InviteEmployeeForm() {
               type="button"
               onClick={() => void handleInviteNow()}
               disabled={isLoading || !canSubmitForm}
-              className="btn-hover h-10 flex-1 rounded-xl font-medium"
+              className="btn-hover h-10 flex-1 rounded-md font-medium"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export function InviteEmployeeForm() {
               variant="secondary"
               onClick={handleAddToList}
               disabled={isLoading || !canSubmitForm}
-              className="h-10 flex-1 rounded-xl font-medium"
+              className="h-10 flex-1 rounded-md font-medium"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add to List
@@ -304,10 +304,10 @@ export function InviteEmployeeForm() {
         </div>
 
         {invitees.length > 0 && (
-          <div className="mt-6 space-y-4 border-t border-border/40 pt-6">
+          <div className="mt-6 space-y-4 border-t border-border pt-6">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Pending Invitations</Label>
-              <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm font-medium">
                 {invitees.length} added
               </span>
             </div>
@@ -316,7 +316,7 @@ export function InviteEmployeeForm() {
               {invitees.map((invitee, idx) => (
                 <div
                   key={`${invitee.email}-${idx}`}
-                  className="flex flex-col p-3 bg-card/50 border border-border/60 rounded-xl"
+                  className="flex flex-col p-3 bg-card border border-border rounded-lg"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -327,7 +327,7 @@ export function InviteEmployeeForm() {
                         {invitee.email}
                       </p>
                       {invitee.designation && (
-                        <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-background/50">
+                        <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded border border-border bg-background">
                           {invitee.designation}
                         </span>
                       )}
@@ -363,7 +363,7 @@ export function InviteEmployeeForm() {
               type="button"
               onClick={() => void handleSendPending()}
               disabled={isLoading}
-              className="btn-hover w-full h-10 rounded-xl font-medium"
+              className="btn-hover w-full h-10 rounded-md font-medium"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -399,7 +399,7 @@ export function InviteEmployeeForm() {
                 id="editFullName"
                 value={editFullName}
                 onChange={(e) => setEditFullName(e.target.value)}
-                className="h-10 rounded-xl bg-card/50 border-border/60"
+                className="h-10 rounded-md bg-card border-border"
               />
             </div>
             <div className="space-y-2">
@@ -411,7 +411,7 @@ export function InviteEmployeeForm() {
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
-                className="h-10 rounded-xl bg-card/50 border-border/60"
+                className="h-10 rounded-md bg-card border-border"
               />
             </div>
             <div className="space-y-2">
@@ -422,7 +422,7 @@ export function InviteEmployeeForm() {
                 id="editDesignation"
                 value={editDesignation}
                 onChange={(e) => setEditDesignation(e.target.value)}
-                className="h-10 rounded-xl bg-card/50 border-border/60"
+                className="h-10 rounded-md bg-card border-border"
               />
             </div>
           </div>
@@ -430,13 +430,13 @@ export function InviteEmployeeForm() {
             <Button
               variant="outline"
               onClick={() => setEditingIndex(null)}
-              className="h-10 rounded-xl"
+              className="h-10 rounded-md"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveEdit}
-              className="h-10 rounded-xl"
+              className="h-10 rounded-md"
             >
               Save Changes
             </Button>

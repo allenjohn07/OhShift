@@ -72,15 +72,6 @@ export default function CompanyRegisterPage() {
     <>
       <ColdStartBanner />
       <div className="min-h-dvh bg-background flex flex-col relative">
-        <div className="fixed inset-0 -z-10">
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-              backgroundSize: "32px 32px",
-            }}
-          />
-        </div>
 
         <div className="h-16 shrink-0 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
@@ -103,7 +94,7 @@ export default function CompanyRegisterPage() {
                   OhShift
                 </span>
               </Link>
-              <h1 className="text-2xl font-semibold tracking-tight">
+              <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
                 Register your company
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -118,7 +109,7 @@ export default function CompanyRegisterPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="companyName" className="text-sm font-medium">
+                    <Label htmlFor="companyName">
                       Company name
                     </Label>
                     <Input
@@ -128,11 +119,11 @@ export default function CompanyRegisterPage() {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       required
-                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                      className="h-9"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-sm font-medium">
+                    <Label htmlFor="firstName">
                       First name
                     </Label>
                     <Input
@@ -142,11 +133,11 @@ export default function CompanyRegisterPage() {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       required
-                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                      className="h-9"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-sm font-medium">
+                    <Label htmlFor="lastName">
                       Last name
                     </Label>
                     <Input
@@ -156,14 +147,14 @@ export default function CompanyRegisterPage() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       required
-                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                      className="h-9"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">
+                    <Label htmlFor="email">
                       Email
                     </Label>
                     <Input
@@ -173,11 +164,11 @@ export default function CompanyRegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30"
+                      className="h-9"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium">
+                    <Label htmlFor="password">
                       Password
                     </Label>
                     <div className="relative">
@@ -188,7 +179,7 @@ export default function CompanyRegisterPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
+                        className="h-9 pr-10"
                       />
                       <IconTooltip
                         label={showPassword ? "Hide password" : "Show password"}
@@ -226,7 +217,7 @@ export default function CompanyRegisterPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        className="h-11 rounded-xl bg-card/50 border-border/60 transition-all duration-300 focus:border-foreground/30 pr-10"
+                        className="h-9 pr-10"
                       />
                       <IconTooltip
                         label={
@@ -264,12 +255,12 @@ export default function CompanyRegisterPage() {
 
               <Button
                 type="submit"
-                className="btn-hover w-full h-11 rounded-xl font-medium lg:mt-2"
+                className="w-full h-9 font-medium lg:mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Creating account...
                   </span>
                 ) : (
@@ -286,7 +277,7 @@ export default function CompanyRegisterPage() {
                 By registering, you agree to our Terms of Service and Privacy
                 Policy.
               </p>
-              <div className="h-px bg-border/50" />
+              <div className="h-px bg-border" />
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link

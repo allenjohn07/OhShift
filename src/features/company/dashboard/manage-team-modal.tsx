@@ -120,9 +120,9 @@ export function ManageTeamModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-card w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-border/50 animate-in fade-in zoom-in-95 duration-200 my-4 max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-border/50 flex items-center justify-between shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+      <div className="bg-popover w-full max-w-2xl rounded-lg shadow-popover overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-4 max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
               <Users className="w-5 h-5" />
@@ -137,7 +137,7 @@ export function ManageTeamModal({
           <IconTooltip label="Close" side="bottom">
             <button
               onClick={onClose}
-              className="p-2 hover:bg-accent rounded-full text-muted-foreground transition-colors"
+              className="p-2 hover:bg-accent rounded-md text-muted-foreground transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -147,7 +147,7 @@ export function ManageTeamModal({
 
         <div className="p-6 overflow-y-auto max-h-[500px]">
           {!employees || employees.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl">
+            <div className="text-center py-10 text-muted-foreground border-2 border-dashed border-border rounded-lg">
               No employees found. Invite some to get started!
             </div>
           ) : (
@@ -155,7 +155,7 @@ export function ManageTeamModal({
               {employees.map((emp) => (
                 <div
                   key={emp.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/40 rounded-xl border border-border/50 gap-4"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/40 rounded-lg border border-border gap-4"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export function ManageTeamModal({
                       </div>
                     ) : (
                       <div
-                        className="px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
+                        className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
                         onClick={() => {
                           setEditingId(emp.id);
                           setEditValue(emp.designation || "");
