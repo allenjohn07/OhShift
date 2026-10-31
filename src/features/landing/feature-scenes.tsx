@@ -1,10 +1,11 @@
 /**
- * Small looping illustrations for the landing page feature cards.
+ * Small looping illustrations for the landing page (feature cards,
+ * "How it works" steps and the "For teams" role cards).
  * Pure CSS animations (keyframes `scene-*` in globals.css); decorative only,
  * and frozen in their finished state when the user prefers reduced motion.
  */
 import type { CSSProperties, ReactNode } from "react";
-import { Check, Lock, Unlock, Zap } from "lucide-react";
+import { Check, Clock, Lock, Send, Unlock, Zap } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -243,3 +244,270 @@ export const FEATURE_SCENES = {
 } as const;
 
 export type FeatureSceneKey = keyof typeof FEATURE_SCENES;
+
+// ── "How it works" steps ─────────────────────────────────────────────────
+
+/** Before/after pair that swaps when the scene's "button" is pressed. */
+function Swap({
+  before,
+  after,
+  className,
+}: {
+  before: ReactNode;
+  after: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={cn("relative inline-grid", className)}>
+      <span data-swap="out" style={anim("scene-swap-out")} className="col-start-1 row-start-1">
+        {before}
+      </span>
+      <span style={anim("scene-swap-in")} className="col-start-1 row-start-1">
+        {after}
+      </span>
+    </span>
+  );
+}
+
+/** The company name types in, then the shift presets appear. */
+function CreateCompanyScene() {
+  return (
+    <Frame className="flex items-center justify-center">
+      <div className="w-52 rounded-md border border-border bg-background p-3">
+        <span className="text-[9px] text-muted-foreground">Company name</span>
+        <div className="mt-1 flex h-6 items-center rounded-sm border border-brand/50 px-2 text-[11px] font-medium ring-2 ring-ring/40">
+          <span
+            style={{ ...anim("scene-type"), animationTimingFunction: "steps(10, end)" }}
+            className="whitespace-nowrap"
+          >
+            Brew &amp; Co.
+          </span>
+          <span
+            style={{ ...anim("scene-caret"), animationDuration: "1s" }}
+            className="ml-px h-3 w-px bg-foreground"
+          />
+        </div>
+        <div className="mt-2 flex gap-1">
+          <span
+            style={anim("scene-pop", 2400)}
+            className="rounded-sm bg-[#fdecc8] px-1.5 py-0.5 text-[9px] text-[#402c1b] dark:bg-[#4a3a1a] dark:text-[#f2d9a4]"
+          >
+            Morning 08–16
+          </span>
+          <span
+            style={anim("scene-pop", 2700)}
+            className="rounded-sm bg-[#d3e5ef] px-1.5 py-0.5 text-[9px] text-[#183347] dark:bg-[#1f3a52] dark:text-[#b9dcf3]"
+          >
+            Evening 16–00
+          </span>
+        </div>
+      </div>
+    </Frame>
+  );
+}
+
+/** Invitees appear one by one with their invite codes. */
+function InviteTeamScene() {
+  const rows: Array<[string, string]> = [
+    ["Sam C", "7F3A21C4"],
+    ["Jordan L", "B90E5D12"],
+    ["Avery P", "4C7712AF"],
+  ];
+  return (
+    <Frame className="flex items-center justify-center">
+      <div className="w-56 space-y-1.5">
+        {rows.map(([name, code], i) => (
+          <div
+            key={name}
+            style={anim("scene-pop", i * 450)}
+            className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+          >
+            <Avatar name={name} className="h-5 w-5 text-[8px] ring-0" />
+            <span className="text-[11px] font-medium">{name}</span>
+            <span className="ml-auto rounded-sm bg-muted px-1 font-mono text-[9px] text-muted-foreground">
+              {code}
+            </span>
+            <Send className="h-3 w-3 text-brand" />
+          </div>
+        ))}
+      </div>
+    </Frame>
+  );
+}
+
+/** Draft shifts (dashed) become solid when Publish is pressed. */
+function PublishScene() {
+  const chips = ["Casey R", "Jordan L", "Avery P", "Sam C"];
+  return (
+    <Frame className="flex flex-col justify-center gap-2.5 px-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-medium">This week</span>
+        <Swap
+          before={
+            <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
+              4 drafts
+            </span>
+          }
+          after={
+            <span className="inline-flex items-center gap-0.5 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium text-emerald-600 dark:text-emerald-400">
+              <Check className="h-2.5 w-2.5" />
+              Published
+            </span>
+          }
+        />
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {chips.map((name) => (
+          <div key={name} className="relative h-8">
+            <div
+              data-swap="out"
+              style={anim("scene-swap-out")}
+              className="absolute inset-0 rounded-sm border border-dashed border-muted-foreground/50 bg-background"
+            />
+            <div
+              style={anim("scene-swap-in")}
+              className={cn("absolute inset-0 rounded-sm", getEmployeeColor(name))}
+            />
+          </div>
+        ))}
+      </div>
+      <span
+        style={anim("scene-press")}
+        className="self-end rounded-md bg-brand px-2.5 py-1 text-[10px] font-medium text-brand-foreground"
+      >
+        Publish
+      </span>
+    </Frame>
+  );
+}
+
+export const STEP_SCENES = [CreateCompanyScene, InviteTeamScene, PublishScene] as const;
+
+// ── "For teams" role cards ───────────────────────────────────────────────
+
+/** Owner flips the manager toggle; the role tag updates. */
+function OwnerScene() {
+  return (
+    <Frame className="flex flex-col justify-center gap-2 px-4">
+      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2">
+        <Avatar name="Priya P" className="h-6 w-6 text-[9px] ring-0" />
+        <div className="min-w-0 leading-tight">
+          <div className="text-[11px] font-medium">Priya Patel</div>
+          <Swap
+            before={<span className="text-[9px] text-muted-foreground">Employee</span>}
+            after={<span className="text-[9px] font-medium text-brand">Manager</span>}
+          />
+        </div>
+        <span
+          style={anim("scene-track")}
+          className="ml-auto flex h-4 w-7 items-center rounded-full bg-input px-0.5"
+        >
+          <span
+            style={anim("scene-knob")}
+            className="h-3 w-3 rounded-full bg-white shadow-sm"
+          />
+        </span>
+      </div>
+      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-[10px]">
+        <span className="text-muted-foreground">Shift presets</span>
+        <span className="ml-auto font-medium tabular-nums">08–16 · 16–00</span>
+      </div>
+    </Frame>
+  );
+}
+
+/** A time-off request gets approved. */
+function ManagerScene() {
+  return (
+    <Frame className="flex items-center justify-center px-4">
+      <div className="w-full rounded-md border border-border bg-background p-2.5">
+        <div className="flex items-center gap-2">
+          <Avatar name="Jordan L" className="h-6 w-6 text-[9px] ring-0" />
+          <div className="min-w-0 leading-tight">
+            <div className="text-[11px] font-medium">Jordan Lee</div>
+            <div className="text-[9px] text-muted-foreground">Vacation · Nov 5–7</div>
+          </div>
+        </div>
+        <div className="mt-2.5 flex justify-end gap-1">
+          <Swap
+            before={
+              <span className="flex gap-1">
+                <span className="rounded-md border border-input px-2 py-0.5 text-[10px]">
+                  Deny
+                </span>
+                <span
+                  style={anim("scene-press")}
+                  className="rounded-md bg-brand px-2 py-0.5 text-[10px] font-medium text-brand-foreground"
+                >
+                  Approve
+                </span>
+              </span>
+            }
+            after={
+              <span className="inline-flex items-center gap-0.5 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                <Check className="h-3 w-3" />
+                Approved
+              </span>
+            }
+            className="justify-items-end"
+          />
+        </div>
+      </div>
+    </Frame>
+  );
+}
+
+/** The employee clocks in and goes "on shift". */
+function EmployeeScene() {
+  return (
+    <Frame className="flex flex-col justify-center gap-2 px-4">
+      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2">
+        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="leading-tight">
+          <div className="text-[11px] font-medium">Morning bar</div>
+          <div className="text-[9px] text-muted-foreground">Today · 9am–3pm</div>
+        </div>
+        <Swap
+          className="ml-auto justify-items-end"
+          before={
+            <span
+              style={anim("scene-press")}
+              className="block rounded-md bg-brand px-2 py-0.5 text-[10px] font-medium text-brand-foreground"
+            >
+              Clock in
+            </span>
+          }
+          after={
+            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+              <span
+                style={{ ...anim("scene-blink"), animationDuration: "1.2s" }}
+                className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+              />
+              On shift
+            </span>
+          }
+        />
+      </div>
+      <div className="flex items-center gap-1 px-1">
+        <span className="mr-1 text-[9px] text-muted-foreground">Available</span>
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          <span
+            key={i}
+            className={cn(
+              "flex h-4 w-4 items-center justify-center rounded-sm text-[8px]",
+              i < 5 ? "bg-brand-soft text-brand" : "bg-background text-muted-foreground",
+            )}
+          >
+            {d}
+          </span>
+        ))}
+      </div>
+    </Frame>
+  );
+}
+
+export const ROLE_SCENES = {
+  Owners: OwnerScene,
+  Managers: ManagerScene,
+  Employees: EmployeeScene,
+} as const;

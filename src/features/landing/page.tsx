@@ -1,16 +1,31 @@
 import { Link } from "@/lib/navigation";
-import { ArrowRight, Building2, Check, User, Users } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Reveal } from "@/components/reveal";
 import { AuthHomeRedirect } from "@/components/auth-home-redirect";
 import { SchedulePreview } from "./schedule-preview";
-import { FEATURE_SCENES, type FeatureSceneKey } from "./feature-scenes";
+import {
+  FEATURE_SCENES,
+  ROLE_SCENES,
+  STEP_SCENES,
+  type FeatureSceneKey,
+} from "./feature-scenes";
 
 function FeatureScene({ name }: { name: FeatureSceneKey }) {
   const Scene = FEATURE_SCENES[name];
   return <Scene />;
+}
+
+function StepScene({ index }: { index: number }) {
+  const Scene = STEP_SCENES[index];
+  return Scene ? <Scene /> : null;
+}
+
+function RoleScene({ title }: { title: string }) {
+  const Scene = ROLE_SCENES[title as keyof typeof ROLE_SCENES];
+  return Scene ? <Scene /> : null;
 }
 
 const features: Array<{
@@ -76,7 +91,6 @@ const steps = [
 
 const roles = [
   {
-    icon: Building2,
     title: "Owners",
     points: [
       "Set up the workspace and shift presets",
@@ -85,7 +99,6 @@ const roles = [
     ],
   },
   {
-    icon: Users,
     title: "Managers",
     points: [
       "Assign shifts one by one or in bulk",
@@ -94,7 +107,6 @@ const roles = [
     ],
   },
   {
-    icon: User,
     title: "Employees",
     points: [
       "See published shifts at a glance",
@@ -215,10 +227,8 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
               {steps.map((step, index) => (
                 <Reveal key={step.title} delayMs={index * 80}>
-                  <div className="border-t border-border pt-6">
-                    <span className="mb-4 flex h-7 w-7 items-center justify-center rounded-md bg-brand-soft text-sm font-semibold text-brand">
-                      {index + 1}
-                    </span>
+                  <div>
+                    <StepScene index={index} />
                     <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
                     <p className="leading-relaxed text-muted-foreground">
                       {step.description}
@@ -241,12 +251,10 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {roles.map((role, index) => (
                 <Reveal key={role.title} delayMs={index * 60}>
-                  <div className="h-full rounded-lg border border-border p-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <role.icon className="h-5 w-5 text-brand" />
-                      <h3 className="text-lg font-semibold">{role.title}</h3>
-                    </div>
-                    <ul className="space-y-2.5">
+                  <div className="h-full rounded-lg border border-border p-4 pb-6">
+                    <RoleScene title={role.title} />
+                    <h3 className="mb-4 px-2 text-lg font-semibold">{role.title}</h3>
+                    <ul className="space-y-2.5 px-2">
                       {role.points.map((point) => (
                         <li
                           key={point}
