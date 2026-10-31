@@ -4,33 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun src/index.ts",
-    "build": "bunx prisma generate",
-    "postinstall": "prisma generate",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
+    "dev": "wrangler dev --port 3001",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply ohshift --local",
+    "db:migrate:remote": "wrangler d1 migrations apply ohshift --remote",
+    "db:studio": "drizzle-kit studio",
     "set-password": "bun run scripts/set-password.ts",
-    "deploy": "bunx wrangler deploy",
-    "cf:dev": "bunx wrangler dev"
-  },
-  "dependencies": {
-    "@auth/core": "^0.41.0",
-    "@elysiajs/cors": "^1.4.0",
-    "@neondatabase/serverless": "^1.0.2",
-    "@prisma/adapter-neon": "^6.19.0",
-    "@prisma/client": "^6.19.0",
-    "bcryptjs": "^3.0.2",
-    "elysia": "^1.4.18",
-    "prisma": "^6.19.0"
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250726.0",
-    "@types/bcryptjs": "^2.4.6",
+    "@cloudflare/workers-types": "^5.20261031.1",
+    "@libsql/client": "^0.18.0",
     "@types/bun": "latest",
+    "drizzle-kit": "^0.31.11",
     "typescript": "^5",
-    "wrangler": "^4.26.0"
+    "wrangler": "^4.156.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.14"
   }
 }

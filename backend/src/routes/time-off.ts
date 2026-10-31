@@ -1,13 +1,15 @@
-import { Elysia } from "elysia";
-import type { TimeOffStatus, TimeOffType } from "@prisma/client";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
 import {
-  ApiError,
-  requireManager,
-  requireUser,
-} from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+  TIME_OFF_TYPES,
+  timeOffRequests,
+  type TimeOffStatus,
+  type TimeOffType,
+} from "../db/schema";
+import { readJson, requireManager, requireUser } from "../lib/auth-guard";
 
-const TYPES: TimeOffType[] = ["vacation", "sick", "personal", "other"];
+const TYPES: readonly TimeOffType[] = TIME_OFF_TYPES;
 
 function parseDateOnly(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -67,216 +69,179 @@ function serializeTimeOff(
   };
 }
 
-export const timeOffRoutes = new Elysia({ prefix: "/time-off" })
-  .get("/", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+const withNames = {
+  employee: { columns: { fullName: true } },
+  reviewedBy: { columns: { fullName: true } },
+} as const;
 
-      const requests = await prisma.timeOffRequest.findMany({
-        where: { employeeId: user.id },
-        orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-      });
+export const timeOffRoutes = new Hono()
+  .get("/", async (c) => {
+    const user = await requireUser(c);
 
-      return { requests: requests.map(serializeTimeOff) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    const requests = await db.query.timeOffRequests.findMany({
+      where: eq(timeOffRequests.employeeId, user.id),
+      orderBy: [desc(timeOffRequests.startDate), desc(timeOffRequests.createdAt)],
+    });
+
+    return c.json({ requests: requests.map((r) => serializeTimeOff(r)) });
   })
-  .post("/", async ({ headers, set, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      if (!user.companyId) {
-        set.status = 400;
-        return { error: "No company associated" };
-      }
+  .post("/", async (c) => {
+    const user = await requireUser(c);
+    if (!user.companyId) {
+      return c.json({ error: "No company associated" }, 400);
+    }
 
-      const payload = body as {
-        type?: string;
-        start_date?: string;
-        end_date?: string;
-        note?: string | null;
-      };
+    const payload = await readJson<{
+      type: string;
+      start_date: string;
+      end_date: string;
+      note: string | null;
+    }>(c);
 
-      const type = payload.type as TimeOffType;
-      if (!TYPES.includes(type)) {
-        set.status = 400;
-        return { error: "Invalid type" };
-      }
+    const type = payload.type as TimeOffType;
+    if (!TYPES.includes(type)) {
+      return c.json({ error: "Invalid type" }, 400);
+    }
 
-      const startDate = parseDateOnly(String(payload.start_date ?? ""));
-      const endDate = parseDateOnly(String(payload.end_date ?? ""));
-      if (!startDate || !endDate) {
-        set.status = 400;
-        return { error: "start_date and end_date must be YYYY-MM-DD" };
-      }
-      if (endDate < startDate) {
-        set.status = 400;
-        return { error: "End date must be on or after start date" };
-      }
+    const startDate = parseDateOnly(String(payload.start_date ?? ""));
+    const endDate = parseDateOnly(String(payload.end_date ?? ""));
+    if (!startDate || !endDate) {
+      return c.json({ error: "start_date and end_date must be YYYY-MM-DD" }, 400);
+    }
+    if (endDate < startDate) {
+      return c.json({ error: "End date must be on or after start date" }, 400);
+    }
 
-      const note =
-        typeof payload.note === "string" && payload.note.trim()
-          ? payload.note.trim().slice(0, 500)
-          : null;
+    const note =
+      typeof payload.note === "string" && payload.note.trim()
+        ? payload.note.trim().slice(0, 500)
+        : null;
 
-      const existing = await prisma.timeOffRequest.findMany({
-        where: {
-          employeeId: user.id,
-          status: { in: ["pending", "approved"] },
-        },
-      });
+    const existing = await db.query.timeOffRequests.findMany({
+      where: and(
+        eq(timeOffRequests.employeeId, user.id),
+        inArray(timeOffRequests.status, ["pending", "approved"]),
+      ),
+      columns: { startDate: true, endDate: true },
+    });
 
-      const conflict = existing.find((row) =>
-        rangesOverlap(startDate, endDate, row.startDate, row.endDate),
+    const conflict = existing.find((row) =>
+      rangesOverlap(startDate, endDate, row.startDate, row.endDate),
+    );
+    if (conflict) {
+      return c.json(
+        { error: "Overlaps an existing pending or approved time-off request" },
+        400,
       );
-      if (conflict) {
-        set.status = 400;
-        return {
-          error: "Overlaps an existing pending or approved time-off request",
-        };
-      }
-
-      const created = await prisma.timeOffRequest.create({
-        data: {
-          companyId: user.companyId,
-          employeeId: user.id,
-          type,
-          startDate,
-          endDate,
-          note,
-        },
-      });
-
-      return { request: serializeTimeOff(created) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
     }
+
+    const [created] = await db
+      .insert(timeOffRequests)
+      .values({
+        companyId: user.companyId,
+        employeeId: user.id,
+        type,
+        startDate,
+        endDate,
+        note,
+      })
+      .returning();
+
+    return c.json({ request: serializeTimeOff(created!) });
   })
-  .post("/:id/cancel", async ({ headers, set, params }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+  .post("/:id/cancel", async (c) => {
+    const user = await requireUser(c);
 
-      const row = await prisma.timeOffRequest.findFirst({
-        where: { id: params.id, employeeId: user.id },
-      });
-      if (!row) {
-        set.status = 404;
-        return { error: "Request not found" };
-      }
-      if (row.status !== "pending") {
-        set.status = 400;
-        return { error: "Only pending requests can be cancelled" };
-      }
-
-      const updated = await prisma.timeOffRequest.update({
-        where: { id: row.id },
-        data: { status: "cancelled" },
-      });
-
-      return { request: serializeTimeOff(updated) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const row = await db.query.timeOffRequests.findFirst({
+      where: and(
+        eq(timeOffRequests.id, c.req.param("id")),
+        eq(timeOffRequests.employeeId, user.id),
+      ),
+    });
+    if (!row) {
+      return c.json({ error: "Request not found" }, 404);
     }
+    if (row.status !== "pending") {
+      return c.json({ error: "Only pending requests can be cancelled" }, 400);
+    }
+
+    const [updated] = await db
+      .update(timeOffRequests)
+      .set({ status: "cancelled" })
+      .where(eq(timeOffRequests.id, row.id))
+      .returning();
+
+    return c.json({ request: serializeTimeOff(updated!) });
   })
-  .get("/company", async ({ headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
+  .get("/company", async (c) => {
+    const user = await requireManager(c);
 
-      const pending = await prisma.timeOffRequest.findMany({
-        where: { companyId: user.companyId!, status: "pending" },
-        include: {
-          employee: { select: { fullName: true } },
-        },
-        orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
-      });
+    const [pending, recent] = await db.batch([
+      db.query.timeOffRequests.findMany({
+        where: and(
+          eq(timeOffRequests.companyId, user.companyId),
+          eq(timeOffRequests.status, "pending"),
+        ),
+        with: { employee: withNames.employee },
+        orderBy: [asc(timeOffRequests.startDate), asc(timeOffRequests.createdAt)],
+      }),
+      db.query.timeOffRequests.findMany({
+        where: and(
+          eq(timeOffRequests.companyId, user.companyId),
+          inArray(timeOffRequests.status, ["approved", "denied", "cancelled"]),
+        ),
+        with: withNames,
+        // Postgres sorted NULL reviewed_at first on DESC; keep that order.
+        orderBy: [
+          desc(sql`${timeOffRequests.reviewedAt} IS NULL`),
+          desc(timeOffRequests.reviewedAt),
+          desc(timeOffRequests.createdAt),
+        ],
+        limit: 20,
+      }),
+    ]);
 
-      const recent = await prisma.timeOffRequest.findMany({
-        where: {
-          companyId: user.companyId!,
-          status: { in: ["approved", "denied", "cancelled"] },
-        },
-        include: {
-          employee: { select: { fullName: true } },
-          reviewedBy: { select: { fullName: true } },
-        },
-        orderBy: [{ reviewedAt: "desc" }, { createdAt: "desc" }],
-        take: 20,
-      });
-
-      return {
-        pending: pending.map(serializeTimeOff),
-        recent: recent.map(serializeTimeOff),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    return c.json({
+      pending: pending.map((r) => serializeTimeOff(r)),
+      recent: recent.map((r) => serializeTimeOff(r)),
+    });
   })
-  .post("/:id/review", async ({ headers, set, params, body }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const payload = body as { decision?: string };
-      const decision = payload.decision;
-      if (decision !== "approved" && decision !== "denied") {
-        set.status = 400;
-        return { error: 'decision must be "approved" or "denied"' };
-      }
-
-      const row = await prisma.timeOffRequest.findFirst({
-        where: { id: params.id, companyId: user.companyId! },
-      });
-      if (!row) {
-        set.status = 404;
-        return { error: "Request not found" };
-      }
-      if (row.status !== "pending") {
-        set.status = 400;
-        return { error: "Only pending requests can be reviewed" };
-      }
-      if (row.employeeId === user.id) {
-        set.status = 403;
-        return { error: "You cannot review your own time-off request" };
-      }
-
-      const updated = await prisma.timeOffRequest.update({
-        where: { id: row.id },
-        data: {
-          status: decision,
-          reviewedById: user.id,
-          reviewedAt: new Date(),
-        },
-        include: {
-          employee: { select: { fullName: true } },
-          reviewedBy: { select: { fullName: true } },
-        },
-      });
-
-      return { request: serializeTimeOff(updated) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+  .post("/:id/review", async (c) => {
+    const user = await requireManager(c);
+    const { decision } = await readJson<{ decision: string }>(c);
+    if (decision !== "approved" && decision !== "denied") {
+      return c.json({ error: 'decision must be "approved" or "denied"' }, 400);
     }
+
+    const row = await db.query.timeOffRequests.findFirst({
+      where: and(
+        eq(timeOffRequests.id, c.req.param("id")),
+        eq(timeOffRequests.companyId, user.companyId),
+      ),
+    });
+    if (!row) {
+      return c.json({ error: "Request not found" }, 404);
+    }
+    if (row.status !== "pending") {
+      return c.json({ error: "Only pending requests can be reviewed" }, 400);
+    }
+    if (row.employeeId === user.id) {
+      return c.json({ error: "You cannot review your own time-off request" }, 403);
+    }
+
+    await db
+      .update(timeOffRequests)
+      .set({
+        status: decision,
+        reviewedById: user.id,
+        reviewedAt: new Date(),
+      })
+      .where(eq(timeOffRequests.id, row.id));
+
+    const updated = await db.query.timeOffRequests.findFirst({
+      where: eq(timeOffRequests.id, row.id),
+      with: withNames,
+    });
+
+    return c.json({ request: serializeTimeOff(updated!) });
   });

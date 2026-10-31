@@ -1,6 +1,8 @@
-import { Elysia } from "elysia";
-import { ApiError, requireUser } from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+import { asc, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { availabilityWindows } from "../db/schema";
+import { readJson, requireUser } from "../lib/auth-guard";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6] as const; // Mon–Sun
 
@@ -38,122 +40,87 @@ function defaultWeek(morningStart?: string, morningEnd?: string) {
   }));
 }
 
-export const availabilityRoutes = new Elysia({ prefix: "/availability" })
-  .get("/", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+export const availabilityRoutes = new Hono()
+  .get("/", async (c) => {
+    const user = await requireUser(c);
 
-      const rows = await prisma.availabilityWindow.findMany({
-        where: { userId: user.id },
-        orderBy: { dayOfWeek: "asc" },
-      });
+    const rows = await db.query.availabilityWindows.findMany({
+      where: eq(availabilityWindows.userId, user.id),
+      orderBy: asc(availabilityWindows.dayOfWeek),
+    });
 
-      if (rows.length === 0) {
-        const company = user.companyId
-          ? await prisma.company.findUnique({ where: { id: user.companyId } })
-          : null;
-        return {
-          days: defaultWeek(company?.morningStart, company?.morningEnd),
-        };
-      }
-
-      const byDay = new Map(rows.map((r) => [r.dayOfWeek, r]));
-      const company = user.companyId
-        ? await prisma.company.findUnique({ where: { id: user.companyId } })
-        : null;
-      const fallback = defaultWeek(company?.morningStart, company?.morningEnd);
-
-      return {
-        days: DAYS.map((day) => {
-          const row = byDay.get(day);
-          return row
-            ? serializeWindow(row)
-            : fallback[day]!;
-        }),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const fallback = defaultWeek(
+      user.company?.morningStart,
+      user.company?.morningEnd,
+    );
+    if (rows.length === 0) {
+      return c.json({ days: fallback });
     }
+
+    const byDay = new Map(rows.map((r) => [r.dayOfWeek, r]));
+    return c.json({
+      days: DAYS.map((day) => {
+        const row = byDay.get(day);
+        return row ? serializeWindow(row) : fallback[day]!;
+      }),
+    });
   })
-  .put("/", async ({ headers, set, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+  .put("/", async (c) => {
+    const user = await requireUser(c);
 
-      const payload = body as {
-        days?: Array<{
-          day_of_week: number;
-          is_available: boolean;
-          start_time: string;
-          end_time: string;
-        }>;
-      };
+    const payload = await readJson<{
+      days: Array<{
+        day_of_week: number;
+        is_available: boolean;
+        start_time: string;
+        end_time: string;
+      }>;
+    }>(c);
 
-      if (!payload?.days || !Array.isArray(payload.days) || payload.days.length !== 7) {
-        set.status = 400;
-        return { error: "Expected days array with 7 entries (Mon–Sun)" };
-      }
-
-      const seen = new Set<number>();
-      const normalized = [];
-
-      for (const day of payload.days) {
-        const dow = day.day_of_week;
-        if (!Number.isInteger(dow) || dow < 0 || dow > 6 || seen.has(dow)) {
-          set.status = 400;
-          return { error: "Each day_of_week must be unique and between 0–6" };
-        }
-        seen.add(dow);
-
-        const isAvailable = Boolean(day.is_available);
-        const startTime = String(day.start_time || "09:00");
-        const endTime = String(day.end_time || "17:00");
-
-        if (!isHhMm(startTime) || !isHhMm(endTime)) {
-          set.status = 400;
-          return { error: "Times must be HH:mm (24h)" };
-        }
-
-        if (isAvailable && toMinutes(endTime) <= toMinutes(startTime)) {
-          set.status = 400;
-          return { error: "End time must be after start time (same day)" };
-        }
-
-        normalized.push({
-          userId: user.id,
-          dayOfWeek: dow,
-          isAvailable,
-          startTime,
-          endTime,
-        });
-      }
-
-      if (seen.size !== 7) {
-        set.status = 400;
-        return { error: "Must include all days 0–6" };
-      }
-
-      await prisma.$transaction([
-        prisma.availabilityWindow.deleteMany({ where: { userId: user.id } }),
-        prisma.availabilityWindow.createMany({ data: normalized }),
-      ]);
-
-      const rows = await prisma.availabilityWindow.findMany({
-        where: { userId: user.id },
-        orderBy: { dayOfWeek: "asc" },
-      });
-
-      return { days: rows.map(serializeWindow) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!payload.days || !Array.isArray(payload.days) || payload.days.length !== 7) {
+      return c.json({ error: "Expected days array with 7 entries (Mon–Sun)" }, 400);
     }
+
+    const seen = new Set<number>();
+    const normalized = [];
+
+    for (const day of payload.days) {
+      const dow = day.day_of_week;
+      if (!Number.isInteger(dow) || dow < 0 || dow > 6 || seen.has(dow)) {
+        return c.json({ error: "Each day_of_week must be unique and between 0–6" }, 400);
+      }
+      seen.add(dow);
+
+      const isAvailable = Boolean(day.is_available);
+      const startTime = String(day.start_time || "09:00");
+      const endTime = String(day.end_time || "17:00");
+
+      if (!isHhMm(startTime) || !isHhMm(endTime)) {
+        return c.json({ error: "Times must be HH:mm (24h)" }, 400);
+      }
+
+      if (isAvailable && toMinutes(endTime) <= toMinutes(startTime)) {
+        return c.json({ error: "End time must be after start time (same day)" }, 400);
+      }
+
+      normalized.push({
+        userId: user.id,
+        dayOfWeek: dow,
+        isAvailable,
+        startTime,
+        endTime,
+      });
+    }
+
+    if (seen.size !== 7) {
+      return c.json({ error: "Must include all days 0–6" }, 400);
+    }
+
+    await db.batch([
+      db.delete(availabilityWindows).where(eq(availabilityWindows.userId, user.id)),
+      db.insert(availabilityWindows).values(normalized),
+    ]);
+
+    normalized.sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+    return c.json({ days: normalized.map(serializeWindow) });
   });

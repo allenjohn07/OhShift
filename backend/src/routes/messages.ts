@@ -1,16 +1,21 @@
-import { Elysia } from "elysia";
-import { ApiError, requireUser } from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+import { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import {
+  conversationParticipants,
+  conversations,
+  directMessages,
+  users,
+} from "../db/schema";
+import {
+  ApiError,
+  readJson,
+  requireCompanyMember,
+  requireUser,
+} from "../lib/auth-guard";
 
 const BODY_MAX = 2000;
 const MESSAGE_LIMIT = 100;
-
-function requireCompanyMember(user: { companyId: string | null }) {
-  if (!user.companyId) {
-    throw new ApiError("No company associated with user", 400);
-  }
-  return user.companyId;
-}
 
 function pairKeyFor(a: string, b: string) {
   return [a, b].sort().join(":");
@@ -46,16 +51,108 @@ function serializeMessage(row: {
   };
 }
 
+const memberColumns = {
+  id: true,
+  fullName: true,
+  role: true,
+  avatarUrl: true,
+} as const;
+
+const conversationWith = {
+  participants: {
+    with: { user: { columns: memberColumns } },
+  },
+  messages: {
+    orderBy: desc(directMessages.createdAt),
+    limit: 1,
+  },
+} as const;
+
+/**
+ * Unread DMs for a user, grouped by conversation — one query instead of a
+ * count per conversation.
+ */
+export async function unreadMessageCounts(userId: string) {
+  const rows = await db
+    .select({
+      conversationId: directMessages.conversationId,
+      count: sql<number>`count(*)`,
+    })
+    .from(directMessages)
+    .innerJoin(
+      conversationParticipants,
+      and(
+        eq(conversationParticipants.conversationId, directMessages.conversationId),
+        eq(conversationParticipants.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        ne(directMessages.senderId, userId),
+        or(
+          isNull(conversationParticipants.lastReadAt),
+          gt(directMessages.createdAt, conversationParticipants.lastReadAt),
+        ),
+      ),
+    )
+    .groupBy(directMessages.conversationId);
+
+  return new Map(rows.map((r) => [r.conversationId, Number(r.count)]));
+}
+
+export async function totalUnreadMessages(userId: string) {
+  let total = 0;
+  for (const count of (await unreadMessageCounts(userId)).values()) {
+    total += count;
+  }
+  return total;
+}
+
+type ConversationRow = NonNullable<
+  Awaited<ReturnType<typeof findConversation>>
+>;
+
+function findConversation(id: string) {
+  return db.query.conversations.findFirst({
+    where: eq(conversations.id, id),
+    with: conversationWith,
+  });
+}
+
+function serializeConversation(
+  c: ConversationRow,
+  userId: string,
+  unread: Map<string, number>,
+) {
+  const other = c.participants.find((p) => p.userId !== userId)!;
+  const last = c.messages[0] ?? null;
+  return {
+    id: c.id,
+    updated_at: c.updatedAt.toISOString(),
+    other: serializeMember(other.user),
+    last_message: last
+      ? {
+          id: last.id,
+          body: last.body,
+          sender_id: last.senderId,
+          created_at: last.createdAt.toISOString(),
+        }
+      : null,
+    unread_count: unread.get(c.id) ?? 0,
+  };
+}
+
 async function assertParticipant(
   conversationId: string,
   userId: string,
   companyId: string,
 ) {
-  const conversation = await prisma.conversation.findFirst({
-    where: { id: conversationId, companyId },
-    include: {
-      participants: true,
-    },
+  const conversation = await db.query.conversations.findFirst({
+    where: and(
+      eq(conversations.id, conversationId),
+      eq(conversations.companyId, companyId),
+    ),
+    with: { participants: true },
   });
   if (!conversation) {
     throw new ApiError("Conversation not found", 404);
@@ -67,346 +164,170 @@ async function assertParticipant(
   return { conversation, me };
 }
 
-export const messagesRoutes = new Elysia({ prefix: "/messages" })
-  .get("/directory", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+function markReadStatement(conversationId: string, userId: string, at: Date) {
+  return db
+    .update(conversationParticipants)
+    .set({ lastReadAt: at })
+    .where(
+      and(
+        eq(conversationParticipants.conversationId, conversationId),
+        eq(conversationParticipants.userId, userId),
+      ),
+    );
+}
 
-      const members = await prisma.user.findMany({
-        where: { companyId, id: { not: user.id } },
-        select: {
-          id: true,
-          fullName: true,
-          role: true,
-          avatarUrl: true,
-        },
-        orderBy: { fullName: "asc" },
-      });
+export const messagesRoutes = new Hono()
+  .get("/directory", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      return { members: members.map(serializeMember) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    const members = await db.query.users.findMany({
+      where: and(eq(users.companyId, companyId), ne(users.id, user.id)),
+      columns: memberColumns,
+      orderBy: asc(users.fullName),
+    });
+
+    return c.json({ members: members.map(serializeMember) });
   })
-  .get("/unread-count", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      requireCompanyMember(user);
+  .get("/unread-count", async (c) => {
+    const user = await requireUser(c);
+    requireCompanyMember(user);
 
-      const participations = await prisma.conversationParticipant.findMany({
-        where: { userId: user.id },
-        select: {
-          conversationId: true,
-          lastReadAt: true,
-        },
-      });
-
-      let count = 0;
-      for (const p of participations) {
-        count += await prisma.directMessage.count({
-          where: {
-            conversationId: p.conversationId,
-            senderId: { not: user.id },
-            ...(p.lastReadAt
-              ? { createdAt: { gt: p.lastReadAt } }
-              : {}),
-          },
-        });
-      }
-
-      return { count };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    return c.json({ count: await totalUnreadMessages(user.id) });
   })
-  .get("/conversations", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+  .get("/conversations", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      const conversations = await prisma.conversation.findMany({
-        where: {
-          companyId,
-          participants: { some: { userId: user.id } },
-        },
-        orderBy: { updatedAt: "desc" },
-        include: {
-          participants: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  role: true,
-                  avatarUrl: true,
-                },
-              },
-            },
-          },
-          messages: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
-      });
+    const [rows, unread] = await Promise.all([
+      db.query.conversations.findMany({
+        where: and(
+          eq(conversations.companyId, companyId),
+          inArray(
+            conversations.id,
+            db
+              .select({ id: conversationParticipants.conversationId })
+              .from(conversationParticipants)
+              .where(eq(conversationParticipants.userId, user.id)),
+          ),
+        ),
+        orderBy: desc(conversations.updatedAt),
+        with: conversationWith,
+      }),
+      unreadMessageCounts(user.id),
+    ]);
 
-      const result = await Promise.all(
-        conversations.map(async (c) => {
-          const me = c.participants.find((p) => p.userId === user.id)!;
-          const other = c.participants.find((p) => p.userId !== user.id)!;
-          const last = c.messages[0] ?? null;
-          const unread = await prisma.directMessage.count({
-            where: {
-              conversationId: c.id,
-              senderId: { not: user.id },
-              ...(me.lastReadAt
-                ? { createdAt: { gt: me.lastReadAt } }
-                : {}),
-            },
-          });
-
-          return {
-            id: c.id,
-            updated_at: c.updatedAt.toISOString(),
-            other: serializeMember(other.user),
-            last_message: last
-              ? {
-                  id: last.id,
-                  body: last.body,
-                  sender_id: last.senderId,
-                  created_at: last.createdAt.toISOString(),
-                }
-              : null,
-            unread_count: unread,
-          };
-        }),
-      );
-
-      return { conversations: result };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    return c.json({
+      conversations: rows.map((row) => serializeConversation(row, user.id, unread)),
+    });
   })
-  .post("/conversations", async ({ headers, set, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
-      const payload = body as { recipient_id?: string };
-      const recipientId = String(payload.recipient_id ?? "").trim();
+  .post("/conversations", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+    const payload = await readJson<{ recipient_id: string }>(c);
+    const recipientId = String(payload.recipient_id ?? "").trim();
 
-      if (!recipientId) {
-        set.status = 400;
-        return { error: "recipient_id is required" };
-      }
-      if (recipientId === user.id) {
-        set.status = 400;
-        return { error: "Cannot message yourself" };
-      }
-
-      const recipient = await prisma.user.findFirst({
-        where: { id: recipientId, companyId },
-        select: {
-          id: true,
-          fullName: true,
-          role: true,
-          avatarUrl: true,
-        },
-      });
-      if (!recipient) {
-        set.status = 400;
-        return { error: "Recipient not found in your company" };
-      }
-
-      const pairKey = pairKeyFor(user.id, recipient.id);
-      const conversationInclude = {
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                role: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-        messages: {
-          orderBy: { createdAt: "desc" as const },
-          take: 1,
-        },
-      };
-
-      let conversation = await prisma.conversation.findUnique({
-        where: {
-          companyId_pairKey: { companyId, pairKey },
-        },
-        include: conversationInclude,
-      });
-
-      if (!conversation) {
-        conversation = await prisma.conversation.create({
-          data: {
-            companyId,
-            pairKey,
-            participants: {
-              create: [{ userId: user.id }, { userId: recipient.id }],
-            },
-          },
-          include: conversationInclude,
-        });
-      }
-
-      const other = conversation.participants.find(
-        (p) => p.userId !== user.id,
-      )!;
-      const me = conversation.participants.find((p) => p.userId === user.id)!;
-      const last = conversation.messages[0] ?? null;
-      const unread = await prisma.directMessage.count({
-        where: {
-          conversationId: conversation.id,
-          senderId: { not: user.id },
-          ...(me.lastReadAt ? { createdAt: { gt: me.lastReadAt } } : {}),
-        },
-      });
-
-      return {
-        conversation: {
-          id: conversation.id,
-          updated_at: conversation.updatedAt.toISOString(),
-          other: serializeMember(other.user),
-          last_message: last
-            ? {
-                id: last.id,
-                body: last.body,
-                sender_id: last.senderId,
-                created_at: last.createdAt.toISOString(),
-              }
-            : null,
-          unread_count: unread,
-        },
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!recipientId) {
+      return c.json({ error: "recipient_id is required" }, 400);
     }
-  })
-  .get("/conversations/:id", async ({ headers, set, params }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
-      await assertParticipant(params.id, user.id, companyId);
-
-      const messages = await prisma.directMessage.findMany({
-        where: { conversationId: params.id },
-        orderBy: { createdAt: "asc" },
-        take: MESSAGE_LIMIT,
-      });
-
-      return { messages: messages.map(serializeMessage) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (recipientId === user.id) {
+      return c.json({ error: "Cannot message yourself" }, 400);
     }
-  })
-  .post("/conversations/:id", async ({ headers, set, params, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
-      await assertParticipant(params.id, user.id, companyId);
 
-      const payload = body as { body?: string };
-      const text = String(payload.body ?? "").trim();
-      if (!text) {
-        set.status = 400;
-        return { error: "Message body is required" };
-      }
-      if (text.length > BODY_MAX) {
-        set.status = 400;
-        return { error: `Message must be ${BODY_MAX} characters or fewer` };
-      }
+    const recipient = await db.query.users.findFirst({
+      where: and(eq(users.id, recipientId), eq(users.companyId, companyId)),
+      columns: { id: true },
+    });
+    if (!recipient) {
+      return c.json({ error: "Recipient not found in your company" }, 400);
+    }
 
-      const now = new Date();
-      const [message] = await prisma.$transaction([
-        prisma.directMessage.create({
-          data: {
-            conversationId: params.id,
-            senderId: user.id,
-            body: text,
-          },
-        }),
-        prisma.conversation.update({
-          where: { id: params.id },
-          data: { updatedAt: now },
-        }),
-        prisma.conversationParticipant.update({
-          where: {
-            conversationId_userId: {
-              conversationId: params.id,
-              userId: user.id,
-            },
-          },
-          data: { lastReadAt: now },
-        }),
+    const pairKey = pairKeyFor(user.id, recipient.id);
+    let existing = await db.query.conversations.findFirst({
+      where: and(
+        eq(conversations.companyId, companyId),
+        eq(conversations.pairKey, pairKey),
+      ),
+      columns: { id: true },
+    });
+
+    if (!existing) {
+      const id = crypto.randomUUID();
+      await db.batch([
+        db.insert(conversations).values({ id, companyId, pairKey }),
+        db.insert(conversationParticipants).values([
+          { conversationId: id, userId: user.id },
+          { conversationId: id, userId: recipient.id },
+        ]),
       ]);
-
-      return { message: serializeMessage(message) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+      existing = { id };
     }
+
+    const [conversation, unread] = await Promise.all([
+      findConversation(existing.id),
+      unreadMessageCounts(user.id),
+    ]);
+
+    return c.json({
+      conversation: serializeConversation(conversation!, user.id, unread),
+    });
   })
-  .post("/conversations/:id/read", async ({ headers, set, params }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
-      await assertParticipant(params.id, user.id, companyId);
+  .get("/conversations/:id", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+    const conversationId = c.req.param("id");
+    await assertParticipant(conversationId, user.id, companyId);
 
-      await prisma.conversationParticipant.update({
-        where: {
-          conversationId_userId: {
-            conversationId: params.id,
-            userId: user.id,
-          },
-        },
-        data: { lastReadAt: new Date() },
-      });
+    const messages = await db.query.directMessages.findMany({
+      where: eq(directMessages.conversationId, conversationId),
+      orderBy: asc(directMessages.createdAt),
+      limit: MESSAGE_LIMIT,
+    });
 
-      return { ok: true };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    return c.json({ messages: messages.map(serializeMessage) });
+  })
+  .post("/conversations/:id", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+    const conversationId = c.req.param("id");
+    await assertParticipant(conversationId, user.id, companyId);
+
+    const payload = await readJson<{ body: string }>(c);
+    const text = String(payload.body ?? "").trim();
+    if (!text) {
+      return c.json({ error: "Message body is required" }, 400);
     }
+    if (text.length > BODY_MAX) {
+      return c.json({ error: `Message must be ${BODY_MAX} characters or fewer` }, 400);
+    }
+
+    const now = new Date();
+    const [[message]] = await db.batch([
+      db
+        .insert(directMessages)
+        .values({
+          conversationId,
+          senderId: user.id,
+          body: text,
+          createdAt: now,
+        })
+        .returning(),
+      db
+        .update(conversations)
+        .set({ updatedAt: now })
+        .where(eq(conversations.id, conversationId)),
+      markReadStatement(conversationId, user.id, now),
+    ]);
+
+    return c.json({ message: serializeMessage(message!) });
+  })
+  .post("/conversations/:id/read", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+    const conversationId = c.req.param("id");
+    await assertParticipant(conversationId, user.id, companyId);
+
+    await markReadStatement(conversationId, user.id, new Date());
+
+    return c.json({ ok: true });
   });

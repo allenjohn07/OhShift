@@ -1,16 +1,115 @@
-import { buildApp } from "./app";
+import { env } from "cloudflare:workers";
+import { sql } from "drizzle-orm";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { db } from "./db";
+import { ApiError } from "./lib/auth-guard";
+import { aiRoutes } from "./routes/ai";
+import { announcementsRoutes } from "./routes/announcements";
+import { authRoutes } from "./routes/auth";
+import { availabilityRoutes } from "./routes/availability";
+import { companyRoutes } from "./routes/company";
+import { dashboardRoutes } from "./routes/dashboard";
+import { employeesRoutes } from "./routes/employees";
+import { inboxRoutes } from "./routes/inbox";
+import { messagesRoutes } from "./routes/messages";
+import { shiftsRoutes } from "./routes/shifts";
+import { timeEntriesRoutes } from "./routes/time-entries";
+import { timeOffRoutes } from "./routes/time-off";
 
-if (!process.env.AUTH_SECRET) {
-  console.error(
-    "AUTH_SECRET is not configured. Set it in backend/.env (e.g. openssl rand -base64 32) and restart.",
-  );
-  process.exit(1);
+function parseOrigin(value: string): string | null {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
 }
 
-const port = Number(process.env.PORT) || 3001;
+const vars = env as unknown as Record<string, string | undefined>;
 
-const app = buildApp().listen(port);
+const configuredOrigins = [
+  vars.FRONTEND_URL,
+  ...(vars.FRONTEND_URLS ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean),
+]
+  .filter((value): value is string => Boolean(value))
+  .map(parseOrigin)
+  .filter((value): value is string => Boolean(value));
 
-console.log(
-  `OhShift API running at http://${app.server?.hostname}:${app.server?.port}`,
-);
+function allowOrigin(origin: string): string | null {
+  if (configuredOrigins.length > 0) {
+    return configuredOrigins.includes(origin) ? origin : null;
+  }
+  if (
+    origin === "http://localhost:3000" ||
+    origin === "http://127.0.0.1:3000" ||
+    /^https:\/\/.*\.pages\.dev$/.test(origin)
+  ) {
+    return origin;
+  }
+  return null;
+}
+
+const app = new Hono()
+  .use(
+    cors({
+      origin: allowOrigin,
+      credentials: true,
+      allowHeaders: ["Content-Type", "Authorization"],
+    }),
+  )
+  .get("/ping", (c) =>
+    c.json({
+      ok: true,
+      service: "ohshift-api",
+      timestamp: new Date().toISOString(),
+    }),
+  )
+  .get("/health", async (c) => {
+    try {
+      await db.run(sql`SELECT 1`);
+      return c.json({
+        ok: true,
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      return c.json({
+        ok: false,
+        database: "disconnected",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  })
+  .get("/", (c) =>
+    c.json({
+      name: "OhShift API",
+      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off, /time-entries, /announcements, /messages, /inbox, /ai",
+    }),
+  )
+  .route("/auth", authRoutes)
+  .route("/company", companyRoutes)
+  .route("/employees", employeesRoutes)
+  .route("/shifts", shiftsRoutes)
+  .route("/dashboard", dashboardRoutes)
+  .route("/availability", availabilityRoutes)
+  .route("/time-off", timeOffRoutes)
+  .route("/time-entries", timeEntriesRoutes)
+  .route("/announcements", announcementsRoutes)
+  .route("/messages", messagesRoutes)
+  .route("/inbox", inboxRoutes)
+  .route("/ai", aiRoutes)
+  .notFound((c) => c.json({ error: "Not found" }, 404))
+  .onError((err, c) => {
+    if (err instanceof ApiError) {
+      return c.json({ error: err.message }, err.status as 400);
+    }
+    console.error(err);
+    return c.json({ error: "Internal Server Error" }, 500);
+  });
+
+export type AppType = typeof app;
+
+export default app;

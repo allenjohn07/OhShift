@@ -1,30 +1,44 @@
-import { Elysia } from "elysia";
-import { ApiError, requireManager } from "../lib/auth-guard";
+import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { Hono, type Context } from "hono";
+import { db } from "../db";
+import { companies, users } from "../db/schema";
+import { ApiError, readJson, requireManager } from "../lib/auth-guard";
 import { askSchedule } from "../lib/nl-schedule-ask";
 import { parseShiftFromPrompt } from "../lib/nl-shift-parse";
-import { prisma } from "../lib/prisma";
 
 async function loadRosterAndPresets(user: {
   id: string;
-  companyId: string | null;
+  companyId: string;
   fullName: string;
   designation: string | null;
 }) {
-  const rosterRows = await prisma.user.findMany({
-    where: {
-      companyId: user.companyId!,
-      OR: [
-        { role: { in: ["employee", "manager"] } },
-        { id: user.id },
-      ],
-    },
-    select: {
-      id: true,
-      fullName: true,
-      designation: true,
-    },
-    orderBy: { fullName: "asc" },
-  });
+  const [rosterRows, companyRows] = await db.batch([
+    db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        designation: users.designation,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.companyId, user.companyId),
+          or(inArray(users.role, ["employee", "manager"]), eq(users.id, user.id)),
+        ),
+      )
+      .orderBy(asc(users.fullName)),
+    db
+      .select({
+        morningStart: companies.morningStart,
+        morningEnd: companies.morningEnd,
+        eveningStart: companies.eveningStart,
+        eveningEnd: companies.eveningEnd,
+      })
+      .from(companies)
+      .where(eq(companies.id, user.companyId))
+      .limit(1),
+  ]);
+  const company = companyRows[0];
 
   const roster = rosterRows.map((row) => ({
     id: row.id,
@@ -43,16 +57,6 @@ async function loadRosterAndPresets(user: {
   if (!roster.some((m) => m.id === selfRow.id)) {
     roster.push(selfRow);
   }
-
-  const company = await prisma.company.findUnique({
-    where: { id: user.companyId! },
-    select: {
-      morningStart: true,
-      morningEnd: true,
-      eveningStart: true,
-      eveningEnd: true,
-    },
-  });
 
   const presets = {
     morning_start: company?.morningStart || "08:00",
@@ -73,36 +77,45 @@ function aiErrorStatus(message: string): number {
   return isConfig ? 503 : 500;
 }
 
-export const aiRoutes = new Elysia({ prefix: "/ai" })
-  .post("/parse-shift", async ({ body, headers, set }) => {
+/** Shared prompt/timezone parsing for both AI endpoints. */
+async function readPrompt(c: Context) {
+  const { prompt, timezone, employeeId } = await readJson<{
+    prompt: string;
+    timezone: string;
+    employeeId: string;
+  }>(c);
+
+  const trimmed = typeof prompt === "string" ? prompt.trim() : "";
+  if (!trimmed) {
+    throw new ApiError("Prompt is required", 400);
+  }
+  if (trimmed.length > 500) {
+    throw new ApiError("Prompt is too long", 400);
+  }
+
+  const tz =
+    typeof timezone === "string" && timezone.trim() ? timezone.trim() : "UTC";
+  return { prompt: trimmed, timezone: tz, employeeId };
+}
+
+function aiFailure(c: Context, err: unknown, fallback: string) {
+  if (err instanceof ApiError) throw err;
+  console.error(err);
+  const message = err instanceof Error ? err.message : fallback;
+  return c.json({ error: message }, aiErrorStatus(message) as 500);
+}
+
+export const aiRoutes = new Hono()
+  .post("/parse-shift", async (c) => {
+    const user = await requireManager(c);
+    const { prompt, timezone, employeeId } = await readPrompt(c);
+
     try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { prompt, timezone, employeeId } = body as {
-        prompt?: string;
-        timezone?: string;
-        employeeId?: string;
-      };
-
-      const trimmed = typeof prompt === "string" ? prompt.trim() : "";
-      if (!trimmed) {
-        set.status = 400;
-        return { error: "Prompt is required" };
-      }
-      if (trimmed.length > 500) {
-        set.status = 400;
-        return { error: "Prompt is too long" };
-      }
-
-      const tz =
-        typeof timezone === "string" && timezone.trim()
-          ? timezone.trim()
-          : "UTC";
-
       const { roster, selfRow, presets } = await loadRosterAndPresets(user);
 
       const result = await parseShiftFromPrompt({
-        prompt: trimmed,
-        timezone: tz,
+        prompt,
+        timezone,
         roster,
         self: selfRow,
         presets,
@@ -113,52 +126,24 @@ export const aiRoutes = new Elysia({ prefix: "/ai" })
       });
 
       if ("employee_id" in result) {
-        return { proposal: result };
+        return c.json({ proposal: result });
       }
-
-      set.status = 422;
-      return { error: result.error };
+      return c.json({ error: result.error }, 422);
     } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      console.error(err);
-      const message =
-        err instanceof Error ? err.message : "Failed to parse shift request";
-      set.status = aiErrorStatus(message);
-      return { error: message };
+      return aiFailure(c, err, "Failed to parse shift request");
     }
   })
-  .post("/ask", async ({ body, headers, set }) => {
+  .post("/ask", async (c) => {
+    const user = await requireManager(c);
+    const { prompt, timezone } = await readPrompt(c);
+
     try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { prompt, timezone } = body as {
-        prompt?: string;
-        timezone?: string;
-      };
-
-      const trimmed = typeof prompt === "string" ? prompt.trim() : "";
-      if (!trimmed) {
-        set.status = 400;
-        return { error: "Prompt is required" };
-      }
-      if (trimmed.length > 500) {
-        set.status = 400;
-        return { error: "Prompt is too long" };
-      }
-
-      const tz =
-        typeof timezone === "string" && timezone.trim()
-          ? timezone.trim()
-          : "UTC";
-
       const { roster, selfRow, presets } = await loadRosterAndPresets(user);
 
       const result = await askSchedule({
-        prompt: trimmed,
-        companyId: user.companyId!,
-        timezone: tz,
+        prompt,
+        companyId: user.companyId,
+        timezone,
         roster,
         self: selfRow,
         presets,
@@ -166,28 +151,19 @@ export const aiRoutes = new Elysia({ prefix: "/ai" })
 
       if ("kind" in result) {
         if (result.kind === "create") {
-          return { kind: "create", proposal: result.proposal };
+          return c.json({ kind: "create", proposal: result.proposal });
         }
-        return {
+        return c.json({
           kind: "query",
           answer: result.answer,
           window_label: result.window_label,
           person: result.person,
           shifts: result.shifts,
-        };
+        });
       }
 
-      set.status = 422;
-      return { error: result.error };
+      return c.json({ error: result.error }, 422);
     } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      console.error(err);
-      const message =
-        err instanceof Error ? err.message : "Failed to process request";
-      set.status = aiErrorStatus(message);
-      return { error: message };
+      return aiFailure(c, err, "Failed to process request");
     }
   });

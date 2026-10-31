@@ -1,7 +1,8 @@
-import { prisma } from "./prisma";
+import type { AssignmentContext } from "./assignment-context";
 
 /** Returns shifts that overlap [startTime, endTime) for the same employee. */
-export async function findOverlappingShifts(
+export function findOverlappingShifts(
+  ctx: AssignmentContext,
   employeeId: string,
   startTime: Date,
   endTime: Date,
@@ -11,36 +12,30 @@ export async function findOverlappingShifts(
     return [];
   }
 
-  return prisma.shift.findMany({
-    where: {
-      employeeId,
-      ...(excludeShiftId ? { id: { not: excludeShiftId } } : {}),
-      startTime: { lt: endTime },
-      endTime: { gt: startTime },
-    },
-    include: {
-      employee: { select: { fullName: true } },
-    },
-    orderBy: { startTime: "asc" },
-  });
+  return (ctx.shifts.get(employeeId) ?? [])
+    .filter(
+      (s) =>
+        s.id !== excludeShiftId &&
+        s.startTime < endTime &&
+        s.endTime > startTime,
+    )
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 }
 
 /** Same person + identical start instant — blocked even if ranges would somehow differ. */
-export async function findShiftWithSameStart(
+export function findShiftWithSameStart(
+  ctx: AssignmentContext,
   employeeId: string,
   startTime: Date,
   excludeShiftId?: string,
 ) {
-  return prisma.shift.findFirst({
-    where: {
-      employeeId,
-      startTime,
-      ...(excludeShiftId ? { id: { not: excludeShiftId } } : {}),
-    },
-    include: {
-      employee: { select: { fullName: true } },
-    },
-  });
+  return (
+    (ctx.shifts.get(employeeId) ?? []).find(
+      (s) =>
+        s.id !== excludeShiftId &&
+        s.startTime.getTime() === startTime.getTime(),
+    ) ?? null
+  );
 }
 
 function formatLocalRange(start: Date, end: Date): string {

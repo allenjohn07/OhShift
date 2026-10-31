@@ -18,7 +18,7 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 | Layer | Tech |
 |-------|------|
 | Frontend | Next.js (static export), React, Tailwind, shadcn/Radix |
-| Backend | Bun, Elysia, Prisma, Neon PostgreSQL |
+| Backend | Hono, Drizzle ORM, Cloudflare D1 (SQLite) — Bun as package manager |
 | Deploy | Cloudflare Pages (frontend), Cloudflare Workers (API) |
 
 ## Key paths
@@ -26,13 +26,14 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 - Frontend pages: `src/app/**`
 - API client: `src/lib/api.ts`
 - Backend routes: `backend/src/routes/**`
-- Schema: `backend/prisma/schema.prisma`
+- Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)
 - UI skill: `.cursor/skills/ohshift-ui/SKILL.md` — follow for frontend styling
 - Live updates: `src/hooks/use-visible-poll.ts`
 
 ## Conventions
 
-- Match existing patterns (snake_case in API JSON, camelCase in Prisma/TS).
+- Match existing patterns (snake_case in API JSON, camelCase in Drizzle/TS).
+- D1: no interactive transactions (use `db.batch`), and a per-request query cap — batch reads instead of querying per row.
 - Minimize scope — one feature vertical at a time (schema → API → UI).
 - Managers and owners share manager permissions; only owners change roles.
 - Managers/owners are also workers: they use Availability and Time off (same pages as employees). Another manager or the owner reviews their time-off — no self-approve.

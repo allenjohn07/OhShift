@@ -1,8 +1,10 @@
-import { decode, encode } from "@auth/core/jwt";
-import { prisma } from "./prisma";
-import type { UserRole } from "@prisma/client";
+import { env } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
+import { sign, verify } from "hono/jwt";
+import { db } from "../db";
+import { users, type UserRole } from "../db/schema";
 
-const SESSION_SALT = "authjs.session-token";
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
 export type AuthPayload = {
   sub: string;
@@ -11,32 +13,30 @@ export type AuthPayload = {
   companyId?: string | null;
 };
 
-export async function getAuthFromBearer(
-  authorization: string | null,
-): Promise<AuthPayload | null> {
-  if (!authorization?.startsWith("Bearer ")) return null;
-
-  const token = authorization.slice(7);
-  const secret = process.env.AUTH_SECRET;
+function authSecret() {
+  const secret = env.AUTH_SECRET;
   if (!secret) {
     throw new Error("AUTH_SECRET is not configured");
   }
+  return secret;
+}
+
+export async function getAuthFromBearer(
+  authorization: string | null | undefined,
+): Promise<AuthPayload | null> {
+  if (!authorization?.startsWith("Bearer ")) return null;
 
   try {
-    const payload = (await decode({
-      token,
-      secret,
-      salt: SESSION_SALT,
-    })) as AuthPayload | null;
-
-    if (!payload?.sub) return null;
-    return payload;
+    const payload = (await verify(
+      authorization.slice(7),
+      authSecret(),
+      "HS256",
+    )) as AuthPayload;
+    return payload?.sub ? payload : null;
   } catch {
     return null;
   }
 }
-
-const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
 export async function createAccessToken(user: {
   id: string;
@@ -44,27 +44,24 @@ export async function createAccessToken(user: {
   role: UserRole;
   companyId: string | null;
 }) {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) {
-    throw new Error("AUTH_SECRET is not configured");
-  }
-
-  return encode({
-    token: {
+  const now = Math.floor(Date.now() / 1000);
+  return sign(
+    {
       sub: user.id,
       email: user.email,
       role: user.role,
       companyId: user.companyId,
+      iat: now,
+      exp: now + SESSION_MAX_AGE,
     },
-    secret,
-    salt: SESSION_SALT,
-    maxAge: SESSION_MAX_AGE,
-  });
+    authSecret(),
+    "HS256",
+  );
 }
 
 export async function getDbUser(userId: string) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    include: { company: true },
+  return db.query.users.findFirst({
+    where: eq(users.id, userId),
+    with: { company: true },
   });
 }

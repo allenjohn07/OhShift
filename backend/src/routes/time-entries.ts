@@ -1,11 +1,8 @@
-import { Elysia } from "elysia";
-import type { TimeEntryStatus } from "@prisma/client";
-import {
-  ApiError,
-  requireManager,
-  requireUser,
-} from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { shifts, timeEntries, type TimeEntryStatus } from "../db/schema";
+import { readJson, requireManager, requireUser } from "../lib/auth-guard";
 
 const CLOCK_IN_EARLY_MS = 30 * 60 * 1000;
 
@@ -70,11 +67,11 @@ function serializeTimeEntry(row: {
   };
 }
 
-const entryInclude = {
-  employee: { select: { fullName: true } },
-  reviewedBy: { select: { fullName: true } },
+const entryWith = {
+  employee: { columns: { fullName: true } },
+  reviewedBy: { columns: { fullName: true } },
   shift: {
-    select: {
+    columns: {
       title: true,
       startTime: true,
       endTime: true,
@@ -83,317 +80,271 @@ const entryInclude = {
   },
 } as const;
 
-export const timeEntriesRoutes = new Elysia({ prefix: "/time-entries" })
-  .get("/active", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+async function loadEntry(id: string) {
+  const entry = await db.query.timeEntries.findFirst({
+    where: eq(timeEntries.id, id),
+    with: entryWith,
+  });
+  return serializeTimeEntry(entry!);
+}
 
-      const entry = await prisma.timeEntry.findFirst({
-        where: { employeeId: user.id, status: "open" },
-        include: entryInclude,
-      });
+export const timeEntriesRoutes = new Hono()
+  .get("/active", async (c) => {
+    const user = await requireUser(c);
 
-      return { entry: entry ? serializeTimeEntry(entry) : null };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    const entry = await db.query.timeEntries.findFirst({
+      where: and(
+        eq(timeEntries.employeeId, user.id),
+        eq(timeEntries.status, "open"),
+      ),
+      with: entryWith,
+    });
+
+    return c.json({ entry: entry ? serializeTimeEntry(entry) : null });
   })
-  .get("/mine", async ({ headers, set, query }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const q = query as { from?: string; to?: string };
+  .get("/mine", async (c) => {
+    const user = await requireUser(c);
+    const fromRaw = c.req.query("from");
+    const toRaw = c.req.query("to");
 
-      const from = parseIsoDate(q.from);
-      const to = parseIsoDate(q.to);
-      if ((q.from && !from) || (q.to && !to)) {
-        set.status = 400;
-        return { error: "from and to must be valid ISO datetimes" };
-      }
-      if (from && to && to <= from) {
-        set.status = 400;
-        return { error: "to must be after from" };
-      }
-
-      const entries = await prisma.timeEntry.findMany({
-        where: {
-          employeeId: user.id,
-          ...(from || to
-            ? {
-                clockInAt: {
-                  ...(from ? { gte: from } : {}),
-                  ...(to ? { lt: to } : {}),
-                },
-              }
-            : {}),
-        },
-        include: entryInclude,
-        orderBy: [{ clockInAt: "desc" }],
-      });
-
-      return { entries: entries.map(serializeTimeEntry) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const from = parseIsoDate(fromRaw);
+    const to = parseIsoDate(toRaw);
+    if ((fromRaw && !from) || (toRaw && !to)) {
+      return c.json({ error: "from and to must be valid ISO datetimes" }, 400);
     }
-  })
-  .get("/company", async ({ headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-
-      const pending = await prisma.timeEntry.findMany({
-        where: { companyId: user.companyId!, status: "pending" },
-        include: entryInclude,
-        orderBy: [{ clockOutAt: "asc" }, { createdAt: "asc" }],
-      });
-
-      const recent = await prisma.timeEntry.findMany({
-        where: {
-          companyId: user.companyId!,
-          status: { in: ["approved", "denied"] },
-        },
-        include: entryInclude,
-        orderBy: [{ reviewedAt: "desc" }, { createdAt: "desc" }],
-        take: 20,
-      });
-
-      return {
-        pending: pending.map(serializeTimeEntry),
-        recent: recent.map(serializeTimeEntry),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (from && to && to <= from) {
+      return c.json({ error: "to must be after from" }, 400);
     }
+
+    const entries = await db.query.timeEntries.findMany({
+      where: and(
+        eq(timeEntries.employeeId, user.id),
+        from ? gte(timeEntries.clockInAt, from) : undefined,
+        to ? lt(timeEntries.clockInAt, to) : undefined,
+      ),
+      with: entryWith,
+      orderBy: desc(timeEntries.clockInAt),
+    });
+
+    return c.json({ entries: entries.map(serializeTimeEntry) });
   })
-  .post("/clock-in", async ({ headers, set, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      if (!user.companyId) {
-        set.status = 400;
-        return { error: "No company associated" };
-      }
+  .get("/company", async (c) => {
+    const user = await requireManager(c);
 
-      const payload = body as { shift_id?: string };
-      const shiftId = payload.shift_id?.trim();
-      if (!shiftId) {
-        set.status = 400;
-        return { error: "shift_id is required" };
-      }
+    const [pending, recent] = await db.batch([
+      db.query.timeEntries.findMany({
+        where: and(
+          eq(timeEntries.companyId, user.companyId),
+          eq(timeEntries.status, "pending"),
+        ),
+        with: entryWith,
+        orderBy: [asc(timeEntries.clockOutAt), asc(timeEntries.createdAt)],
+      }),
+      db.query.timeEntries.findMany({
+        where: and(
+          eq(timeEntries.companyId, user.companyId),
+          inArray(timeEntries.status, ["approved", "denied"]),
+        ),
+        with: entryWith,
+        orderBy: [desc(timeEntries.reviewedAt), desc(timeEntries.createdAt)],
+        limit: 20,
+      }),
+    ]);
 
-      const shift = await prisma.shift.findFirst({
-        where: {
-          id: shiftId,
-          companyId: user.companyId,
-          employeeId: user.id,
-        },
-      });
-      if (!shift) {
-        set.status = 404;
-        return { error: "Shift not found" };
-      }
-      if (shift.status !== "published") {
-        set.status = 400;
-        return { error: "You can only clock in to a published shift" };
-      }
+    return c.json({
+      pending: pending.map(serializeTimeEntry),
+      recent: recent.map(serializeTimeEntry),
+    });
+  })
+  .post("/clock-in", async (c) => {
+    const user = await requireUser(c);
+    if (!user.companyId) {
+      return c.json({ error: "No company associated" }, 400);
+    }
 
-      const existing = await prisma.timeEntry.findUnique({
-        where: { shiftId: shift.id },
-      });
-      if (existing) {
-        set.status = 400;
-        return { error: "This shift already has a time entry" };
-      }
+    const payload = await readJson<{ shift_id: string }>(c);
+    const shiftId = payload.shift_id?.trim();
+    if (!shiftId) {
+      return c.json({ error: "shift_id is required" }, 400);
+    }
 
-      const openEntry = await prisma.timeEntry.findFirst({
-        where: { employeeId: user.id, status: "open" },
-      });
-      if (openEntry) {
-        set.status = 400;
-        return { error: "You already have an open clock-in. Clock out first." };
-      }
+    // Plain selects: drizzle's findFirst crashes inside db.batch on empty results.
+    const [[shift], [existing], [openEntry]] = await db.batch([
+      db
+        .select()
+        .from(shifts)
+        .where(
+          and(
+            eq(shifts.id, shiftId),
+            eq(shifts.companyId, user.companyId),
+            eq(shifts.employeeId, user.id),
+          ),
+        )
+        .limit(1),
+      db
+        .select({ id: timeEntries.id })
+        .from(timeEntries)
+        .where(eq(timeEntries.shiftId, shiftId))
+        .limit(1),
+      db
+        .select({ id: timeEntries.id })
+        .from(timeEntries)
+        .where(
+          and(
+            eq(timeEntries.employeeId, user.id),
+            eq(timeEntries.status, "open"),
+          ),
+        )
+        .limit(1),
+    ]);
 
-      const now = new Date();
-      const windowStart = new Date(shift.startTime.getTime() - CLOCK_IN_EARLY_MS);
-      if (now < windowStart) {
-        set.status = 400;
-        return {
+    if (!shift) {
+      return c.json({ error: "Shift not found" }, 404);
+    }
+    if (shift.status !== "published") {
+      return c.json({ error: "You can only clock in to a published shift" }, 400);
+    }
+    if (existing) {
+      return c.json({ error: "This shift already has a time entry" }, 400);
+    }
+    if (openEntry) {
+      return c.json({ error: "You already have an open clock-in. Clock out first." }, 400);
+    }
+
+    const now = new Date();
+    const windowStart = new Date(shift.startTime.getTime() - CLOCK_IN_EARLY_MS);
+    if (now < windowStart) {
+      return c.json(
+        {
           error: "Too early to clock in. You can clock in up to 30 minutes before the shift starts.",
-        };
-      }
-      if (now > shift.endTime) {
-        set.status = 400;
-        return { error: "This shift has already ended" };
-      }
-
-      const created = await prisma.timeEntry.create({
-        data: {
-          companyId: user.companyId,
-          employeeId: user.id,
-          shiftId: shift.id,
-          punchedInAt: now,
-          clockInAt: now,
-          status: "open",
         },
-        include: entryInclude,
-      });
-
-      return { entry: serializeTimeEntry(created) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+        400,
+      );
     }
+    if (now > shift.endTime) {
+      return c.json({ error: "This shift has already ended" }, 400);
+    }
+
+    const [created] = await db
+      .insert(timeEntries)
+      .values({
+        companyId: user.companyId,
+        employeeId: user.id,
+        shiftId: shift.id,
+        punchedInAt: now,
+        clockInAt: now,
+        status: "open",
+      })
+      .returning({ id: timeEntries.id });
+
+    return c.json({ entry: await loadEntry(created!.id) });
   })
-  .post("/clock-out", async ({ headers, set, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+  .post("/clock-out", async (c) => {
+    const user = await requireUser(c);
 
-      const payload = body as { shift_id?: string };
-      const shiftId = payload.shift_id?.trim();
-      if (!shiftId) {
-        set.status = 400;
-        return { error: "shift_id is required" };
-      }
-
-      const entry = await prisma.timeEntry.findFirst({
-        where: {
-          shiftId,
-          employeeId: user.id,
-          status: "open",
-        },
-      });
-      if (!entry) {
-        set.status = 404;
-        return { error: "No open clock-in found for this shift" };
-      }
-
-      const now = new Date();
-      if (now <= entry.clockInAt) {
-        set.status = 400;
-        return { error: "Clock-out must be after clock-in" };
-      }
-
-      const updated = await prisma.timeEntry.update({
-        where: { id: entry.id },
-        data: {
-          punchedOutAt: now,
-          clockOutAt: now,
-          status: "pending",
-        },
-        include: entryInclude,
-      });
-
-      return { entry: serializeTimeEntry(updated) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const payload = await readJson<{ shift_id: string }>(c);
+    const shiftId = payload.shift_id?.trim();
+    if (!shiftId) {
+      return c.json({ error: "shift_id is required" }, 400);
     }
+
+    const entry = await db.query.timeEntries.findFirst({
+      where: and(
+        eq(timeEntries.shiftId, shiftId),
+        eq(timeEntries.employeeId, user.id),
+        eq(timeEntries.status, "open"),
+      ),
+    });
+    if (!entry) {
+      return c.json({ error: "No open clock-in found for this shift" }, 404);
+    }
+
+    const now = new Date();
+    if (now <= entry.clockInAt) {
+      return c.json({ error: "Clock-out must be after clock-in" }, 400);
+    }
+
+    await db
+      .update(timeEntries)
+      .set({
+        punchedOutAt: now,
+        clockOutAt: now,
+        status: "pending",
+      })
+      .where(eq(timeEntries.id, entry.id));
+
+    return c.json({ entry: await loadEntry(entry.id) });
   })
-  .post("/:id/review", async ({ headers, set, params, body }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const payload = body as {
-        decision?: string;
-        clock_in_at?: string;
-        clock_out_at?: string;
-        note?: string | null;
-      };
+  .post("/:id/review", async (c) => {
+    const user = await requireManager(c);
+    const payload = await readJson<{
+      decision: string;
+      clock_in_at: string;
+      clock_out_at: string;
+      note: string | null;
+    }>(c);
 
-      const decision = payload.decision;
-      if (decision !== "approved" && decision !== "denied") {
-        set.status = 400;
-        return { error: 'decision must be "approved" or "denied"' };
-      }
-
-      const row = await prisma.timeEntry.findFirst({
-        where: { id: params.id, companyId: user.companyId! },
-      });
-      if (!row) {
-        set.status = 404;
-        return { error: "Time entry not found" };
-      }
-      if (row.status !== "pending") {
-        set.status = 400;
-        return { error: "Only pending time entries can be reviewed" };
-      }
-      if (row.employeeId === user.id) {
-        set.status = 403;
-        return { error: "You cannot review your own time entry" };
-      }
-
-      let clockInAt = row.clockInAt;
-      let clockOutAt = row.clockOutAt;
-      if (!clockOutAt) {
-        set.status = 400;
-        return { error: "Time entry is missing a clock-out time" };
-      }
-
-      if (payload.clock_in_at !== undefined) {
-        const parsed = parseIsoDate(payload.clock_in_at);
-        if (!parsed) {
-          set.status = 400;
-          return { error: "clock_in_at must be a valid ISO datetime" };
-        }
-        clockInAt = parsed;
-      }
-      if (payload.clock_out_at !== undefined) {
-        const parsed = parseIsoDate(payload.clock_out_at);
-        if (!parsed) {
-          set.status = 400;
-          return { error: "clock_out_at must be a valid ISO datetime" };
-        }
-        clockOutAt = parsed;
-      }
-      if (clockOutAt <= clockInAt) {
-        set.status = 400;
-        return { error: "Clock-out must be after clock-in" };
-      }
-
-      const reviewNote =
-        typeof payload.note === "string" && payload.note.trim()
-          ? payload.note.trim().slice(0, 500)
-          : null;
-
-      const updated = await prisma.timeEntry.update({
-        where: { id: row.id },
-        data: {
-          clockInAt,
-          clockOutAt,
-          status: decision,
-          reviewNote,
-          reviewedById: user.id,
-          reviewedAt: new Date(),
-        },
-        include: entryInclude,
-      });
-
-      return { entry: serializeTimeEntry(updated) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const decision = payload.decision;
+    if (decision !== "approved" && decision !== "denied") {
+      return c.json({ error: 'decision must be "approved" or "denied"' }, 400);
     }
+
+    const row = await db.query.timeEntries.findFirst({
+      where: and(
+        eq(timeEntries.id, c.req.param("id")),
+        eq(timeEntries.companyId, user.companyId),
+      ),
+    });
+    if (!row) {
+      return c.json({ error: "Time entry not found" }, 404);
+    }
+    if (row.status !== "pending") {
+      return c.json({ error: "Only pending time entries can be reviewed" }, 400);
+    }
+    if (row.employeeId === user.id) {
+      return c.json({ error: "You cannot review your own time entry" }, 403);
+    }
+
+    let clockInAt = row.clockInAt;
+    let clockOutAt = row.clockOutAt;
+    if (!clockOutAt) {
+      return c.json({ error: "Time entry is missing a clock-out time" }, 400);
+    }
+
+    if (payload.clock_in_at !== undefined) {
+      const parsed = parseIsoDate(payload.clock_in_at);
+      if (!parsed) {
+        return c.json({ error: "clock_in_at must be a valid ISO datetime" }, 400);
+      }
+      clockInAt = parsed;
+    }
+    if (payload.clock_out_at !== undefined) {
+      const parsed = parseIsoDate(payload.clock_out_at);
+      if (!parsed) {
+        return c.json({ error: "clock_out_at must be a valid ISO datetime" }, 400);
+      }
+      clockOutAt = parsed;
+    }
+    if (clockOutAt <= clockInAt) {
+      return c.json({ error: "Clock-out must be after clock-in" }, 400);
+    }
+
+    const reviewNote =
+      typeof payload.note === "string" && payload.note.trim()
+        ? payload.note.trim().slice(0, 500)
+        : null;
+
+    await db
+      .update(timeEntries)
+      .set({
+        clockInAt,
+        clockOutAt,
+        status: decision,
+        reviewNote,
+        reviewedById: user.id,
+        reviewedAt: new Date(),
+      })
+      .where(eq(timeEntries.id, row.id));
+
+    return c.json({ entry: await loadEntry(row.id) });
   });

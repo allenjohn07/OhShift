@@ -1,189 +1,158 @@
-import { Elysia } from "elysia";
-import type { UserRole } from "@prisma/client";
+import { and, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { users, type UserRole } from "../db/schema";
 import {
-  ApiError,
+  assertOwner,
+  readJson,
   requireManager,
-  requireOwner,
   verifyEmployeeInCompany,
 } from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
 import { generateTempPassword, hashPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
 
 const ASSIGNABLE_ROLES: UserRole[] = ["employee", "manager"];
 
-export const employeesRoutes = new Elysia({ prefix: "/employees" })
-  .put("/", async ({ body, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { employeeId, designation, role } = body as {
-        employeeId?: string;
-        designation?: string | null;
-        role?: UserRole;
-      };
+export const employeesRoutes = new Hono()
+  .put("/", async (c) => {
+    const user = await requireManager(c);
+    const { employeeId, designation, role } = await readJson<{
+      employeeId: string;
+      designation: string | null;
+      role: UserRole;
+    }>(c);
 
-      if (!employeeId) {
-        set.status = 400;
-        return { error: "Missing employee ID" };
-      }
-
-      const member = await verifyEmployeeInCompany(
-        employeeId,
-        user.companyId!,
-      );
-
-      if (member.role === "owner") {
-        set.status = 403;
-        return { error: "Cannot change the company owner's role" };
-      }
-
-      if (role !== undefined) {
-        await requireOwner(headers.authorization ?? null);
-
-        if (!ASSIGNABLE_ROLES.includes(role)) {
-          set.status = 400;
-          return { error: "Role must be employee or manager" };
-        }
-      }
-
-      const updated = await prisma.user.update({
-        where: { id: employeeId },
-        data: {
-          ...(designation !== undefined
-            ? { designation: designation || null }
-            : {}),
-          ...(role !== undefined ? { role } : {}),
-        },
-      });
-
-      return { employee: serializeUser(updated) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!employeeId) {
+      return c.json({ error: "Missing employee ID" }, 400);
     }
-  })
-  .delete("/", async ({ query, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const employeeId = query.id;
 
-      if (!employeeId) {
-        set.status = 400;
-        return { error: "Missing employee ID" };
-      }
+    const member = await verifyEmployeeInCompany(employeeId, user.companyId);
 
-      const employee = await prisma.user.findFirst({
-        where: { id: employeeId, companyId: user.companyId! },
-      });
-
-      if (!employee) {
-        set.status = 404;
-        return { error: "Employee not found or access denied" };
-      }
-
-      if (employee.role === "owner") {
-        set.status = 403;
-        return { error: "Cannot remove company owner" };
-      }
-
-      if (employee.role === "manager") {
-        await requireOwner(headers.authorization ?? null);
-      }
-
-      await prisma.user.delete({ where: { id: employeeId } });
-
-      return { message: "Employee removed successfully" };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (member.role === "owner") {
+      return c.json({ error: "Cannot change the company owner's role" }, 403);
     }
+
+    if (role !== undefined) {
+      assertOwner(user);
+
+      if (!ASSIGNABLE_ROLES.includes(role)) {
+        return c.json({ error: "Role must be employee or manager" }, 400);
+      }
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        ...(designation !== undefined
+          ? { designation: designation || null }
+          : {}),
+        ...(role !== undefined ? { role } : {}),
+      })
+      .where(eq(users.id, employeeId))
+      .returning();
+
+    return c.json({ employee: serializeUser(updated!) });
   })
-  .post("/invite", async ({ body, headers, set }) => {
-    try {
-      const sender = await requireManager(headers.authorization ?? null);
-      const { invites } = body as {
-        invites?: Array<{
-          email: string;
-          fullName: string;
-          designation?: string;
-        }>;
-      };
+  .delete("/", async (c) => {
+    const user = await requireManager(c);
+    const employeeId = c.req.query("id");
 
-      if (!invites?.length) {
-        set.status = 400;
-        return { error: "At least one invitee is required." };
-      }
+    if (!employeeId) {
+      return c.json({ error: "Missing employee ID" }, 400);
+    }
 
-      let successCount = 0;
-      const inviteErrors: string[] = [];
-      const created: Array<{ email: string; fullName: string; inviteCode: string }> =
-        [];
+    const employee = await db.query.users.findFirst({
+      where: and(eq(users.id, employeeId), eq(users.companyId, user.companyId)),
+    });
 
-      for (const invite of invites) {
-        const email = invite.email.trim();
-        const fullName = invite.fullName.trim();
-        const designation = invite.designation?.trim() || null;
+    if (!employee) {
+      return c.json({ error: "Employee not found or access denied" }, 404);
+    }
 
-        try {
-          const existing = await prisma.user.findUnique({ where: { email } });
-          if (existing) {
-            inviteErrors.push(
-              `${email}: already registered — use a different email`,
-            );
-            continue;
-          }
+    if (employee.role === "owner") {
+      return c.json({ error: "Cannot remove company owner" }, 403);
+    }
 
-          const inviteCode = generateTempPassword();
-          const passwordHash = await hashPassword(inviteCode);
+    if (employee.role === "manager") {
+      assertOwner(user);
+    }
 
-          await prisma.user.create({
-            data: {
-              email,
-              fullName,
-              role: "employee",
-              companyId: sender.companyId!,
-              designation,
-              passwordHash,
-            },
-          });
+    await db.delete(users).where(eq(users.id, employeeId));
 
-          created.push({ email, fullName, inviteCode });
-          successCount++;
-        } catch (err) {
-          console.error("Invite failed for", email, err);
-          const reason =
-            err instanceof Error ? err.message : "Unexpected error";
-          inviteErrors.push(`${email}: ${reason}`);
+    return c.json({ message: "Employee removed successfully" });
+  })
+  .post("/invite", async (c) => {
+    const sender = await requireManager(c);
+    const { invites } = await readJson<{
+      invites: Array<{
+        email: string;
+        fullName: string;
+        designation?: string;
+      }>;
+    }>(c);
+
+    if (!invites?.length) {
+      return c.json({ error: "At least one invitee is required." }, 400);
+    }
+
+    let successCount = 0;
+    const inviteErrors: string[] = [];
+    const created: Array<{ email: string; fullName: string; inviteCode: string }> =
+      [];
+
+    for (const invite of invites) {
+      const email = invite.email.trim();
+      const fullName = invite.fullName.trim();
+      const designation = invite.designation?.trim() || null;
+
+      try {
+        const inviteCode = generateTempPassword();
+        const passwordHash = await hashPassword(inviteCode);
+
+        // Unique email: skip silently-conflicting rows instead of a pre-check query.
+        const inserted = await db
+          .insert(users)
+          .values({
+            email,
+            fullName,
+            role: "employee",
+            companyId: sender.companyId,
+            designation,
+            passwordHash,
+          })
+          .onConflictDoNothing({ target: users.email })
+          .returning({ id: users.id });
+
+        if (inserted.length === 0) {
+          inviteErrors.push(
+            `${email}: already registered — use a different email`,
+          );
+          continue;
         }
-      }
 
-      if (successCount === 0) {
-        set.status = 400;
-        return {
+        created.push({ email, fullName, inviteCode });
+        successCount++;
+      } catch (err) {
+        console.error("Invite failed for", email, err);
+        const reason =
+          err instanceof Error ? err.message : "Unexpected error";
+        inviteErrors.push(`${email}: ${reason}`);
+      }
+    }
+
+    if (successCount === 0) {
+      return c.json(
+        {
           error: "Failed to invite any employees.",
           details: inviteErrors,
-        };
-      }
-
-      return {
-        message: `Successfully invited ${successCount} employee(s). Share their invite codes — email is not sent yet.`,
-        invites: created,
-        errors: inviteErrors.length > 0 ? inviteErrors : undefined,
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "An unexpected error occurred" };
+        },
+        400,
+      );
     }
+
+    return c.json({
+      message: `Successfully invited ${successCount} employee(s). Share their invite codes — email is not sent yet.`,
+      invites: created,
+      errors: inviteErrors.length > 0 ? inviteErrors : undefined,
+    });
   });

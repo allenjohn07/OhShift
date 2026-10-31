@@ -1,23 +1,29 @@
-# OhShift API — Cloudflare Workers
-# https://elysiajs.com/integrations/cloudflare-worker
+# OhShift API — Cloudflare Workers (Hono + Drizzle + D1)
 
 name = "ohshift-api"
-main = "src/worker.ts"
-compatibility_date = "2025-06-01"
-compatibility_flags = ["nodejs_compat"]
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
 
 [vars]
 NODE_ENV = "production"
 
-# Workers AI binding — powers Ask OhShift (NL shift parse) in production.
-# Free open-source models (e.g. Llama 3.2); local Bun uses REST + env tokens instead.
+# D1 database. Create once with: bunx wrangler d1 create ohshift
+# then paste the printed database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "ohshift"
+database_id = "ebc12527-207d-47f4-b6b3-e9370840cfc1"
+migrations_dir = "drizzle"
+
+# Workers AI binding — powers Ask OhShift (NL shift parse).
+# Always remote (even in `wrangler dev`), so local AI calls count toward usage.
 [ai]
 binding = "AI"
+remote = true
 
 # Set secrets (do not put them in this file):
-#   bunx wrangler secret put DATABASE_URL
-#   bunx wrangler secret put DIRECT_URL
 #   bunx wrangler secret put AUTH_SECRET
 #   bunx wrangler secret put FRONTEND_URL
 #
 # FRONTEND_URL must be the Pages origin, e.g. https://ohshift.pages.dev
+# Local dev reads AUTH_SECRET / FRONTEND_URL from backend/.dev.vars.

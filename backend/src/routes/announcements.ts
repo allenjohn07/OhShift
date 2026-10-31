@@ -1,22 +1,20 @@
-import { Elysia } from "elysia";
+import { and, desc, eq, ne, notExists, sql } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { announcementReads, announcements } from "../db/schema";
 import {
-  ApiError,
   isManagerRole,
+  readJson,
+  requireCompanyMember,
   requireManager,
   requireUser,
 } from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
 
 const TITLE_MAX = 120;
 const BODY_MAX = 4000;
 const LIST_LIMIT = 50;
-
-function requireCompanyMember(user: { companyId: string | null }) {
-  if (!user.companyId) {
-    throw new ApiError("No company associated with user", 400);
-  }
-  return user.companyId;
-}
+// D1 binds at most 100 params per statement; read rows use 4 each.
+const READ_INSERT_CHUNK = 20;
 
 function serializeAnnouncement(
   row: {
@@ -53,281 +51,204 @@ function serializeAnnouncement(
   };
 }
 
-export const announcementsRoutes = new Elysia({ prefix: "/announcements" })
-  .get("/", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+function announcementWith(userId: string) {
+  return {
+    author: { columns: { fullName: true, avatarUrl: true } },
+    reads: {
+      where: eq(announcementReads.userId, userId),
+      columns: { id: true },
+      limit: 1,
+    },
+  } as const;
+}
 
-      const rows = await prisma.announcement.findMany({
-        where: { companyId },
-        orderBy: { createdAt: "desc" },
-        take: LIST_LIMIT,
-        include: {
-          author: { select: { fullName: true, avatarUrl: true } },
-          reads: {
-            where: { userId: user.id },
-            select: { id: true },
-            take: 1,
-          },
-        },
-      });
-
-      return {
-        announcements: rows.map((row) =>
-          serializeAnnouncement(row, user.id),
+function unreadWhere(companyId: string, userId: string) {
+  return and(
+    eq(announcements.companyId, companyId),
+    ne(announcements.authorId, userId),
+    notExists(
+      db
+        .select({ one: sql`1` })
+        .from(announcementReads)
+        .where(
+          and(
+            eq(announcementReads.announcementId, announcements.id),
+            eq(announcementReads.userId, userId),
+          ),
         ),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    ),
+  );
+}
+
+/** Unread announcements (not authored by the user) — shared with /inbox. */
+export function countUnreadAnnouncements(companyId: string, userId: string) {
+  return db.$count(announcements, unreadWhere(companyId, userId));
+}
+
+function validate(title: string, text: string): string | null {
+  if (!title) return "Title is required";
+  if (title.length > TITLE_MAX) {
+    return `Title must be ${TITLE_MAX} characters or fewer`;
+  }
+  if (!text) return "Body is required";
+  if (text.length > BODY_MAX) {
+    return `Body must be ${BODY_MAX} characters or fewer`;
+  }
+  return null;
+}
+
+async function loadAnnouncement(id: string, userId: string) {
+  const row = await db.query.announcements.findFirst({
+    where: eq(announcements.id, id),
+    with: announcementWith(userId),
+  });
+  return serializeAnnouncement(row!, userId);
+}
+
+async function findCompanyAnnouncement(id: string, companyId: string) {
+  return db.query.announcements.findFirst({
+    where: and(eq(announcements.id, id), eq(announcements.companyId, companyId)),
+  });
+}
+
+export const announcementsRoutes = new Hono()
+  .get("/", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+
+    const rows = await db.query.announcements.findMany({
+      where: eq(announcements.companyId, companyId),
+      orderBy: desc(announcements.createdAt),
+      limit: LIST_LIMIT,
+      with: announcementWith(user.id),
+    });
+
+    return c.json({
+      announcements: rows.map((row) => serializeAnnouncement(row, user.id)),
+    });
   })
-  .get("/unread-count", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+  .get("/unread-count", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      const count = await prisma.announcement.count({
-        where: {
-          companyId,
-          authorId: { not: user.id },
-          reads: { none: { userId: user.id } },
-        },
-      });
-
-      return { count };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    const count = await countUnreadAnnouncements(companyId, user.id);
+    return c.json({ count });
   })
-  .post("/", async ({ headers, set, body }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const payload = body as { title?: string; body?: string };
+  .post("/", async (c) => {
+    const user = await requireManager(c);
+    const payload = await readJson<{ title: string; body: string }>(c);
 
-      const title = String(payload.title ?? "").trim();
-      const text = String(payload.body ?? "").trim();
-
-      if (!title) {
-        set.status = 400;
-        return { error: "Title is required" };
-      }
-      if (title.length > TITLE_MAX) {
-        set.status = 400;
-        return { error: `Title must be ${TITLE_MAX} characters or fewer` };
-      }
-      if (!text) {
-        set.status = 400;
-        return { error: "Body is required" };
-      }
-      if (text.length > BODY_MAX) {
-        set.status = 400;
-        return { error: `Body must be ${BODY_MAX} characters or fewer` };
-      }
-
-      const row = await prisma.announcement.create({
-        data: {
-          companyId: user.companyId!,
-          authorId: user.id,
-          title,
-          body: text,
-        },
-        include: {
-          author: { select: { fullName: true, avatarUrl: true } },
-          reads: {
-            where: { userId: user.id },
-            select: { id: true },
-            take: 1,
-          },
-        },
-      });
-
-      return { announcement: serializeAnnouncement(row, user.id) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const title = String(payload.title ?? "").trim();
+    const text = String(payload.body ?? "").trim();
+    const error = validate(title, text);
+    if (error) {
+      return c.json({ error }, 400);
     }
+
+    const [row] = await db
+      .insert(announcements)
+      .values({
+        companyId: user.companyId,
+        authorId: user.id,
+        title,
+        body: text,
+      })
+      .returning({ id: announcements.id });
+
+    return c.json({ announcement: await loadAnnouncement(row!.id, user.id) });
   })
-  .post("/read-all", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+  .post("/read-all", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      const unread = await prisma.announcement.findMany({
-        where: {
-          companyId,
-          authorId: { not: user.id },
-          reads: { none: { userId: user.id } },
-        },
-        select: { id: true },
-      });
+    const unread = await db
+      .select({ id: announcements.id })
+      .from(announcements)
+      .where(unreadWhere(companyId, user.id));
 
-      if (unread.length > 0) {
-        await prisma.announcementRead.createMany({
-          data: unread.map((a) => ({
-            announcementId: a.id,
-            userId: user.id,
-          })),
-          skipDuplicates: true,
-        });
-      }
-
-      return { marked: unread.length };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const inserts = [];
+    for (let i = 0; i < unread.length; i += READ_INSERT_CHUNK) {
+      inserts.push(
+        db
+          .insert(announcementReads)
+          .values(
+            unread.slice(i, i + READ_INSERT_CHUNK).map((a) => ({
+              announcementId: a.id,
+              userId: user.id,
+            })),
+          )
+          .onConflictDoNothing(),
+      );
     }
+    const [first, ...rest] = inserts;
+    if (first) {
+      await db.batch([first, ...rest]);
+    }
+
+    return c.json({ marked: unread.length });
   })
-  .post("/:id/read", async ({ headers, set, params }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+  .post("/:id/read", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      const announcement = await prisma.announcement.findFirst({
-        where: { id: params.id, companyId },
-      });
-      if (!announcement) {
-        set.status = 404;
-        return { error: "Announcement not found" };
-      }
-
-      await prisma.announcementRead.upsert({
-        where: {
-          announcementId_userId: {
-            announcementId: announcement.id,
-            userId: user.id,
-          },
-        },
-        create: {
-          announcementId: announcement.id,
-          userId: user.id,
-        },
-        update: { readAt: new Date() },
-      });
-
-      return { ok: true };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const announcement = await findCompanyAnnouncement(c.req.param("id"), companyId);
+    if (!announcement) {
+      return c.json({ error: "Announcement not found" }, 404);
     }
+
+    await db
+      .insert(announcementReads)
+      .values({ announcementId: announcement.id, userId: user.id })
+      .onConflictDoUpdate({
+        target: [announcementReads.announcementId, announcementReads.userId],
+        set: { readAt: new Date() },
+      });
+
+    return c.json({ ok: true });
   })
-  .patch("/:id", async ({ headers, set, params, body }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
-      const payload = body as { title?: string; body?: string };
+  .patch("/:id", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
+    const payload = await readJson<{ title: string; body: string }>(c);
 
-      const existing = await prisma.announcement.findFirst({
-        where: { id: params.id, companyId },
-      });
-      if (!existing) {
-        set.status = 404;
-        return { error: "Announcement not found" };
-      }
-      if (existing.authorId !== user.id) {
-        set.status = 403;
-        return { error: "Only the author can edit this announcement" };
-      }
-
-      const title =
-        payload.title !== undefined
-          ? String(payload.title).trim()
-          : existing.title;
-      const text =
-        payload.body !== undefined
-          ? String(payload.body).trim()
-          : existing.body;
-
-      if (!title) {
-        set.status = 400;
-        return { error: "Title is required" };
-      }
-      if (title.length > TITLE_MAX) {
-        set.status = 400;
-        return { error: `Title must be ${TITLE_MAX} characters or fewer` };
-      }
-      if (!text) {
-        set.status = 400;
-        return { error: "Body is required" };
-      }
-      if (text.length > BODY_MAX) {
-        set.status = 400;
-        return { error: `Body must be ${BODY_MAX} characters or fewer` };
-      }
-
-      const row = await prisma.announcement.update({
-        where: { id: existing.id },
-        data: { title, body: text },
-        include: {
-          author: { select: { fullName: true, avatarUrl: true } },
-          reads: {
-            where: { userId: user.id },
-            select: { id: true },
-            take: 1,
-          },
-        },
-      });
-
-      return { announcement: serializeAnnouncement(row, user.id) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const existing = await findCompanyAnnouncement(c.req.param("id"), companyId);
+    if (!existing) {
+      return c.json({ error: "Announcement not found" }, 404);
     }
+    if (existing.authorId !== user.id) {
+      return c.json({ error: "Only the author can edit this announcement" }, 403);
+    }
+
+    const title =
+      payload.title !== undefined ? String(payload.title).trim() : existing.title;
+    const text =
+      payload.body !== undefined ? String(payload.body).trim() : existing.body;
+    const error = validate(title, text);
+    if (error) {
+      return c.json({ error }, 400);
+    }
+
+    await db
+      .update(announcements)
+      .set({ title, body: text })
+      .where(eq(announcements.id, existing.id));
+
+    return c.json({ announcement: await loadAnnouncement(existing.id, user.id) });
   })
-  .delete("/:id", async ({ headers, set, params }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const companyId = requireCompanyMember(user);
+  .delete("/:id", async (c) => {
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
 
-      const existing = await prisma.announcement.findFirst({
-        where: { id: params.id, companyId },
-      });
-      if (!existing) {
-        set.status = 404;
-        return { error: "Announcement not found" };
-      }
-
-      const canDelete =
-        existing.authorId === user.id || isManagerRole(user.role);
-      if (!canDelete) {
-        set.status = 403;
-        return { error: "Forbidden" };
-      }
-
-      await prisma.announcement.delete({ where: { id: existing.id } });
-      return { ok: true };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    const existing = await findCompanyAnnouncement(c.req.param("id"), companyId);
+    if (!existing) {
+      return c.json({ error: "Announcement not found" }, 404);
     }
+
+    const canDelete = existing.authorId === user.id || isManagerRole(user.role);
+    if (!canDelete) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    await db.delete(announcements).where(eq(announcements.id, existing.id));
+    return c.json({ ok: true });
   });

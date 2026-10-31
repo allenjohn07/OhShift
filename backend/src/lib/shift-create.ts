@@ -1,8 +1,15 @@
+import { and, eq, inArray } from "drizzle-orm";
+import { db } from "../db";
+import { shifts, users, type Shift } from "../db/schema";
+import {
+  addShiftToContext,
+  loadAssignmentContext,
+  type AssignmentContext,
+} from "./assignment-context";
 import {
   availabilityConflictMessage,
   ohShiftDayOfWeek,
 } from "./availability-check";
-import { prisma } from "./prisma";
 import { serializeShift } from "./serialize";
 import {
   findOverlappingShifts,
@@ -10,22 +17,18 @@ import {
   formatConflictMessage,
   formatSameStartMessage,
 } from "./shift-conflicts";
-import { logShiftAction } from "./shift-log";
+import { shiftLogInsert } from "./shift-log";
 import {
   approvedTimeOffConflictMessage,
   reasonFromAvailabilityMessage,
   type EligibilityReason,
 } from "./time-off-check";
-import { ApiError, verifyEmployeeInCompany } from "./auth-guard";
 
 export type CreateDraftShiftInput = {
-  companyId: string;
-  actorId: string;
   employeeId: string;
   title: string;
   start: Date;
   end: Date;
-  timezone?: string;
 };
 
 export type CreateDraftShiftSuccess = {
@@ -40,13 +43,16 @@ export type CreateDraftShiftFailure = {
   status: number;
 };
 
-export async function validateShiftAssignment(options: {
-  employeeId: string;
-  start: Date;
-  end: Date;
-  timezone?: string;
-  excludeShiftId?: string;
-}): Promise<CreateDraftShiftFailure | null> {
+export function validateShiftAssignment(
+  ctx: AssignmentContext,
+  options: {
+    employeeId: string;
+    start: Date;
+    end: Date;
+    timezone?: string;
+    excludeShiftId?: string;
+  },
+): CreateDraftShiftFailure | null {
   const { employeeId, start, end, timezone, excludeShiftId } = options;
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
@@ -67,11 +73,7 @@ export async function validateShiftAssignment(options: {
   }
 
   const dayOfWeek = ohShiftDayOfWeek(start, timezone);
-  const window = await prisma.availabilityWindow.findUnique({
-    where: {
-      userId_dayOfWeek: { userId: employeeId, dayOfWeek },
-    },
-  });
+  const window = ctx.windows.get(employeeId)?.get(dayOfWeek);
   const availabilityError = availabilityConflictMessage(
     window,
     start,
@@ -87,7 +89,8 @@ export async function validateShiftAssignment(options: {
     };
   }
 
-  const timeOffError = await approvedTimeOffConflictMessage(
+  const timeOffError = approvedTimeOffConflictMessage(
+    ctx,
     employeeId,
     start,
     end,
@@ -102,7 +105,8 @@ export async function validateShiftAssignment(options: {
     };
   }
 
-  const sameStart = await findShiftWithSameStart(
+  const sameStart = findShiftWithSameStart(
+    ctx,
     employeeId,
     start,
     excludeShiftId,
@@ -116,7 +120,8 @@ export async function validateShiftAssignment(options: {
     };
   }
 
-  const conflicts = await findOverlappingShifts(
+  const conflicts = findOverlappingShifts(
+    ctx,
     employeeId,
     start,
     end,
@@ -134,65 +139,114 @@ export async function validateShiftAssignment(options: {
   return null;
 }
 
-export async function createDraftShift(
-  input: CreateDraftShiftInput,
-): Promise<CreateDraftShiftSuccess | CreateDraftShiftFailure> {
-  const { companyId, actorId, employeeId, title, start, end, timezone } =
-    input;
+function validTimes(items: { start: Date; end: Date }[]) {
+  return items.flatMap(({ start, end }) =>
+    Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())
+      ? []
+      : [start.getTime(), end.getTime()],
+  );
+}
 
-  let employee;
-  try {
-    employee = await verifyEmployeeInCompany(employeeId, companyId);
-  } catch (err) {
-    if (err instanceof ApiError) {
-      return {
+/**
+ * Validate and create draft shifts in order. Each item sees shifts created by
+ * earlier items. All reads happen in one batch and all writes in another.
+ */
+export async function createDraftShifts(options: {
+  companyId: string;
+  actorId: string;
+  timezone?: string;
+  items: CreateDraftShiftInput[];
+}): Promise<Array<CreateDraftShiftSuccess | CreateDraftShiftFailure>> {
+  const { companyId, actorId, timezone, items } = options;
+  if (items.length === 0) return [];
+
+  const times = validTimes(items);
+  const from = new Date(times.length ? Math.min(...times) : 0);
+  const to = new Date(times.length ? Math.max(...times) : 0);
+
+  const employeeIds = [...new Set(items.map((i) => i.employeeId))];
+  const [ctx, members] = await Promise.all([
+    loadAssignmentContext(companyId, from, to),
+    db
+      .select({ id: users.id, fullName: users.fullName })
+      .from(users)
+      .where(
+        and(eq(users.companyId, companyId), inArray(users.id, employeeIds)),
+      ),
+  ]);
+  const memberNames = new Map(members.map((m) => [m.id, m.fullName]));
+
+  const results: Array<CreateDraftShiftSuccess | CreateDraftShiftFailure> = [];
+  const statements: Parameters<typeof db.batch>[0][number][] = [];
+
+  for (const { employeeId, title, start, end } of items) {
+    const employeeName = memberNames.get(employeeId);
+    if (!employeeName) {
+      results.push({
         ok: false,
-        error: err.message,
+        error: "Invalid employee",
         reason: "invalid",
-        status: err.status,
-      };
+        status: 400,
+      });
+      continue;
     }
-    throw err;
-  }
 
-  const validationError = await validateShiftAssignment({
-    employeeId,
-    start,
-    end,
-    timezone,
-  });
-  if (validationError) return validationError;
+    const validationError = validateShiftAssignment(ctx, {
+      employeeId,
+      start,
+      end,
+      timezone,
+    });
+    if (validationError) {
+      results.push(validationError);
+      continue;
+    }
 
-  const shift = await prisma.shift.create({
-    data: {
+    const shift: Shift = {
+      id: crypto.randomUUID(),
       companyId,
       employeeId,
       title,
       startTime: start,
       endTime: end,
       status: "draft",
-    },
-  });
+      publishedAt: null,
+      createdAt: new Date(),
+    };
+    addShiftToContext(ctx, employeeId, shift);
 
-  await logShiftAction({
-    companyId,
-    actorId,
-    action: "created",
-    shiftId: shift.id,
-    detail: `Assigned "${title}" to ${employee.fullName} on ${start.toDateString()}`,
-  });
+    statements.push(
+      db.insert(shifts).values(shift),
+      shiftLogInsert({
+        companyId,
+        actorId,
+        action: "created",
+        shiftId: shift.id,
+        detail: `Assigned "${title}" to ${employeeName} on ${start.toDateString()}`,
+      }),
+    );
+    results.push({ ok: true, shift: serializeShift(shift) });
+  }
 
-  return { ok: true, shift: serializeShift(shift) };
+  const [first, ...rest] = statements;
+  if (first) {
+    await db.batch([first, ...rest]);
+  }
+
+  return results;
 }
 
-export async function evaluateEligibility(options: {
-  employeeId: string;
-  designation: string | null;
-  filterDesignation: string | null;
-  start: Date;
-  end: Date;
-  timezone?: string;
-}): Promise<{ eligible: boolean; reason: EligibilityReason }> {
+export function evaluateEligibility(
+  ctx: AssignmentContext,
+  options: {
+    employeeId: string;
+    designation: string | null;
+    filterDesignation: string | null;
+    start: Date;
+    end: Date;
+    timezone?: string;
+  },
+): { eligible: boolean; reason: EligibilityReason } {
   const {
     employeeId,
     designation,
@@ -214,7 +268,7 @@ export async function evaluateEligibility(options: {
     return { eligible: false, reason: "outside_window" };
   }
 
-  const validationError = await validateShiftAssignment({
+  const validationError = validateShiftAssignment(ctx, {
     employeeId,
     start,
     end,
@@ -238,6 +292,3 @@ export async function evaluateEligibility(options: {
   }
   return { eligible: false, reason: "unavailable" };
 }
-
-// Re-export for routes that catch ApiError from verifyEmployeeInCompany
-export { ApiError };

@@ -1,13 +1,12 @@
-import { Elysia } from "elysia";
-import {
-  ApiError,
-  requireManager,
-  requireUser,
-} from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { shifts, users } from "../db/schema";
+import { loadAssignmentContext } from "../lib/assignment-context";
+import { readJson, requireManager, requireUser } from "../lib/auth-guard";
 import { serializeShift } from "../lib/serialize";
 import {
-  createDraftShift,
+  createDraftShifts,
   evaluateEligibility,
   validateShiftAssignment,
 } from "../lib/shift-create";
@@ -15,340 +14,267 @@ import { logShiftAction } from "../lib/shift-log";
 
 const BULK_MAX = 50;
 
-export const shiftsRoutes = new Elysia({ prefix: "/shifts" })
-  .get("/mine", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const shifts = await prisma.shift.findMany({
-        where: {
-          employeeId: user.id,
-          status: "published",
-        },
-        orderBy: { startTime: "asc" },
-      });
-      return { shifts: shifts.map(serializeShift) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+async function findCompanyShift(shiftId: string, companyId: string) {
+  return db.query.shifts.findFirst({
+    where: and(eq(shifts.id, shiftId), eq(shifts.companyId, companyId)),
+    with: { employee: { columns: { fullName: true } } },
+  });
+}
+
+export const shiftsRoutes = new Hono()
+  .get("/mine", async (c) => {
+    const user = await requireUser(c);
+    const rows = await db.query.shifts.findMany({
+      where: and(eq(shifts.employeeId, user.id), eq(shifts.status, "published")),
+      orderBy: asc(shifts.startTime),
+    });
+    return c.json({ shifts: rows.map((s) => serializeShift(s)) });
   })
-  .get("/eligible", async ({ headers, query, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const startRaw = typeof query.start === "string" ? query.start : "";
-      const endRaw = typeof query.end === "string" ? query.end : "";
-      const timezone =
-        typeof query.timezone === "string" && query.timezone.trim()
-          ? query.timezone.trim()
-          : undefined;
-      const designationFilter =
-        typeof query.designation === "string" && query.designation.trim()
-          ? query.designation.trim()
-          : null;
+  .get("/eligible", async (c) => {
+    const user = await requireManager(c);
+    const startRaw = c.req.query("start") ?? "";
+    const endRaw = c.req.query("end") ?? "";
+    const timezone = c.req.query("timezone")?.trim() || undefined;
+    const designationFilter = c.req.query("designation")?.trim() || null;
 
-      if (!startRaw || !endRaw) {
-        set.status = 400;
-        return { error: "start and end are required" };
-      }
-
-      const start = new Date(startRaw);
-      const end = new Date(endRaw);
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-        set.status = 400;
-        return { error: "Invalid start or end time" };
-      }
-      if (start >= end) {
-        set.status = 400;
-        return { error: "End time must be after start time" };
-      }
-
-      const members = await prisma.user.findMany({
-        where: {
-          companyId: user.companyId!,
-          role: { in: ["employee", "manager"] },
-        },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          designation: true,
-          role: true,
-        },
-        orderBy: { fullName: "asc" },
-      });
-
-      const people = await Promise.all(
-        members.map(async (m) => {
-          const { eligible, reason } = await evaluateEligibility({
-            employeeId: m.id,
-            designation: m.designation,
-            filterDesignation: designationFilter,
-            start,
-            end,
-            timezone,
-          });
-          return {
-            id: m.id,
-            full_name: m.fullName,
-            email: m.email,
-            designation: m.designation,
-            role: m.role,
-            eligible,
-            reason,
-          };
-        }),
-      );
-
-      const designations = [
-        ...new Set(
-          members
-            .map((m) => m.designation?.trim())
-            .filter((d): d is string => Boolean(d)),
-        ),
-      ].sort((a, b) => a.localeCompare(b));
-
-      return { people, designations };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      console.error(err);
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!startRaw || !endRaw) {
+      return c.json({ error: "start and end are required" }, 400);
     }
-  })
-  .post("/bulk", async ({ body, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { timezone, shifts } = body as {
-        timezone?: string;
-        shifts?: Array<{
-          employeeId?: string;
-          title?: string;
-          startTime?: string;
-          endTime?: string;
-        }>;
+
+    const start = new Date(startRaw);
+    const end = new Date(endRaw);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return c.json({ error: "Invalid start or end time" }, 400);
+    }
+    if (start >= end) {
+      return c.json({ error: "End time must be after start time" }, 400);
+    }
+
+    const [members, ctx] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+          designation: users.designation,
+          role: users.role,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.companyId, user.companyId),
+            inArray(users.role, ["employee", "manager"]),
+          ),
+        )
+        .orderBy(asc(users.fullName)),
+      loadAssignmentContext(user.companyId, start, end),
+    ]);
+
+    const people = members.map((m) => {
+      const { eligible, reason } = evaluateEligibility(ctx, {
+        employeeId: m.id,
+        designation: m.designation,
+        filterDesignation: designationFilter,
+        start,
+        end,
+        timezone,
+      });
+      return {
+        id: m.id,
+        full_name: m.fullName,
+        email: m.email,
+        designation: m.designation,
+        role: m.role,
+        eligible,
+        reason,
       };
+    });
 
-      if (!Array.isArray(shifts) || shifts.length === 0) {
-        set.status = 400;
-        return { error: "shifts array is required" };
-      }
-      if (shifts.length > BULK_MAX) {
-        set.status = 400;
-        return { error: `At most ${BULK_MAX} shifts per request` };
-      }
+    const designations = [
+      ...new Set(
+        members
+          .map((m) => m.designation?.trim())
+          .filter((d): d is string => Boolean(d)),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
 
-      const results: Array<{
-        employee_id: string;
-        ok: boolean;
-        shift?: ReturnType<typeof serializeShift>;
-        error?: string;
-      }> = [];
-
-      let created = 0;
-      let failed = 0;
-
-      for (const item of shifts) {
-        const employeeId = item.employeeId?.trim() ?? "";
-        const title = item.title?.trim() ?? "";
-        if (!employeeId || !title || !item.startTime || !item.endTime) {
-          results.push({
-            employee_id: employeeId || "unknown",
-            ok: false,
-            error: "Missing required fields",
-          });
-          failed += 1;
-          continue;
-        }
-
-        const start = new Date(item.startTime);
-        const end = new Date(item.endTime);
-        const outcome = await createDraftShift({
-          companyId: user.companyId!,
-          actorId: user.id,
-          employeeId,
-          title,
-          start,
-          end,
-          timezone,
-        });
-
-        if (outcome.ok) {
-          created += 1;
-          results.push({
-            employee_id: employeeId,
-            ok: true,
-            shift: outcome.shift,
-          });
-        } else {
-          failed += 1;
-          results.push({
-            employee_id: employeeId,
-            ok: false,
-            error: outcome.error,
-          });
-        }
-      }
-
-      return { created, failed, results };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      console.error(err);
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    return c.json({ people, designations });
   })
-  .post("/", async ({ body, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { employeeId, title, startTime, endTime, timezone } = body as {
+  .post("/bulk", async (c) => {
+    const user = await requireManager(c);
+    const { timezone, shifts: items } = await readJson<{
+      timezone: string;
+      shifts: Array<{
         employeeId?: string;
         title?: string;
         startTime?: string;
         endTime?: string;
-        timezone?: string;
-      };
+      }>;
+    }>(c);
 
-      if (!employeeId || !title || !startTime || !endTime) {
-        set.status = 400;
-        return { error: "Missing required fields" };
-      }
-
-      const outcome = await createDraftShift({
-        companyId: user.companyId!,
-        actorId: user.id,
-        employeeId,
-        title,
-        start: new Date(startTime),
-        end: new Date(endTime),
-        timezone,
-      });
-
-      if (!outcome.ok) {
-        set.status = outcome.status;
-        return { error: outcome.error };
-      }
-
-      return { shift: outcome.shift };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!Array.isArray(items) || items.length === 0) {
+      return c.json({ error: "shifts array is required" }, 400);
     }
+    if (items.length > BULK_MAX) {
+      return c.json({ error: `At most ${BULK_MAX} shifts per request` }, 400);
+    }
+
+    const normalized = items.map((item) => ({
+      employeeId: item.employeeId?.trim() ?? "",
+      title: item.title?.trim() ?? "",
+      startTime: item.startTime,
+      endTime: item.endTime,
+    }));
+    const valid = normalized.filter(
+      (item) => item.employeeId && item.title && item.startTime && item.endTime,
+    );
+
+    const outcomes = await createDraftShifts({
+      companyId: user.companyId,
+      actorId: user.id,
+      timezone,
+      items: valid.map((item) => ({
+        employeeId: item.employeeId,
+        title: item.title,
+        start: new Date(item.startTime!),
+        end: new Date(item.endTime!),
+      })),
+    });
+
+    let created = 0;
+    let failed = 0;
+    let next = 0;
+    const results = normalized.map((item) => {
+      if (!valid.includes(item)) {
+        failed += 1;
+        return {
+          employee_id: item.employeeId || "unknown",
+          ok: false,
+          error: "Missing required fields",
+        };
+      }
+      const outcome = outcomes[next++]!;
+      if (outcome.ok) {
+        created += 1;
+        return { employee_id: item.employeeId, ok: true, shift: outcome.shift };
+      }
+      failed += 1;
+      return { employee_id: item.employeeId, ok: false, error: outcome.error };
+    });
+
+    return c.json({ created, failed, results });
   })
-  .put("/", async ({ body, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const { shiftId, title, startTime, endTime, timezone } = body as {
-        shiftId?: string;
-        title?: string;
-        startTime?: string;
-        endTime?: string;
-        timezone?: string;
-      };
+  .post("/", async (c) => {
+    const user = await requireManager(c);
+    const { employeeId, title, startTime, endTime, timezone } = await readJson<{
+      employeeId: string;
+      title: string;
+      startTime: string;
+      endTime: string;
+      timezone: string;
+    }>(c);
 
-      if (!shiftId || !title || !startTime || !endTime) {
-        set.status = 400;
-        return { error: "Missing required fields" };
-      }
-
-      const existing = await prisma.shift.findFirst({
-        where: { id: shiftId, companyId: user.companyId! },
-        include: { employee: { select: { fullName: true } } },
-      });
-
-      if (!existing) {
-        set.status = 404;
-        return { error: "Shift not found or access denied" };
-      }
-
-      const start = new Date(startTime);
-      const end = new Date(endTime);
-
-      const validationError = await validateShiftAssignment({
-        employeeId: existing.employeeId,
-        start,
-        end,
-        timezone,
-        excludeShiftId: shiftId,
-      });
-      if (validationError) {
-        set.status = validationError.status;
-        return { error: validationError.error };
-      }
-
-      const shift = await prisma.shift.update({
-        where: { id: shiftId },
-        data: { title, startTime: start, endTime: end },
-      });
-
-      await logShiftAction({
-        companyId: user.companyId!,
-        actorId: user.id,
-        action: "updated",
-        shiftId: shift.id,
-        detail: `Updated "${title}" for ${existing.employee.fullName} on ${start.toDateString()}`,
-      });
-
-      return { shift: serializeShift(shift) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!employeeId || !title || !startTime || !endTime) {
+      return c.json({ error: "Missing required fields" }, 400);
     }
+
+    const [outcome] = await createDraftShifts({
+      companyId: user.companyId,
+      actorId: user.id,
+      timezone,
+      items: [
+        {
+          employeeId,
+          title,
+          start: new Date(startTime),
+          end: new Date(endTime),
+        },
+      ],
+    });
+
+    if (!outcome!.ok) {
+      return c.json({ error: outcome!.error }, outcome!.status as 400);
+    }
+
+    return c.json({ shift: outcome!.shift });
   })
-  .delete("/", async ({ query, headers, set }) => {
-    try {
-      const user = await requireManager(headers.authorization ?? null);
-      const shiftId = query.id;
+  .put("/", async (c) => {
+    const user = await requireManager(c);
+    const { shiftId, title, startTime, endTime, timezone } = await readJson<{
+      shiftId: string;
+      title: string;
+      startTime: string;
+      endTime: string;
+      timezone: string;
+    }>(c);
 
-      if (!shiftId) {
-        set.status = 400;
-        return { error: "Missing shift ID" };
-      }
-
-      const existing = await prisma.shift.findFirst({
-        where: { id: shiftId, companyId: user.companyId! },
-        include: { employee: { select: { fullName: true } } },
-      });
-
-      if (!existing) {
-        set.status = 404;
-        return { error: "Shift not found or access denied" };
-      }
-
-      await prisma.shift.delete({ where: { id: shiftId } });
-
-      await logShiftAction({
-        companyId: user.companyId!,
-        actorId: user.id,
-        action: "deleted",
-        shiftId: null,
-        detail: `Deleted "${existing.title}" for ${existing.employee.fullName} on ${existing.startTime.toDateString()}`,
-      });
-
-      return { message: "Shift deleted successfully" };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (!shiftId || !title || !startTime || !endTime) {
+      return c.json({ error: "Missing required fields" }, 400);
     }
+
+    const existing = await findCompanyShift(shiftId, user.companyId);
+    if (!existing) {
+      return c.json({ error: "Shift not found or access denied" }, 404);
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    const ctx = Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())
+      ? { windows: new Map(), timeOff: new Map(), shifts: new Map() }
+      : await loadAssignmentContext(user.companyId, start, end);
+    const validationError = validateShiftAssignment(ctx, {
+      employeeId: existing.employeeId,
+      start,
+      end,
+      timezone,
+      excludeShiftId: shiftId,
+    });
+    if (validationError) {
+      return c.json(
+        { error: validationError.error },
+        validationError.status as 400,
+      );
+    }
+
+    const [shift] = await db
+      .update(shifts)
+      .set({ title, startTime: start, endTime: end })
+      .where(eq(shifts.id, shiftId))
+      .returning();
+
+    await logShiftAction({
+      companyId: user.companyId,
+      actorId: user.id,
+      action: "updated",
+      shiftId: shift!.id,
+      detail: `Updated "${title}" for ${existing.employee.fullName} on ${start.toDateString()}`,
+    });
+
+    return c.json({ shift: serializeShift(shift!) });
+  })
+  .delete("/", async (c) => {
+    const user = await requireManager(c);
+    const shiftId = c.req.query("id");
+
+    if (!shiftId) {
+      return c.json({ error: "Missing shift ID" }, 400);
+    }
+
+    const existing = await findCompanyShift(shiftId, user.companyId);
+    if (!existing) {
+      return c.json({ error: "Shift not found or access denied" }, 404);
+    }
+
+    await db.delete(shifts).where(eq(shifts.id, shiftId));
+
+    await logShiftAction({
+      companyId: user.companyId,
+      actorId: user.id,
+      action: "deleted",
+      shiftId: null,
+      detail: `Deleted "${existing.title}" for ${existing.employee.fullName} on ${existing.startTime.toDateString()}`,
+    });
+
+    return c.json({ message: "Shift deleted successfully" });
   });

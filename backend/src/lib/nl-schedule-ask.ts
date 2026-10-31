@@ -1,5 +1,7 @@
 import { runChatCompletion } from "./workers-ai";
-import { prisma } from "./prisma";
+import { and, asc, eq, gt, inArray, lt } from "drizzle-orm";
+import { db } from "../db";
+import { shifts, users } from "../db/schema";
 import { serializeShift } from "./serialize";
 import {
   extractDateFromPrompt,
@@ -338,14 +340,16 @@ async function runOrgRoleQuery(options: {
   companyId: string;
   focus: "managers" | "owner" | "both";
 }): Promise<ScheduleAskQuery> {
-  const members = await prisma.user.findMany({
-    where: {
-      companyId: options.companyId,
-      role: { in: ["owner", "manager"] },
-    },
-    select: { fullName: true, role: true },
-    orderBy: { fullName: "asc" },
-  });
+  const members = await db
+    .select({ fullName: users.fullName, role: users.role })
+    .from(users)
+    .where(
+      and(
+        eq(users.companyId, options.companyId),
+        inArray(users.role, ["owner", "manager"]),
+      ),
+    )
+    .orderBy(asc(users.fullName));
 
   const owners = members
     .filter((m) => m.role === "owner")
@@ -896,16 +900,16 @@ Timezone: ${timezone}`,
   const fetchStart = new Date(range.start.getTime() - 12 * 60 * 60 * 1000);
   const fetchEnd = new Date(range.end.getTime() + 12 * 60 * 60 * 1000);
 
-  const rows = await prisma.shift.findMany({
-    where: {
-      companyId,
-      ...(resolvedEmployeeId ? { employeeId: resolvedEmployeeId } : {}),
-      startTime: { lt: fetchEnd },
-      endTime: { gt: fetchStart },
-    },
-    include: { employee: { select: { fullName: true } } },
-    orderBy: { startTime: "asc" },
-    take: 100,
+  const rows = await db.query.shifts.findMany({
+    where: and(
+      eq(shifts.companyId, companyId),
+      resolvedEmployeeId ? eq(shifts.employeeId, resolvedEmployeeId) : undefined,
+      lt(shifts.startTime, fetchEnd),
+      gt(shifts.endTime, fetchStart),
+    ),
+    with: { employee: { columns: { fullName: true } } },
+    orderBy: asc(shifts.startTime),
+    limit: 100,
   });
 
   const filtered = rows.filter((s) => {

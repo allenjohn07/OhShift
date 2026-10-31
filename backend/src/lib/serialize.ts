@@ -1,4 +1,4 @@
-import type { Company, Shift, User } from "@prisma/client";
+import type { Company, Shift, User } from "../db/schema";
 
 type UserWithCompany = User & { company?: Company | null };
 
@@ -40,8 +40,6 @@ export function serializeCompany(company: Company) {
 
 export function serializeShift(
   shift: Shift & {
-    status?: "draft" | "published";
-    publishedAt?: Date | null;
     users?: { fullName: string } | null;
   },
 ) {

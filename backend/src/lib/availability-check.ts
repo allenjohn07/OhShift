@@ -1,4 +1,4 @@
-/** Availability helpers — dayOfWeek 0 = Monday … 6 = Sunday (matches Prisma). */
+/** Availability helpers — dayOfWeek 0 = Monday … 6 = Sunday (matches the DB schema). */
 
 function isHhMm(value: string) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);

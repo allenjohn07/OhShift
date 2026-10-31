@@ -1,139 +1,103 @@
-import { Elysia } from "elysia";
-import { ApiError, isManagerRole, requireUser } from "../lib/auth-guard";
-import { prisma } from "../lib/prisma";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db";
+import { shifts, users } from "../db/schema";
+import { isManagerRole, requireUser } from "../lib/auth-guard";
 import { serializeShift, serializeUser } from "../lib/serialize";
 
-export const dashboardRoutes = new Elysia({ prefix: "/dashboard" })
-  .get("/employee", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+const withEmployeeName = { employee: { columns: { fullName: true } } } as const;
 
-      if (isManagerRole(user.role)) {
-        set.status = 403;
-        return { error: "Use company dashboard" };
-      }
+export const dashboardRoutes = new Hono()
+  .get("/employee", async (c) => {
+    const user = await requireUser(c);
 
-      if (!user.companyId) {
-        set.status = 400;
-        return { error: "No company associated" };
-      }
-
-      const profile = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { company: true },
-      });
-
-      const shifts = await prisma.shift.findMany({
-        where: { employeeId: user.id, status: "published" },
-        orderBy: { startTime: "asc" },
-      });
-
-      const companyShifts = await prisma.shift.findMany({
-        where: { companyId: user.companyId, status: "published" },
-        include: { employee: { select: { fullName: true } } },
-        orderBy: { startTime: "asc" },
-      });
-
-      return {
-        profile: serializeUser(profile!),
-        shifts: shifts.map(serializeShift),
-        companyShifts: companyShifts.map((s) =>
-          serializeShift({ ...s, users: { fullName: s.employee.fullName } }),
-        ),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
+    if (isManagerRole(user.role)) {
+      return c.json({ error: "Use company dashboard" }, 403);
     }
+
+    if (!user.companyId) {
+      return c.json({ error: "No company associated" }, 400);
+    }
+
+    const [myShifts, companyShifts] = await db.batch([
+      db.query.shifts.findMany({
+        where: and(eq(shifts.employeeId, user.id), eq(shifts.status, "published")),
+        orderBy: asc(shifts.startTime),
+      }),
+      db.query.shifts.findMany({
+        where: and(
+          eq(shifts.companyId, user.companyId),
+          eq(shifts.status, "published"),
+        ),
+        with: withEmployeeName,
+        orderBy: asc(shifts.startTime),
+      }),
+    ]);
+
+    return c.json({
+      profile: serializeUser(user),
+      shifts: myShifts.map((s) => serializeShift(s)),
+      companyShifts: companyShifts.map((s) =>
+        serializeShift({ ...s, users: { fullName: s.employee.fullName } }),
+      ),
+    });
   })
-  .get("/company", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
+  .get("/company", async (c) => {
+    const user = await requireUser(c);
 
-      if (user.role === "employee") {
-        set.status = 403;
-        return { error: "Employees use employee dashboard" };
-      }
+    if (user.role === "employee") {
+      return c.json({ error: "Employees use employee dashboard" }, 403);
+    }
 
-      if (!user.companyId) {
-        set.status = 400;
-        return { error: "No company associated" };
-      }
+    if (!user.companyId) {
+      return c.json({ error: "No company associated" }, 400);
+    }
 
-      const profile = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { company: true },
-      });
-
-      const employees = await prisma.user.findMany({
-        where: {
-          companyId: user.companyId,
-          role: { in: ["employee", "manager"] },
-        },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          designation: true,
-          role: true,
-        },
-        orderBy: { fullName: "asc" },
-      });
-
-      const shifts = await prisma.shift.findMany({
-        where: { companyId: user.companyId },
-        include: { employee: { select: { fullName: true } } },
-        orderBy: { startTime: "asc" },
-      });
-
+    const [employees, companyShifts, myShifts] = await db.batch([
+      db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+          designation: users.designation,
+          role: users.role,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.companyId, user.companyId),
+            inArray(users.role, ["employee", "manager"]),
+          ),
+        )
+        .orderBy(asc(users.fullName)),
+      db.query.shifts.findMany({
+        where: eq(shifts.companyId, user.companyId),
+        with: withEmployeeName,
+        orderBy: asc(shifts.startTime),
+      }),
       // Manager's own published shifts (for their personal shift summary)
-      const myShifts = await prisma.shift.findMany({
-        where: { employeeId: user.id, status: "published" },
-        orderBy: { startTime: "asc" },
-      });
+      db.query.shifts.findMany({
+        where: and(eq(shifts.employeeId, user.id), eq(shifts.status, "published")),
+        orderBy: asc(shifts.startTime),
+      }),
+    ]);
 
-      return {
-        profile: serializeUser(profile!),
-        employees: employees.map((e) => ({
-          id: e.id,
-          full_name: e.fullName,
-          email: e.email,
-          designation: e.designation,
-          role: e.role,
-        })),
-        shifts: shifts.map((s) =>
-          serializeShift({ ...s, users: { fullName: s.employee.fullName } }),
-        ),
-        myShifts: myShifts.map(serializeShift),
-      };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+    return c.json({
+      profile: serializeUser(user),
+      employees: employees.map((e) => ({
+        id: e.id,
+        full_name: e.fullName,
+        email: e.email,
+        designation: e.designation,
+        role: e.role,
+      })),
+      shifts: companyShifts.map((s) =>
+        serializeShift({ ...s, users: { fullName: s.employee.fullName } }),
+      ),
+      myShifts: myShifts.map((s) => serializeShift(s)),
+    });
   })
-  .get("/profile", async ({ headers, set }) => {
-    try {
-      const user = await requireUser(headers.authorization ?? null);
-      const profile = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { company: true },
-      });
-
-      return { profile: serializeUser(profile!) };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        set.status = err.status;
-        return { error: err.message };
-      }
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
+  .get("/profile", async (c) => {
+    const user = await requireUser(c);
+    return c.json({ profile: serializeUser(user) });
   });

@@ -1,27 +1,35 @@
 # OhShift API
 
-Bun + [Elysia](https://elysiajs.com/) backend with [Neon](https://neon.tech/) PostgreSQL and [Prisma](https://www.prisma.io/).  
-Production: [Cloudflare Workers](https://workers.cloudflare.com/) via Elysia `CloudflareAdapter`.  
-Local: `bun run dev` on port 3001.
+[Hono](https://hono.dev/) on [Cloudflare Workers](https://workers.cloudflare.com/) with [D1](https://developers.cloudflare.com/d1/) (SQLite) via [Drizzle ORM](https://orm.drizzle.team/).
+Local dev runs the real Workers runtime with `wrangler dev` on port 3001.
 
 ## Setup
 
 ```bash
 cd backend
-cp .env.example .env
-# Paste Neon pooled + direct URLs; set AUTH_SECRET and FRONTEND_URL
 bun install
-bun run db:push    # or: bun run db:migrate
+cp .env.example .dev.vars        # set AUTH_SECRET and FRONTEND_URL
+bunx wrangler login              # once — Workers AI binding needs it, even locally
+bun run db:migrate:local         # create tables in the local D1 (.wrangler/state)
 bun run dev
 ```
 
 API runs at `http://localhost:3001`.
 
+## Database
+
+- Schema: `src/db/schema.ts` (Drizzle). Client: `src/db/index.ts` (`db`, bound to `env.DB`).
+- After changing the schema: `bun run db:generate` → new SQL file in `drizzle/` → `bun run db:migrate:local` (and `db:migrate:remote` before deploying).
+- Timestamps are stored as epoch milliseconds and read as `Date`.
+- D1 has no interactive transactions — use `db.batch([...])` for atomic multi-statement writes.
+- D1 limits queries per request (50 on the Workers Free plan), so prefer one batched read over per-row queries (see `src/lib/assignment-context.ts`).
+
 ## Auth model
 
-- **Login** — `POST /auth/login` returns a JWT (`accessToken`). The static frontend stores it in `localStorage` and sends `Authorization: Bearer <token>` on API calls.
+- **Login** — `POST /auth/login` returns a JWT (`accessToken`, HS256 via `hono/jwt`). The static frontend stores it in `localStorage` and sends `Authorization: Bearer <token>`.
 - **Session** — `GET /auth/me` validates the token.
-- Set `AUTH_SECRET` in `backend/.env` (and as a Wrangler secret in production). Configure `FRONTEND_URL` to your frontend origin for CORS.
+- **Passwords** — PBKDF2-SHA256 via Web Crypto (`src/lib/password.ts`).
+- Admin recovery: `bun run set-password <email> <new-password> [--remote]`.
 
 ## Routes
 
@@ -35,40 +43,42 @@ API runs at `http://localhost:3001`.
 | `POST /auth/reset-password` | Returns `tempPassword` in JSON (email deferred) |
 | `POST /auth/change-password` | Authenticated password change |
 | `PUT /company` | Update shift presets |
-| `PUT/DELETE /employees` | Manage team |
+| `POST /company/schedule/publish` | Publish draft shifts for a week |
+| `PUT/DELETE /employees` | Manage team / roles |
 | `POST /employees/invite` | Invite employees; returns `inviteCode` per user |
-| `GET/POST/PUT/DELETE /shifts` | Shift CRUD |
-| `GET /shifts/mine` | Employee's shifts (client polling) |
-| `GET /dashboard/employee` | Employee dashboard data |
-| `GET /dashboard/company` | Company dashboard data |
-| `GET /dashboard/profile` | Profile page data |
+| `GET/POST/PUT/DELETE /shifts` | Shift CRUD (`/shifts/bulk`, `/shifts/eligible`) |
+| `GET /shifts/mine` | Employee's published shifts |
+| `/availability`, `/time-off`, `/time-entries` | Worker availability, time off, timesheets |
+| `/announcements`, `/messages`, `/inbox` | Team comms + unread counts |
+| `POST /ai/parse-shift`, `POST /ai/ask` | Ask OhShift (Workers AI) |
+| `GET /dashboard/employee`, `/dashboard/company`, `/dashboard/profile` | Dashboard data |
 
-## Cloudflare Workers deployment
+## Cloudflare deployment
 
 1. `bunx wrangler login`
-2. Set secrets (never commit these):
+2. Create the database once and paste the printed `database_id` into `wrangler.toml`:
 
 ```bash
-bunx wrangler secret put DATABASE_URL   # Neon pooled
-bunx wrangler secret put DIRECT_URL     # Neon direct
+bunx wrangler d1 create ohshift
+```
+
+3. Set secrets (never commit these):
+
+```bash
 bunx wrangler secret put AUTH_SECRET
 bunx wrangler secret put FRONTEND_URL   # e.g. https://ohshift.pages.dev
 ```
 
-3. Deploy:
+4. Apply migrations and deploy:
 
 ```bash
+bun run db:migrate:remote
 bun run deploy
-# or: bunx wrangler deploy
 ```
-
-4. Optional local Workers preview: `bun run cf:dev` (port 8787).
-
-`wrangler.toml` uses `nodejs_compat` and `compatibility_date` ≥ `2025-06-01` for the Elysia Cloudflare adapter.
 
 ## Email (deferred)
 
-Outbound email is not wired. Invite codes and password-reset temps are returned in API responses for the UI to display. When you re-add email, prefer **Resend** or **Brevo** (not AWS SES if you want to avoid AWS billing).
+Outbound email is not wired. Invite codes and password-reset temps are returned in API responses for the UI to display. When you re-add email, prefer **Resend** or **Brevo**.
 
 ## Frontend
 
