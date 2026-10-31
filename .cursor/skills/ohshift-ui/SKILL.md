@@ -22,7 +22,7 @@ Monogram: `public/logo/ohshift-os-monogram.svg`
 | From | `#6D5CFF` |
 | To | `#4634D6` |
 
-CSS vars: `--brand-from`, `--brand-to` in `src/app/globals.css`.
+CSS vars: `--brand-from`, `--brand-to` in `src/styles/globals.css`.
 
 ### Tokens
 
@@ -112,7 +112,7 @@ import { BrandMark } from "@/components/brand-mark";
 | Navbar / auth titles | `22` |
 | Footer | `24` |
 
-Gap between mark and title: **`gap-1.5`** (tight). Favicon: `src/app/icon.svg` + layout `icons` metadata → `/logo/ohshift-os-monogram.svg`.
+Gap between mark and title: **`gap-1.5`** (tight). Favicon: `index.html` `<link rel="icon">` → `/logo/ohshift-os-monogram.svg`.
 
 ## Layout gutters
 
@@ -151,7 +151,7 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 </div>
 ```
 
-- **No footer** on authenticated pages (dashboards, profile, settings). Footer is marketing-only (`src/app/page.tsx`).
+- **No footer** on authenticated pages (dashboards, profile, settings). Footer is marketing-only (`src/features/landing/page.tsx`).
 
 ### Auth pages (login / register)
 
@@ -218,7 +218,7 @@ import { ScrollFade } from "@/components/scroll-fade";
 
 | File | Role |
 |------|------|
-| `src/app/globals.css` | Tokens, `.btn-brand`, motion |
+| `src/styles/globals.css` | Tokens, `.btn-brand`, motion |
 | `src/components/brand-mark.tsx` | Logo mark |
 | `src/components/scroll-fade.tsx` | Scrollable list panels with soft mask fades |
 | `src/components/ui/button.tsx` | Default = brand gradient |

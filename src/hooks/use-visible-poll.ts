@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 
 /** Default interval for cross-user live updates (employee ↔ manager). */

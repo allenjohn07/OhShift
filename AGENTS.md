@@ -17,13 +17,14 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js (static export), React, Tailwind, shadcn/Radix |
+| Frontend | Vite SPA, React, TanStack Router (file routes), Tailwind, shadcn/Radix |
 | Backend | Hono, Drizzle ORM, Cloudflare D1 (SQLite) — Bun as package manager |
 | Deploy | Cloudflare Pages (frontend), Cloudflare Workers (API) |
 
 ## Key paths
 
-- Frontend pages: `src/app/**`
+- Frontend routes: `src/routes/**` (thin) → page components in `src/features/**`
+- Navigation helpers: `src/lib/navigation.tsx` (`Link href`, `useRouter`, `usePathname`)
 - API client: `src/lib/api.ts`
 - Backend routes: `backend/src/routes/**`
 - Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)
@@ -53,8 +54,8 @@ Any feature where **one role writes and another role must see it without a manua
 6. **Both sides every time** — shipping only manager live updates or only employee live updates is incomplete. Wire employee + manager (or owner) in the same vertical slice.
 
 Reference implementations:
-- Manager: `src/hooks/use-pending-time-off.ts` + badge in `src/components/app-shell.tsx` + `src/app/company/dashboard/requests/page.tsx`
-- Employee: `src/app/dashboard/time-off/page.tsx`
+- Manager: `src/hooks/use-pending-time-off.ts` + badge in `src/components/app-shell.tsx` + `src/features/company/dashboard/requests/page.tsx`
+- Employee: `src/features/dashboard/time-off/page.tsx`
 
 Do **not** add WebSockets/SSE unless product explicitly asks — Workers-friendly polling is the default.
 

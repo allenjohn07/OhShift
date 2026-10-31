@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { apiFetch } from "@/lib/api";

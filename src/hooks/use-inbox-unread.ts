@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";

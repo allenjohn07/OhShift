@@ -8,7 +8,6 @@ export function BrandMark({
   size?: number;
 }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo/ohshift-os-monogram.svg"
       alt=""

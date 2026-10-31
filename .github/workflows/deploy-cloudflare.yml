@@ -29,9 +29,9 @@ jobs:
 
       - name: Build static site
         env:
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
-          NEXT_PUBLIC_BASE_PATH: ${{ vars.NEXT_PUBLIC_BASE_PATH }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
         run: bun run build
 
       - name: Ensure Pages project exists
@@ -50,7 +50,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
-          command: pages deploy out --project-name=ohshift
+          command: pages deploy dist --project-name=ohshift
 
   deploy-worker:
     runs-on: ubuntu-latest

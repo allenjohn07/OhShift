@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/lib/navigation";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";

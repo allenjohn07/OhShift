@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { homeHrefForRole, type AppRole } from "@/lib/nav";
 

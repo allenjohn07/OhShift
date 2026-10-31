@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, User, Building2, Sun, Moon } from "lucide-react";
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";

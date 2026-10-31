@@ -1,7 +1,7 @@
 import { getAccessToken } from "@/lib/auth-storage";
 
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+  import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 async function fetchWithNetworkErrorHint(
   input: string,
@@ -12,7 +12,7 @@ async function fetchWithNetworkErrorHint(
   } catch (err) {
     if (err instanceof TypeError) {
       throw new Error(
-        `Cannot reach API at ${API_URL}. Verify NEXT_PUBLIC_API_URL and backend CORS/availability in production.`,
+        `Cannot reach API at ${API_URL}. Verify VITE_API_URL and backend CORS/availability in production.`,
       );
     }
     throw err;

@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/lib/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { normalizePath } from "@/lib/nav";
 
