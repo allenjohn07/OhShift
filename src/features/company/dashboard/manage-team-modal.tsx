@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
-import { X, Users, Loader2, Save, Trash2, Shield } from "lucide-react";
+import { X, Loader2, Save, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
+import { Input, fieldClass } from "@/components/ui/input";
 import { useApi } from "@/hooks/use-api";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Employee {
   id: string;
@@ -34,8 +45,6 @@ export function ManageTeamModal({
   const [roleSavingId, setRoleSavingId] = useState<string | null>(null);
 
   const isOwner = currentUserRole === "owner";
-
-  if (!isOpen) return null;
 
   const handleSaveDesignation = async (employeeId: string) => {
     setIsSaving(employeeId);
@@ -120,59 +129,48 @@ export function ManageTeamModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
-      <div className="bg-popover w-full max-w-2xl rounded-lg shadow-popover overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-4 max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-border flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Manage Team</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Update titles, roles, or remove team members.
-              </p>
-            </div>
-          </div>
-          <IconTooltip label="Close" side="bottom">
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-accent rounded-md text-muted-foreground transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </IconTooltip>
-        </div>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manage team</DialogTitle>
+          <DialogDescription>
+            Update titles, roles, or remove team members.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="p-6 overflow-y-auto max-h-[500px]">
+        <DialogBody>
           {!employees || employees.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground border-2 border-dashed border-border rounded-lg">
+            <div className="py-10 text-center text-sm text-muted-foreground">
               No employees found. Invite some to get started!
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
               {employees.map((emp) => (
                 <div
                   key={emp.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/40 rounded-lg border border-border gap-4"
+                  className="flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">{emp.full_name}</p>
+                      <p className="truncate text-sm font-medium">{emp.full_name}</p>
                       {emp.role === "manager" && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md bg-brand-soft text-brand">
+                        <span className="inline-flex items-center gap-1 rounded-sm bg-brand-soft px-1.5 py-0.5 text-xs font-medium text-brand">
                           <Shield className="w-3 h-3" />
                           Manager
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="truncate text-xs text-muted-foreground">
                       {emp.email}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
                     {isOwner && (
                       <select
                         value={emp.role ?? "employee"}
@@ -184,7 +182,7 @@ export function ManageTeamModal({
                             emp.full_name,
                           )
                         }
-                        className="h-8 px-2 rounded-lg border border-input bg-background text-sm"
+                        className={cn(fieldClass, "h-8 w-auto")}
                         aria-label={`Role for ${emp.full_name}`}
                       >
                         <option value="employee">Employee</option>
@@ -198,7 +196,7 @@ export function ManageTeamModal({
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
                           placeholder="e.g. Server"
-                          className="h-8 w-32 text-sm bg-background"
+                          className="h-8 w-32"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter")
@@ -210,7 +208,7 @@ export function ManageTeamModal({
                           <button
                             onClick={() => handleSaveDesignation(emp.id)}
                             disabled={isSaving === emp.id}
-                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-brand transition-colors hover:bg-accent"
                             aria-label="Save title"
                           >
                             {isSaving === emp.id ? (
@@ -223,7 +221,7 @@ export function ManageTeamModal({
                         <IconTooltip label="Cancel" side="top">
                           <button
                             onClick={() => setEditingId(null)}
-                            className="p-1.5 text-muted-foreground hover:bg-accent rounded-lg transition-colors"
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent"
                             aria-label="Cancel"
                           >
                             <X className="w-4 h-4" />
@@ -232,33 +230,32 @@ export function ManageTeamModal({
                       </div>
                     ) : (
                       <div
-                        className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm cursor-pointer hover:border-emerald-500/50 transition-colors w-32 truncate text-center"
+                        className={cn(fieldClass, "flex h-8 w-32 cursor-pointer items-center truncate hover:bg-accent")}
                         onClick={() => {
                           setEditingId(emp.id);
                           setEditValue(emp.designation || "");
                         }}
                       >
                         {emp.designation ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                          <span className="truncate">
                             {emp.designation}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground italic">
-                            Add title...
+                          <span className="truncate text-muted-foreground/70">
+                            Add title…
                           </span>
                         )}
                       </div>
                     )}
 
-                    <div className="w-px h-8 bg-border/50 mx-1 hidden sm:block" />
-
+                    
                     <IconTooltip label="Remove employee" side="top">
                       <button
                         onClick={() =>
                           handleRemoveEmployee(emp.id, emp.full_name)
                         }
                         disabled={isDeleting === emp.id}
-                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Remove employee"
                       >
                         {isDeleting === emp.id ? (
@@ -273,8 +270,11 @@ export function ManageTeamModal({
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogBody>
+      <DialogFooter>
+          <Button onClick={onClose}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,12 +1,25 @@
 import { useState, useRef } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X, Trash2, Loader2, Edit2, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { AskOhShiftModal } from "./ask-ohshift-modal";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
 import { getEmployeeColor } from "@/lib/tag-colors";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ShiftProperties } from "@/features/dashboard/shift-properties";
 
 interface Shift {
   id: string;
@@ -33,6 +46,7 @@ export function TeamScheduleGrid({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const doneButtonRef = useRef<HTMLButtonElement>(null);
 
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -123,7 +137,6 @@ export function TeamScheduleGrid({
       }
     }
   };
-
 
   const handleDeleteShift = async () => {
     if (!selectedShift) return;
@@ -403,181 +416,139 @@ export function TeamScheduleGrid({
         </div>
       </div>
 
-      {/* Shift Details Dialog */}
-      {selectedShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
-          <div className="bg-popover w-full max-w-sm rounded-lg shadow-popover animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
-            <IconTooltip label="Close" side="bottom">
-              <button 
-                onClick={() => {
-                  setSelectedShift(null);
-                  setIsEditing(false);
-                }}
-                className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors z-10"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </IconTooltip>
-            <div className="p-6">
-               <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                 <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-                   <Calendar className="w-5 h-5" />
-                 </div>
-                 {isEditing ? "Edit Shift" : "Shift Details"}
-               </h3>
-               
-               {isEditing ? (
-                 <form id="edit-shift-form" onSubmit={handleEditShift} className="space-y-4 text-left">
-                   <div className="space-y-2">
-                     <label htmlFor="title" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                       Role / Title
-                     </label>
-                     <input
-                       type="text"
-                       id="title"
-                       name="title"
-                       required
-                       defaultValue={selectedShift.title}
-                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <label htmlFor="date" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                       Date
-                     </label>
-                     <input
-                       type="date"
-                       id="date"
-                       name="date"
-                       required
-                       defaultValue={new Date(selectedShift.start_time).toISOString().split('T')[0]}
-                       className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                     />
-                   </div>
-                   <div className="grid grid-cols-2 gap-3">
-                     <div className="space-y-2">
-                       <label htmlFor="startTime" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                         Start Time
-                       </label>
-                       <input
-                         type="time"
-                         id="startTime"
-                         name="startTime"
-                         required
-                         defaultValue={new Date(selectedShift.start_time).toTimeString().substring(0, 5)}
-                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <label htmlFor="endTime" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                         End Time
-                       </label>
-                       <input
-                         type="time"
-                         id="endTime"
-                         name="endTime"
-                         required
-                         defaultValue={new Date(selectedShift.end_time).toTimeString().substring(0, 5)}
-                         className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                       />
-                     </div>
-                   </div>
-                 </form>
-               ) : (
-                 <div className="space-y-5">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-                        <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div className="pt-0.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Assigned to</p>
-                        <p className="text-base font-medium">{selectedShift.users?.full_name}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
-                        <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div className="pt-0.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Time</p>
-                        <p className="text-base font-medium text-blue-600 dark:text-blue-400">
-                          {formatDateLabel(new Date(selectedShift.start_time))}
-                        </p>
-                        <p className="text-sm font-medium mt-0.5 opacity-90">
-                          {formatTime(selectedShift.start_time)} <span className="text-muted-foreground font-normal mx-1">to</span> {formatTime(selectedShift.end_time)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                        <MapPin className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                      </div>
-                      <div className="pt-0.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Role / Title</p>
-                        <p className="text-base font-medium">{selectedShift.title}</p>
-                        {selectedShift.status === "draft" && (
-                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                            Draft — not visible to employees until published
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                 </div>
-               )}
-            </div>
-            <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex items-center justify-between gap-2">
-               {!isEditing ? (
-                 <>
-                   <button
-                      onClick={handleDeleteShift}
-                      disabled={isDeleting}
-                      className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors flex items-center gap-2"
-                    >
-                      {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
-                    </button>
+      {/* Shift details / edit */}
+      <Dialog
+        open={selectedShift !== null}
+        onOpenChange={(open) => {
+          if (!open && !isSaving && !isDeleting) {
+            setSelectedShift(null);
+            setIsEditing(false);
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => {
+            // Never land on Delete — start on the safe primary action.
+            e.preventDefault();
+            doneButtonRef.current?.focus();
+          }}
+        >
+          {selectedShift && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {isEditing ? "Edit shift" : selectedShift.title}
+                </DialogTitle>
+                <DialogDescription>
+                  {isEditing
+                    ? `${selectedShift.users?.full_name ?? "Team member"} · changes are checked for conflicts`
+                    : "Shift details"}
+                </DialogDescription>
+              </DialogHeader>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                         onClick={() => setIsEditing(true)}
-                         className="px-3 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors flex items-center gap-2"
-                       >
-                         <Edit2 className="w-4 h-4" />
-                         Edit
-                       </button>
-                      <button
-                         onClick={() => setSelectedShift(null)}
-                         className="px-4 py-2 text-sm font-medium btn-brand rounded-md"
-                       >
-                         Close
-                       </button>
+              {isEditing ? (
+                <form
+                  id="edit-shift-form"
+                  onSubmit={handleEditShift}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <DialogBody>
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        name="title"
+                        required
+                        defaultValue={selectedShift.title}
+                      />
                     </div>
-                 </>
-               ) : (
-                 <>
-                   <button 
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Date</Label>
+                      <Input
+                        type="date"
+                        id="date"
+                        name="date"
+                        required
+                        defaultValue={new Date(selectedShift.start_time).toISOString().split("T")[0]}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="startTime">Start</Label>
+                        <Input
+                          type="time"
+                          id="startTime"
+                          name="startTime"
+                          required
+                          defaultValue={new Date(selectedShift.start_time).toTimeString().substring(0, 5)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endTime">End</Label>
+                        <Input
+                          type="time"
+                          id="endTime"
+                          name="endTime"
+                          required
+                          defaultValue={new Date(selectedShift.end_time).toTimeString().substring(0, 5)}
+                        />
+                      </div>
+                    </div>
+                  </DialogBody>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
                       disabled={isSaving}
                     >
                       Cancel
-                    </button>
-                   <button 
-                      type="submit"
-                      form="edit-shift-form"
-                      disabled={isSaving}
-                      className="px-4 py-2 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded-md transition-colors flex items-center gap-2"
+                    </Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isSaving ? "Saving…" : "Save changes"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              ) : (
+                <>
+                  <DialogBody>
+                    <ShiftProperties
+                      shift={selectedShift}
+                      assignee={selectedShift.users?.full_name}
+                    />
+                  </DialogBody>
+                  <DialogFooter className="sm:justify-between">
+                    <Button
+                      variant="ghost"
+                      onClick={handleDeleteShift}
+                      disabled={isDeleting}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
-                      {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </button>
-                 </>
-               )}
-            </div>
-          </div>
-        </div>
-      )}
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      {isDeleting ? "Deleting…" : "Delete"}
+                    </Button>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                      <Button variant="outline" onClick={() => setIsEditing(true)}>
+                        <Edit2 className="h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button ref={doneButtonRef} onClick={() => setSelectedShift(null)}>
+                        Done
+                      </Button>
+                    </div>
+                  </DialogFooter>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

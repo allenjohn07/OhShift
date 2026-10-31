@@ -1,18 +1,11 @@
 import { useCallback, useEffect, useRef, useState, useId } from "react";
-import { createPortal } from "react-dom";
-import {
-  Send,
-  Clock,
-  ChevronUp,
-  ChevronRight,
-  User,
-  Loader2,
-  X,
-  Calendar,
-} from "lucide-react";
+import { Send, Clock, ChevronUp, ChevronRight, Loader2 } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { ScrollFade } from "@/components/scroll-fade";
-import { IconTooltip } from "@/components/icon-tooltip";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getEmployeeColor } from "@/lib/tag-colors";
+import { cn } from "@/lib/utils";
 
 type PublishedShift = {
   id: string;
@@ -66,122 +59,89 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function ShiftDetailModal({
+function PublishedScheduleDialog({
   log,
-  onClose,
+  open,
+  onOpenChange,
 }: {
   log: LogEntry;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  // Close on backdrop click or Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   const weekLabel = formatWeek(log.week_start);
+  const count = log.shifts.length;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" aria-hidden />
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {weekLabel ? `Week of ${weekLabel}` : "Published schedule"}
+          </DialogTitle>
+          <DialogDescription>
+            Published by {log.actor.full_name}{" "}
+            <span className="capitalize">({log.actor.role})</span> ·{" "}
+            {timeAgo(log.created_at)}
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg bg-popover rounded-lg shadow-popover overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-border bg-card">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-brand-soft text-brand shrink-0">
-                <Send className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-base leading-snug">{log.detail}</h2>
-                {weekLabel && (
-                  <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                    <Calendar className="w-3 h-3" />
-                    Week of {weekLabel}
+        <DialogBody className="p-0">
+          {count === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No shift details available.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {log.shifts.map((shift) => (
+                <li
+                  key={shift.id}
+                  className="flex items-center justify-between gap-4 px-6 py-2.5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                        getEmployeeColor(shift.employee_name),
+                      )}
+                    >
+                      {shift.employee_name
+                        .split(/\s+/)
+                        .map((p) => p[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {shift.employee_name}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {shift.title}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-            <IconTooltip label="Close" side="bottom">
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </IconTooltip>
-          </div>
-
-          <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-            <span>
-              Published by{" "}
-              <span className="font-medium text-foreground">{log.actor.full_name}</span>{" "}
-              <span className="capitalize">({log.actor.role})</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {timeAgo(log.created_at)}
-            </span>
-          </div>
-        </div>
-
-        {/* Shifts list */}
-        {log.shifts.length === 0 ? (
-          <div className="px-6 py-8 text-center text-sm text-muted-foreground">
-            No shift details available.
-          </div>
-        ) : (
-          <div className="overflow-y-auto max-h-[60vh] divide-y divide-border">
-            {log.shifts.map((shift) => (
-              <div
-                key={shift.id}
-                className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-1.5 rounded-lg bg-brand-soft text-brand shrink-0">
-                    <User className="w-3.5 h-3.5" />
+                  <div className="shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                    <p className="font-medium text-foreground">
+                      {formatDate(shift.start_time)}
+                    </p>
+                    <p>
+                      {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
+                    </p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{shift.employee_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{shift.title}</p>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground whitespace-nowrap shrink-0 text-right">
-                  <p className="font-medium text-foreground/80">{formatDate(shift.start_time)}</p>
-                  <p>{formatTime(shift.start_time)} – {formatTime(shift.end_time)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogBody>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-muted/20 flex items-center justify-between">
+        <DialogFooter className="sm:justify-between">
           <span className="text-xs text-muted-foreground">
-            {log.shifts.length} shift{log.shifts.length !== 1 ? "s" : ""} published
+            {count} shift{count !== 1 ? "s" : ""} published
           </span>
-          <button
-            onClick={onClose}
-            className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+          <Button onClick={() => onOpenChange(false)}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -228,9 +188,11 @@ function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
         </button>
       </div>
 
-      {modalOpen && (
-        <ShiftDetailModal log={log} onClose={() => setModalOpen(false)} />
-      )}
+      <PublishedScheduleDialog
+        log={log}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </>
   );
 }

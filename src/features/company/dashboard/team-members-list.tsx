@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, Shield } from "lucide-react";
 import { AssignShiftModal } from "./assign-shift-modal";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
 import { ScrollFade } from "@/components/scroll-fade";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";

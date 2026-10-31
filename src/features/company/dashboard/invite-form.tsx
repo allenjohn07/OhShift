@@ -222,16 +222,18 @@ export function InviteEmployeeForm({
       )}
 
       <div className={bare ? "flex flex-col" : "p-4 sm:p-6 flex-1 flex flex-col"}>
-        <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
-          Invite someone now, or add several to a list and send them together.
-          We generate an invite code for each person — share it so they can log
-          in (email delivery comes later).
-        </p>
+        {!bare && (
+          <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
+            Invite someone now, or add several to a list and send them together.
+            We generate an invite code for each person — share it so they can log
+            in (email delivery comes later).
+          </p>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-sm font-medium">
-              Full Name
+            <Label htmlFor="fullName">
+              Full name
             </Label>
             <Input
               id="fullName"
@@ -243,8 +245,8 @@ export function InviteEmployeeForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              Email Address
+            <Label htmlFor="email">
+              Email
             </Label>
             <Input
               id="email"
@@ -263,7 +265,7 @@ export function InviteEmployeeForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="designation" className="text-sm font-medium">
+            <Label htmlFor="designation">
               Designation{" "}
               <span className="text-muted-foreground font-normal">
                 (Optional)
@@ -308,10 +310,10 @@ export function InviteEmployeeForm({
               variant="secondary"
               onClick={handleAddToList}
               disabled={isLoading || !canSubmitForm}
-              className="h-10 flex-1 rounded-md font-medium"
+              className="h-9 flex-1"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add to List
+              Add to list
             </Button>
           </div>
         </div>
@@ -319,7 +321,7 @@ export function InviteEmployeeForm({
         {invitees.length > 0 && (
           <div className="mt-6 space-y-4 border-t border-border pt-6">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Pending Invitations</Label>
+              <Label>Pending invitations</Label>
               <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm font-medium">
                 {invitees.length} added
               </span>
@@ -405,18 +407,18 @@ export function InviteEmployeeForm({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="editFullName" className="text-sm font-medium">
+              <Label htmlFor="editFullName">
                 Full Name
               </Label>
               <Input
                 id="editFullName"
                 value={editFullName}
                 onChange={(e) => setEditFullName(e.target.value)}
-                className="h-10 rounded-md bg-card border-border"
+                className="h-9"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editEmail" className="text-sm font-medium">
+              <Label htmlFor="editEmail">
                 Email Address
               </Label>
               <Input
@@ -424,18 +426,18 @@ export function InviteEmployeeForm({
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
-                className="h-10 rounded-md bg-card border-border"
+                className="h-9"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editDesignation" className="text-sm font-medium">
+              <Label htmlFor="editDesignation">
                 Designation
               </Label>
               <Input
                 id="editDesignation"
                 value={editDesignation}
                 onChange={(e) => setEditDesignation(e.target.value)}
-                className="h-10 rounded-md bg-card border-border"
+                className="h-9"
               />
             </div>
           </div>
@@ -443,13 +445,13 @@ export function InviteEmployeeForm({
             <Button
               variant="outline"
               onClick={() => setEditingIndex(null)}
-              className="h-10 rounded-md"
+              className="h-9"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveEdit}
-              className="h-10 rounded-md"
+              className="h-9"
             >
               Save Changes
             </Button>

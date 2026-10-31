@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Loader2,
-  Users,
-  X,
-} from "lucide-react";
+import { CheckSquare, ChevronDown, ChevronRight, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { fieldClass } from "@/components/ui/input";
 import { useApi } from "@/hooks/use-api";
-import { IconTooltip } from "@/components/icon-tooltip";
+
 import { ScrollFade } from "@/components/scroll-fade";
 import { cn } from "@/lib/utils";
 
@@ -288,19 +281,6 @@ export function BulkAssignModal({
     }
   }
 
-  if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={open}
-        className="inline-flex items-center gap-1.5 text-sm font-medium btn-brand h-8 px-3 rounded-md shrink-0"
-      >
-        <Users className="w-4 h-4" />
-        <span>Assign shifts</span>
-      </button>
-    );
-  }
-
   return (
     <>
       <button
@@ -312,43 +292,35 @@ export function BulkAssignModal({
         <span>Assign shifts</span>
       </button>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
-        <div className="bg-popover w-full max-w-lg rounded-lg shadow-popover overflow-hidden max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 flex flex-col">
-          <div className="p-6 border-b border-border flex items-start justify-between gap-3 shrink-0">
-            <div>
-              <h2 className="text-xl font-semibold">Assign shifts</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pick a time window, filter by designation, then create drafts.
-              </p>
-            </div>
-            <IconTooltip label="Close" side="bottom">
-              <button
-                type="button"
-                onClick={close}
-                disabled={isLoading}
-                className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors disabled:opacity-50"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </IconTooltip>
-          </div>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(next) => {
+          if (!next && !isLoading) close();
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Assign shifts</DialogTitle>
+            <DialogDescription>
+              Pick a time window, filter by designation, then create drafts.
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+          <DialogBody className="space-y-5">
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-100 dark:border-red-500/20">
+              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
             )}
 
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold">When</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">When</h3>
               <div className="space-y-2">
                 <label
                   htmlFor="bulk-date"
-                  className="text-sm font-medium flex items-center gap-2"
+                  className="text-[13px] font-medium text-muted-foreground"
                 >
-                  <Calendar className="w-4 h-4 text-muted-foreground" /> Date
+                  Date
                 </label>
                 <input
                   type="date"
@@ -356,13 +328,13 @@ export function BulkAssignModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className={cn(fieldClass, "h-9")}
                 />
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Shift time</label>
+                  <label className="text-[13px] font-medium text-muted-foreground">Shift time</label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground mr-1">
                       Presets:
@@ -373,7 +345,7 @@ export function BulkAssignModal({
                         setStartTime(company.morning_start);
                         setEndTime(company.morning_end);
                       }}
-                      className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
+                      className="h-6 px-2 text-xs font-medium rounded-md border border-input transition-colors hover:bg-accent"
                     >
                       Morning
                     </button>
@@ -383,7 +355,7 @@ export function BulkAssignModal({
                         setStartTime(company.evening_start);
                         setEndTime(company.evening_end);
                       }}
-                      className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                      className="h-6 px-2 text-xs font-medium rounded-md border border-input transition-colors hover:bg-accent"
                     >
                       Evening
                     </button>
@@ -393,31 +365,31 @@ export function BulkAssignModal({
                   <div className="space-y-2">
                     <label
                       htmlFor="bulk-start"
-                      className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                      className="text-[13px] font-medium text-muted-foreground"
                     >
-                      <Clock className="w-3.5 h-3.5" /> Start
+                      Start
                     </label>
                     <input
                       type="time"
                       id="bulk-start"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
                   <div className="space-y-2">
                     <label
                       htmlFor="bulk-end"
-                      className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                      className="text-[13px] font-medium text-muted-foreground"
                     >
-                      <Clock className="w-3.5 h-3.5" /> End
+                      End
                     </label>
                     <input
                       type="time"
                       id="bulk-end"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
                 </div>
@@ -425,16 +397,16 @@ export function BulkAssignModal({
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold">Who</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Who</h3>
               <div className="space-y-2">
-                <label htmlFor="bulk-designation" className="text-sm font-medium">
+                <label htmlFor="bulk-designation" className="text-[13px] font-medium text-muted-foreground">
                   Designation
                 </label>
                 <select
                   id="bulk-designation"
                   value={designation}
                   onChange={(e) => setDesignation(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className={cn(fieldClass, "h-9")}
                 >
                   <option value="">All designations</option>
                   {designations.map((d) => (
@@ -445,7 +417,7 @@ export function BulkAssignModal({
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="bulk-title" className="text-sm font-medium">
+                <label htmlFor="bulk-title" className="text-[13px] font-medium text-muted-foreground">
                   Default title
                 </label>
                 <input
@@ -454,14 +426,14 @@ export function BulkAssignModal({
                   value={sharedTitle}
                   onChange={(e) => setSharedTitle(e.target.value)}
                   placeholder={designation || "Shift"}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  className={cn(fieldClass, "h-9")}
                 />
               </div>
             </section>
 
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
+                <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Eligible
                   {isFetching && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
@@ -566,7 +538,7 @@ export function BulkAssignModal({
                                   })
                                 }
                                 placeholder="Title"
-                                className="w-full h-9 px-3 rounded-lg border border-input bg-transparent text-sm"
+                                className={cn(fieldClass, "h-8")}
                               />
                               <div className="grid grid-cols-3 gap-2">
                                 <input
@@ -577,7 +549,7 @@ export function BulkAssignModal({
                                       date: e.target.value,
                                     })
                                   }
-                                  className="h-9 px-2 rounded-lg border border-input bg-transparent text-xs"
+                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
                                 />
                                 <input
                                   type="time"
@@ -587,7 +559,7 @@ export function BulkAssignModal({
                                       startTime: e.target.value,
                                     })
                                   }
-                                  className="h-9 px-2 rounded-lg border border-input bg-transparent text-xs"
+                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
                                 />
                                 <input
                                   type="time"
@@ -597,7 +569,7 @@ export function BulkAssignModal({
                                       endTime: e.target.value,
                                     })
                                   }
-                                  className="h-9 px-2 rounded-lg border border-input bg-transparent text-xs"
+                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
                                 />
                               </div>
                             </div>
@@ -614,13 +586,13 @@ export function BulkAssignModal({
               {selectedCount} draft shift{selectedCount === 1 ? "" : "s"} will
               be created
             </p>
-          </div>
+          </DialogBody>
 
-          <div className="p-6 pt-4 flex items-center justify-end gap-3 border-t border-border shrink-0">
+          <DialogFooter>
             <button
               type="button"
               onClick={close}
-              className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
               disabled={isLoading}
             >
               Cancel
@@ -629,7 +601,7 @@ export function BulkAssignModal({
               type="button"
               onClick={onCreate}
               disabled={isLoading || selectedCount === 0}
-              className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
+              className="btn-brand inline-flex h-8 items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -640,9 +612,9 @@ export function BulkAssignModal({
                 "Create drafts"
               )}
             </button>
-          </div>
-        </div>
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

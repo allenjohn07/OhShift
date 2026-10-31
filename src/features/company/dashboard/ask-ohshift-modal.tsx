@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { Sparkles, Loader2, X, Calendar, Clock, User } from "lucide-react";
-import { IconTooltip } from "@/components/icon-tooltip";
+import { Sparkles, Loader2, Calendar, Clock, User } from "lucide-react";
+
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
 import { ScrollFade } from "@/components/scroll-fade";
+import { fieldClass } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type ShiftProposal = {
   employee_id: string;
@@ -245,16 +256,19 @@ export function AskOhShiftModal({
         Ask OhShift
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
-          <div className="bg-popover w-full max-w-md rounded-lg shadow-popover overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-brand" />
+      <Dialog
+          open={isOpen}
+          onOpenChange={(next) => {
+            if (!next && !isParsing && !isCreating) handleClose();
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-brand" />
                   Ask OhShift
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                </DialogTitle>
+                <DialogDescription>
                   {isEditing
                     ? "Adjust the shift details, then create."
                     : showingQuery
@@ -262,24 +276,12 @@ export function AskOhShiftModal({
                       : showingCreate
                         ? "Review before creating a draft."
                         : "Ask about the schedule or describe a shift to create."}
-                </p>
-              </div>
-              <IconTooltip label="Close" side="bottom">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={isParsing || isCreating}
-                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors disabled:opacity-50"
-                  aria-label="Close"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </IconTooltip>
-            </div>
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="p-6 space-y-4">
+            <DialogBody>
               {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-100 dark:border-red-500/20">
+                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -287,7 +289,7 @@ export function AskOhShiftModal({
               {!showingCreate && !showingQuery ? (
                 <form onSubmit={handleAsk} className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="ask-prompt" className="text-sm font-medium">
+                    <label htmlFor="ask-prompt" className="text-[13px] font-medium text-muted-foreground">
                       Ask or schedule
                     </label>
                     <textarea
@@ -297,17 +299,17 @@ export function AskOhShiftModal({
                       rows={3}
                       maxLength={500}
                       placeholder="e.g. Who is the manager? Who is working Tuesday? Or: Add me to next Friday evening"
-                      className="w-full px-3 py-2.5 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                      className={cn(fieldClass, "py-2 resize-none")}
                       disabled={isParsing}
                       autoFocus
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
+                  <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
                       disabled={isParsing}
                     >
                       Cancel
@@ -315,7 +317,7 @@ export function AskOhShiftModal({
                     <button
                       type="submit"
                       disabled={isParsing || !prompt.trim()}
-                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
+                      className="btn-brand inline-flex h-8 items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {isParsing ? (
                         <span className="flex items-center justify-center">
@@ -326,14 +328,14 @@ export function AskOhShiftModal({
                         "Ask"
                       )}
                     </button>
-                  </div>
+                  </DialogFooter>
                 </form>
               ) : showingQuery ? (
                 <div className="space-y-4">
                   {(queryWindow || queryPerson) && (
                     <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 space-y-1">
                       {queryPerson && (
-                        <p className="text-sm font-medium flex items-center gap-2">
+                        <p className="text-[13px] font-medium text-muted-foreground">
                           <User className="w-4 h-4 text-brand shrink-0" />
                           {queryPerson}
                         </p>
@@ -353,7 +355,7 @@ export function AskOhShiftModal({
 
                   <div className="rounded-lg border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border bg-muted/30">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <p className="text-[13px] font-medium text-muted-foreground">
                         From schedule
                         {queryShifts.length > 0
                           ? ` (${queryShifts.length})`
@@ -399,7 +401,7 @@ export function AskOhShiftModal({
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border">
+                  <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover sm:justify-between">
                     <button
                       type="button"
                       onClick={() => {
@@ -409,18 +411,18 @@ export function AskOhShiftModal({
                         setQueryPerson(null);
                         setError(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
                     >
                       Ask again
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium"
+                      className="btn-brand inline-flex h-8 items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       Done
                     </button>
-                  </div>
+                  </DialogFooter>
                 </div>
               ) : isEditing && proposal ? (
                 <div className="space-y-4 text-left">
@@ -430,9 +432,9 @@ export function AskOhShiftModal({
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="ask-title" className="text-sm font-medium">
-                      Shift Title / Role
-                    </label>
+                    <label htmlFor="ask-title" className="text-[13px] font-medium text-muted-foreground">
+              Title
+            </label>
                     <input
                       id="ask-title"
                       type="text"
@@ -441,16 +443,16 @@ export function AskOhShiftModal({
                         setFields((f) => ({ ...f, title: e.target.value }))
                       }
                       required
-                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label
                       htmlFor="ask-date"
-                      className="text-sm font-medium flex items-center gap-2"
+                      className="text-[13px] font-medium text-muted-foreground"
                     >
-                      <Calendar className="w-4 h-4 text-muted-foreground" /> Date
+                      Date
                     </label>
                     <input
                       id="ask-date"
@@ -460,13 +462,13 @@ export function AskOhShiftModal({
                         setFields((f) => ({ ...f, date: e.target.value }))
                       }
                       required
-                      className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <label className="text-sm font-medium">Shift Time</label>
+                      <label className="text-[13px] font-medium text-muted-foreground">Shift time</label>
                       {company && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground mr-1">
@@ -481,7 +483,7 @@ export function AskOhShiftModal({
                                 endTime: company.morning_end,
                               }))
                             }
-                            className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg transition-colors"
+                            className="h-6 px-2 text-xs font-medium rounded-md border border-input transition-colors hover:bg-accent"
                           >
                             Morning
                           </button>
@@ -494,7 +496,7 @@ export function AskOhShiftModal({
                                 endTime: company.evening_end,
                               }))
                             }
-                            className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                            className="h-6 px-2 text-xs font-medium rounded-md border border-input transition-colors hover:bg-accent"
                           >
                             Evening
                           </button>
@@ -505,9 +507,9 @@ export function AskOhShiftModal({
                       <div className="space-y-2">
                         <label
                           htmlFor="ask-start"
-                          className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                          className="text-[13px] font-medium text-muted-foreground"
                         >
-                          <Clock className="w-3.5 h-3.5" /> Start
+                          Start
                         </label>
                         <input
                           id="ask-start"
@@ -520,15 +522,15 @@ export function AskOhShiftModal({
                             }))
                           }
                           required
-                          className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                       <div className="space-y-2">
                         <label
                           htmlFor="ask-end"
-                          className="text-xs font-medium flex items-center gap-2 text-muted-foreground uppercase tracking-wider"
+                          className="text-[13px] font-medium text-muted-foreground"
                         >
-                          <Clock className="w-3.5 h-3.5" /> End
+                          End
                         </label>
                         <input
                           id="ask-end"
@@ -541,13 +543,13 @@ export function AskOhShiftModal({
                             }))
                           }
                           required
-                          className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
+                  <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">
                     <button
                       type="button"
                       onClick={() => {
@@ -555,7 +557,7 @@ export function AskOhShiftModal({
                         setError(null);
                         setFields(proposalToFields(proposal));
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
                       disabled={isCreating}
                     >
                       Cancel
@@ -564,7 +566,7 @@ export function AskOhShiftModal({
                       type="button"
                       onClick={handleConfirm}
                       disabled={isCreating}
-                      className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
+                      className="btn-brand inline-flex h-8 items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {isCreating ? (
                         <span className="flex items-center justify-center">
@@ -575,7 +577,7 @@ export function AskOhShiftModal({
                         "Create shift"
                       )}
                     </button>
-                  </div>
+                  </DialogFooter>
                 </div>
               ) : proposal ? (
                 <div className="space-y-4">
@@ -604,7 +606,7 @@ export function AskOhShiftModal({
                     </div>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between gap-3 border-t border-border">
+                  <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover sm:justify-between">
                     <button
                       type="button"
                       onClick={() => {
@@ -612,19 +614,19 @@ export function AskOhShiftModal({
                         setIsEditing(false);
                         setError(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                      className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
                       disabled={isCreating}
                     >
                       Back
                     </button>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
                       <button
                         type="button"
                         onClick={() => {
                           setIsEditing(true);
                           setError(null);
                         }}
-                        className="px-4 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors"
+                        className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
                         disabled={isCreating}
                       >
                         Edit
@@ -633,7 +635,7 @@ export function AskOhShiftModal({
                         type="button"
                         onClick={handleConfirm}
                         disabled={isCreating}
-                        className="btn-brand h-9 px-6 rounded-md text-sm font-medium disabled:opacity-50"
+                        className="btn-brand inline-flex h-8 items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium disabled:opacity-50"
                       >
                         {isCreating ? (
                           <span className="flex items-center justify-center">
@@ -645,13 +647,12 @@ export function AskOhShiftModal({
                         )}
                       </button>
                     </div>
-                  </div>
+                  </DialogFooter>
                 </div>
               ) : null}
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogBody>
+          </DialogContent>
+        </Dialog>
     </>
   );
 }

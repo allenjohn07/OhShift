@@ -5,9 +5,10 @@ import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, fieldClass } from "@/components/ui/input";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -275,7 +276,7 @@ function TimeOffPageContent() {
         </div>
       </main>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="rounded-lg sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Request time off</DialogTitle>
             <DialogDescription>
@@ -283,17 +284,18 @@ function TimeOffPageContent() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Type</label>
-              <div className="flex flex-wrap gap-1.5 p-1 rounded-lg bg-background border border-border">
+              <label className="text-[13px] font-medium text-muted-foreground">Type</label>
+              <div className="flex flex-wrap gap-1 rounded-md border border-input p-1">
                 {(Object.keys(TYPE_LABELS) as TimeOffType[]).map((t) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setType(t)}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+                      "px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer",
                       type === t
                         ? "bg-brand-soft text-brand"
                         : "text-muted-foreground hover:text-foreground",
@@ -307,7 +309,7 @@ function TimeOffPageContent() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label htmlFor="start" className="text-sm font-medium">
+                <label htmlFor="start" className="text-[13px] font-medium text-muted-foreground">
                   Start
                 </label>
                 <Input
@@ -321,11 +323,11 @@ function TimeOffPageContent() {
                       setEndDate(e.target.value);
                     }
                   }}
-                  className="h-10 rounded-md bg-card border-border"
+                  className="h-9"
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="end" className="text-sm font-medium">
+                <label htmlFor="end" className="text-[13px] font-medium text-muted-foreground">
                   End
                 </label>
                 <Input
@@ -335,13 +337,13 @@ function TimeOffPageContent() {
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="h-10 rounded-md bg-card border-border"
+                  className="h-9"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="note" className="text-sm font-medium">
+              <label htmlFor="note" className="text-[13px] font-medium text-muted-foreground">
                 Note <span className="text-muted-foreground">(optional)</span>
               </label>
               <textarea
@@ -351,15 +353,16 @@ function TimeOffPageContent() {
                 rows={3}
                 maxLength={500}
                 placeholder="Anything your manager should know…"
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className={cn(fieldClass, "py-2")}
               />
             </div>
 
+            </DialogBody>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-lg"
+                
                 onClick={() => setModalOpen(false)}
               >
                 Cancel
@@ -367,7 +370,7 @@ function TimeOffPageContent() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="btn-brand rounded-md"
+                
               >
                 {submitting ? (
                   <>

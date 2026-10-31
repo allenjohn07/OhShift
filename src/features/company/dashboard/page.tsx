@@ -7,7 +7,7 @@ import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
 import type { AppRole } from "@/lib/nav";
 
 type CompanyDashboardData = {

@@ -14,9 +14,10 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, fieldClass } from "@/components/ui/input";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -426,7 +427,7 @@ function InboxPageContent() {
             <div className="flex items-center gap-2">
               {tab === "announcements" && canManage && (
                 <Button
-                  className="btn-brand rounded-md"
+                  
                   onClick={() => openCompose()}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
@@ -436,7 +437,7 @@ function InboxPageContent() {
               {tab === "announcements" && unreadAnnouncements > 0 && (
                 <Button
                   variant="outline"
-                  className="rounded-lg"
+                  
                   onClick={handleMarkAllRead}
                 >
                   Mark all read
@@ -444,7 +445,7 @@ function InboxPageContent() {
               )}
               {tab === "messages" && (
                 <Button
-                  className="btn-brand rounded-md"
+                  
                   onClick={openNewDm}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
@@ -564,7 +565,7 @@ function InboxPageContent() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="rounded-lg"
+                                  
                                   onClick={() => openCompose(ann)}
                                 >
                                   <Pencil className="h-3.5 w-3.5 mr-1.5" />
@@ -771,7 +772,7 @@ function InboxPageContent() {
                         onChange={(e) => setDraft(e.target.value)}
                         maxLength={MSG_MAX}
                         placeholder="Write a message…"
-                        className="h-11 rounded-md bg-card border-border"
+                        className="h-9"
                       />
                       <Button
                         type="submit"
@@ -794,7 +795,7 @@ function InboxPageContent() {
       </div>
 
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-        <DialogContent className="rounded-lg sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Edit announcement" : "New announcement"}
@@ -803,9 +804,10 @@ function InboxPageContent() {
               Visible to everyone in your company.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSaveAnnouncement} className="space-y-4">
+          <form onSubmit={handleSaveAnnouncement} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody>
             <div className="space-y-2">
-              <label htmlFor="ann-title" className="text-sm font-medium">
+              <label htmlFor="ann-title" className="text-[13px] font-medium text-muted-foreground">
                 Title
               </label>
               <Input
@@ -814,11 +816,11 @@ function InboxPageContent() {
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={TITLE_MAX}
                 placeholder="Schedule update for next week"
-                className="h-11 rounded-md bg-card border-border"
+                className="h-9"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="ann-body" className="text-sm font-medium">
+              <label htmlFor="ann-body" className="text-[13px] font-medium text-muted-foreground">
                 Message
               </label>
               <textarea
@@ -828,14 +830,15 @@ function InboxPageContent() {
                 rows={5}
                 maxLength={BODY_MAX}
                 placeholder="Share details with your team…"
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className={cn(fieldClass, "py-2")}
               />
             </div>
+            </DialogBody>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-lg"
+                
                 onClick={() => setComposeOpen(false)}
               >
                 Cancel
@@ -843,7 +846,7 @@ function InboxPageContent() {
               <Button
                 type="submit"
                 disabled={savingAnnouncement}
-                className="btn-brand rounded-md"
+                
               >
                 {savingAnnouncement ? (
                   <>
@@ -862,14 +865,14 @@ function InboxPageContent() {
       </Dialog>
 
       <Dialog open={newDmOpen} onOpenChange={setNewDmOpen}>
-        <DialogContent className="rounded-lg sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New message</DialogTitle>
             <DialogDescription>
               Choose a teammate to message.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-72 overflow-y-auto space-y-1 -mx-1 px-1">
+          <DialogBody className="max-h-80 space-y-0.5 px-3 py-2">
             {directory.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No other teammates in your company yet.
@@ -881,7 +884,7 @@ function InboxPageContent() {
                   type="button"
                   disabled={startingDm}
                   onClick={() => handleStartDm(m.id)}
-                  className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer disabled:opacity-50"
+                  className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-accent transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Avatar className="h-9 w-9">
                     {m.avatar_url && <AvatarImage src={m.avatar_url} />}
@@ -898,7 +901,7 @@ function InboxPageContent() {
                 </button>
               ))
             )}
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>

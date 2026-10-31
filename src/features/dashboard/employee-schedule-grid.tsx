@@ -1,7 +1,18 @@
 import { useState, useRef } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { getEmployeeColor } from "@/lib/tag-colors";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ShiftProperties } from "./shift-properties";
 
 interface Shift {
   id: string;
@@ -24,7 +35,6 @@ const formatDateLabel = (date: Date) => {
     day: 'numeric'
   }).format(date);
 };
-
 
 export function EmployeeScheduleGrid({
   initialShifts,
@@ -251,73 +261,30 @@ export function EmployeeScheduleGrid({
         </div>
       </div>
 
-      {/* Shift Details Dialog */}
-      {selectedShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
-          <div className="bg-popover w-full max-w-sm rounded-lg shadow-popover animate-in fade-in zoom-in-95 duration-200 overflow-hidden relative">
-            <IconTooltip label="Close" side="bottom">
-              <button 
-                onClick={() => setSelectedShift(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors z-10"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </IconTooltip>
-            <div className="p-6">
-               <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                 <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-                   <Calendar className="w-5 h-5" />
-                 </div>
-                 Shift Details
-               </h3>
-               
-               <div className="space-y-5">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-                      <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div className="pt-0.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Assigned to</p>
-                      <p className="text-base font-medium">{employeeName}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
-                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="pt-0.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Time</p>
-                      <p className="text-base font-medium text-blue-600 dark:text-blue-400">
-                        {formatDateLabel(new Date(selectedShift.start_time))}
-                      </p>
-                      <p className="text-sm font-medium mt-0.5 opacity-90">
-                        {formatTime(selectedShift.start_time)} <span className="text-muted-foreground font-normal mx-1">to</span> {formatTime(selectedShift.end_time)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                      <MapPin className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                    </div>
-                    <div className="pt-0.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Role / Title</p>
-                      <p className="text-base font-medium">{selectedShift.title}</p>
-                    </div>
-                  </div>
-               </div>
-            </div>
-            <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex items-center justify-end gap-2">
-               <button 
-                 onClick={() => setSelectedShift(null)}
-                 className="px-4 py-2 text-sm font-medium btn-brand rounded-md"
-               >
-                 Close
-               </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Shift details */}
+      <Dialog
+        open={selectedShift !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedShift(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          {selectedShift && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedShift.title}</DialogTitle>
+                <DialogDescription>Shift details</DialogDescription>
+              </DialogHeader>
+              <DialogBody>
+                <ShiftProperties shift={selectedShift} assignee={employeeName} />
+              </DialogBody>
+              <DialogFooter>
+                <Button onClick={() => setSelectedShift(null)}>Done</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

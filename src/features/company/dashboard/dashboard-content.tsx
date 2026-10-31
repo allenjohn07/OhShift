@@ -4,6 +4,7 @@ import { Link } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -18,7 +19,7 @@ import { BulkAssignModal } from "./bulk-assign-modal";
 import { TeamScheduleGrid } from "@/features/company/dashboard/team-schedule-grid";
 import { DayAgenda } from "@/features/dashboard/day-agenda";
 import { ManageTeamModal } from "@/features/company/dashboard/manage-team-modal";
-import type { CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./company-settings";
 import { ShiftSummary } from "@/features/dashboard/shift-summary";
 import { ActivityFeed } from "./activity-feed";
 
@@ -228,14 +229,16 @@ export function DashboardContent({
       </main>
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Invite to {company.name}</DialogTitle>
-            <DialogDescription className="sr-only">
-              Invite employees and share their invite codes.
+            <DialogDescription>
+              Invite one person or add several to a list. Each gets an invite code to share (email delivery comes later).
             </DialogDescription>
           </DialogHeader>
-          <InviteEmployeeForm bare />
+          <DialogBody>
+            <InviteEmployeeForm bare />
+          </DialogBody>
         </DialogContent>
       </Dialog>
 

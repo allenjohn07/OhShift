@@ -160,6 +160,35 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Stat/property tiles: small muted label with a 14px icon, value `text-2xl font-semibold`.
 - Page header: optional muted eyebrow, then `h1` `text-[1.75rem] sm:text-[2.5rem] font-bold tracking-tight`.
 
+## Modals (one design language)
+
+Every modal uses `@/components/ui/dialog` — never a hand-rolled `fixed inset-0` overlay.
+
+```tsx
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Assign shift</DialogTitle>            {/* sentence case */}
+      <DialogDescription>One line of context.</DialogDescription>
+    </DialogHeader>
+    <form onSubmit={…} className="flex min-h-0 flex-1 flex-col">
+      <DialogBody>{/* fields; scrolls */}</DialogBody>
+      <DialogFooter>
+        <Button variant="outline">Cancel</Button>
+        <Button type="submit">Save changes</Button>      {/* primary on the right */}
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
+```
+
+- Header + hairline, scrollable `DialogBody`, footer bar with hairline. Close (×) comes from `DialogContent`.
+- Labels: sentence case, no icons (`<Label>` or `text-[13px] font-medium text-muted-foreground`). Raw `<select>`/`<textarea>` use `fieldClass` from `@/components/ui/input`.
+- Read-only details use `ShiftProperties`-style property rows (muted icon + label, value).
+- Destructive actions go bottom-left (`DialogFooter className="sm:justify-between"`, ghost + `text-destructive`) and must not receive initial focus — focus the primary via `onOpenAutoFocus`.
+- Multi-step modals may pin a step's footer inside the body: `<DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">`.
+- Errors: `rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive`.
+
 ## Scrollable list panels
 
 For any capped-height scrollable section inside a card (Team Members, Published Schedules, future queues/lists):
