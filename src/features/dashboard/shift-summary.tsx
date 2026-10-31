@@ -61,14 +61,6 @@ function formatTime(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-function formatDate(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(dateStr));
-}
-
 export function ShiftSummary({
   initialShifts,
 }: {
@@ -250,188 +242,148 @@ export function ShiftSummary({
     },
   };
 
-  const endOfWeek = new Date(now);
-  const daysToSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
-  endOfWeek.setDate(now.getDate() + daysToSunday);
-  endOfWeek.setHours(23, 59, 59, 999);
+  const upcomingShifts = shifts
+    .filter((s) => toLocalDate(s.start_time) > localToday)
+    .sort(
+      (a, b) =>
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    );
+  const nextShifts = upcomingShifts.slice(0, 4);
 
-  const upcomingShifts = shifts.filter((s) => {
-    const shiftDate = toLocalDate(s.start_time);
-    return shiftDate > localToday;
-  });
+  const clockAction = !statusReady ? (
+    <span className="text-xs text-muted-foreground">Loading…</span>
+  ) : canClockOut ? (
+    <Button disabled={acting} onClick={clockOut}>
+      {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock out"}
+    </Button>
+  ) : canClockIn ? (
+    <Button disabled={acting} onClick={clockIn}>
+      {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock in"}
+    </Button>
+  ) : null;
+
+  const clockHint =
+    todayShift && statusReady && !canClockIn && !canClockOut && !entry
+      ? active
+        ? "Clock out of your other shift first"
+        : getStatus(todayShift) === "upcoming"
+          ? "Clock-in opens 30 min before start"
+          : null
+      : null;
 
   return (
-    <>
-      {todayShift ? (
-        (() => {
-          const status = getStatus(todayShift);
-          const cfg = statusConfig[status];
-          return (
-            <div className="rounded-lg border border-border bg-card p-6 sm:p-8 overflow-hidden">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex flex-col gap-3 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-semibold">
-                      Today&apos;s Shift: {todayShift.title}
-                    </h2>
-                    <span
-                      className={`text-xs font-medium px-1.5 py-0.5 rounded-sm ${cfg.className}`}
-                    >
-                      {cfg.label}
-                    </span>
-                    {statusReady && isOpen && (
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-500">
-                        Clocked in
-                      </span>
-                    )}
-                    {statusReady && entry && entry.status !== "open" && (
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                        {entry.status}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-8 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-emerald-500 shrink-0" />
-                      <span>{formatDate(todayShift.start_time)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
-                      <span>
-                        {formatTime(todayShift.start_time)} –{" "}
-                        {formatTime(todayShift.end_time)}
-                      </span>
-                    </div>
-                  </div>
-                  {statusReady && entry?.clock_in_at && (
-                    <p className="text-xs text-muted-foreground">
-                      In {formatTime(entry.clock_in_at)}
-                      {entry.clock_out_at
-                        ? ` · Out ${formatTime(entry.clock_out_at)}`
-                        : ""}
-                    </p>
-                  )}
-                  <Link
-                    href="/dashboard/hours"
-                    className="text-sm font-medium text-brand hover:underline w-fit"
-                  >
-                    View all hours
-                  </Link>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {!statusReady ? (
-                    <span className="text-xs text-muted-foreground">
-                      Loading...
-                    </span>
-                  ) : canClockOut ? (
-                    <Button
-                      className="btn-brand rounded-md h-9 px-5"
-                      disabled={acting}
-                      onClick={clockOut}
-                    >
-                      {acting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Clock out"
-                      )}
-                    </Button>
-                  ) : canClockIn ? (
-                    <Button
-                      className="btn-brand rounded-md h-9 px-5"
-                      disabled={acting}
-                      onClick={clockIn}
-                    >
-                      {acting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Clock in"
-                      )}
-                    </Button>
-                  ) : entry ? null : status !== "completed" ? (
-                    <span className="text-xs text-muted-foreground max-w-[12rem]">
-                      {active
-                        ? "Clock out of your other shift first"
-                        : Date.now() <
-                            new Date(todayShift.start_time).getTime() -
-                              30 * 60 * 1000
-                          ? "Available 30 min before start"
-                          : null}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          );
-        })()
-      ) : (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <h2 className="text-lg font-semibold">No Shift Today</h2>
-            <p className="text-muted-foreground">
-              You don&apos;t have a shift scheduled for today. Enjoy your day
-              off!
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-          <Clock className="h-4 w-4 text-emerald-500" />
-          <h2 className="font-semibold">Upcoming Shifts</h2>
-          {upcomingShifts.length > 0 && (
-            <span className="ml-auto text-xs font-medium bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-sm">
-              {upcomingShifts.length} shift
-              {upcomingShifts.length > 1 ? "s" : ""}
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* Today */}
+      <section className="flex flex-col rounded-lg border border-border bg-card p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium text-muted-foreground">Today</h2>
+          {todayShift && (
+            <span
+              className={`ml-auto text-xs font-medium px-1.5 py-0.5 rounded-sm ${statusConfig[getStatus(todayShift)].className}`}
+            >
+              {statusConfig[getStatus(todayShift)].label}
             </span>
           )}
         </div>
-        {upcomingShifts.length === 0 ? (
-          <div className="px-4 sm:px-6 py-8 text-center text-muted-foreground text-sm">
-            No upcoming shifts scheduled.
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {upcomingShifts.map((shift) => {
-              const shiftStart = new Date(shift.start_time);
-              const isThisWeek = shiftStart <= endOfWeek;
 
+        {todayShift ? (
+          <>
+            <p className="text-xl font-semibold tracking-tight">
+              {todayShift.title}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
+              <Clock className="h-3.5 w-3.5" />
+              {formatTime(todayShift.start_time)} –{" "}
+              {formatTime(todayShift.end_time)}
+            </p>
+
+            <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
+              {clockAction}
+              {statusReady && isOpen && (
+                <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  Clocked in {entry?.clock_in_at && `at ${formatTime(entry.clock_in_at)}`}
+                </span>
+              )}
+              {statusReady && entry && entry.status !== "open" && (
+                <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium capitalize text-amber-600 dark:text-amber-400">
+                  {entry.status}
+                  {entry.clock_out_at &&
+                    ` · ${formatTime(entry.clock_in_at)}–${formatTime(entry.clock_out_at)}`}
+                </span>
+              )}
+              {clockHint && (
+                <span className="text-xs text-muted-foreground">{clockHint}</span>
+              )}
+              <Link
+                href="/dashboard/hours"
+                className="ml-auto text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                View hours →
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-xl font-semibold tracking-tight">No shift today</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Enjoy your day off.
+            </p>
+            <div className="mt-auto pt-5">
+              <Link
+                href="/dashboard/hours"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                View hours →
+              </Link>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Up next */}
+      <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium text-muted-foreground">Up next</h2>
+          {upcomingShifts.length > 0 && (
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+              {upcomingShifts.length} scheduled
+            </span>
+          )}
+        </div>
+        {nextShifts.length === 0 ? (
+          <p className="px-5 pb-5 text-sm text-muted-foreground">
+            No upcoming shifts yet. New shifts appear here once your manager
+            publishes the schedule.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border border-t border-border">
+            {nextShifts.map((shift) => {
+              const d = new Date(shift.start_time);
               return (
-                <div
-                  key={shift.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                >
-                  <div>
-                    <p className="font-medium">{shift.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(shift.start_time)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                    <Clock className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>
-                      {formatTime(shift.start_time)} –{" "}
-                      {formatTime(shift.end_time)}
+                <li key={shift.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <span className="flex w-9 shrink-0 flex-col items-center rounded-md border border-border py-0.5 leading-none">
+                    <span className="text-[9px] font-medium uppercase text-brand">
+                      {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(d)}
                     </span>
-                    <span className="ml-1 text-xs font-medium px-1.5 py-0.5 rounded-sm bg-blue-500/15 text-blue-400">
-                      Upcoming
+                    <span className="text-sm font-semibold tabular-nums">
+                      {d.getDate()}
                     </span>
-                    {isThisWeek && (
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-violet-500/15 text-violet-400">
-                        This Week
-                      </span>
-                    )}
-                  </div>
-                </div>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {shift.title}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
+                  </span>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </div>
-    </>
+      </section>
+    </div>
   );
 }

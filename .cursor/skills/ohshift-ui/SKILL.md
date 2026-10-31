@@ -184,6 +184,15 @@ import { ScrollFade } from "@/components/scroll-fade";
 
 **Don’t** stack absolute `bg-gradient-to-*` overlays for vertical list fades — use `ScrollFade`.
 
+## Landing page ↔ app consistency
+
+The landing page illustrations are **replicas of real screens**, not invented UI:
+
+- Hero preview (`src/features/landing/schedule-preview.tsx`) mirrors the owner Overview (`dashboard-content.tsx`): sidebar items, greeting header, at-a-glance strip, Schedule card, chip format `"7 am – 3 pm" / "Name: Title"`.
+- Animated scenes (`src/features/landing/feature-scenes.tsx`) mirror Team panel, Up next / Today cards, Invite dialog, Manage-team role select, Requests approve flow, Publish (n) button.
+
+When you change one of those app screens (labels, layout, status tags), update the matching landing replica in the same change — and vice versa.
+
 ## Motion
 
 - Entry: `animate-fade-in` + `delay-100` … `delay-400` (subtle: 6px, 400ms).

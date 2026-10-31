@@ -142,10 +142,12 @@ export function AssignShiftModal({
   if (!isOpen) {
     return (
       <button
+        type="button"
         onClick={open}
-        className="h-7 px-2.5 rounded-md border border-input bg-background text-[13px] font-medium text-foreground transition-colors hover:bg-accent dark:bg-transparent"
+        aria-label={`Assign a shift to ${employee.full_name}`}
+        className="h-7 px-2 rounded-md text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       >
-        Assign Shift
+        Assign
       </button>
     );
   }

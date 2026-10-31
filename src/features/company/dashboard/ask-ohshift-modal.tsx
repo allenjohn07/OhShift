@@ -239,7 +239,7 @@ export function AskOhShiftModal({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand px-3 py-1.5 rounded-md"
+        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent dark:bg-transparent [&_svg]:text-brand"
       >
         <Sparkles className="w-4 h-4" />
         Ask OhShift

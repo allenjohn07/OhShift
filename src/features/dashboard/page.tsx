@@ -8,7 +8,8 @@ import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
-import { TodayCompanySchedule } from "./today-company-schedule";
+import { DayAgenda } from "./day-agenda";
+import { greeting, todayLabel } from "@/lib/greeting";
 
 type DashboardData = {
   profile: {
@@ -71,18 +72,18 @@ function EmployeeDashboard() {
   }
 
   const profile = data.profile;
-  const companyName = profile.companies?.name || "Your Company";
+  const companyName = profile.companies?.name || "Your company";
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 sm:space-y-8 flex-1">
-      <div>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
+      <header className="pb-2">
         <p className="text-sm text-muted-foreground mb-1.5">
-          {companyName} Team
+          {companyName} · {todayLabel()}
         </p>
         <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-          Welcome back, {profile.full_name}
+          {greeting(profile.full_name ?? "")}
         </h1>
-      </div>
+      </header>
 
       <ShiftSummary initialShifts={data.shifts} employeeId={user.id} />
       <EmployeeScheduleGrid
@@ -90,10 +91,7 @@ function EmployeeDashboard() {
         employeeId={user.id}
         employeeName={profile.full_name ?? ""}
       />
-      <TodayCompanySchedule
-        initialShifts={data.companyShifts}
-        currentUserId={user.id}
-      />
+      <DayAgenda shifts={data.companyShifts} currentUserId={user.id} />
     </main>
   );
 }

@@ -160,11 +160,8 @@ export function EmployeeScheduleGrid({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="border-b border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-emerald-500" />
-          <h2 className="font-semibold text-lg">Your Schedule</h2>
-        </div>
+      <div className="border-b border-border px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+        <h2 className="font-semibold">Your schedule</h2>
 
         <div className="flex items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto">
            <IconTooltip label="Previous week" side="bottom">
@@ -201,12 +198,12 @@ export function EmployeeScheduleGrid({
 
       <div 
         ref={scrollRef}
-        className="p-3 sm:p-6 overflow-x-auto overscroll-x-none snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="overflow-x-auto overscroll-x-none snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
       >
-        <div className="min-w-[560px] rounded-lg border border-border bg-card overflow-hidden">
+        <div className="min-w-[560px] bg-card">
           <div className="grid grid-cols-7 gap-px bg-border/30">
             {[["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"], ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]].map(([full, short]) => (
               <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card">

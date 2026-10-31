@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import {
-  Activity,
   Send,
   Clock,
   ChevronUp,
@@ -279,10 +278,9 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
         onClick={() => setOpen((p) => !p)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="w-full border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2 hover:bg-accent transition-colors"
+        className={`w-full px-4 sm:px-5 py-3 bg-card flex items-center gap-2 hover:bg-accent/60 transition-colors ${open ? "border-b border-border" : ""}`}
       >
-        <Activity className="h-4 w-4 text-brand shrink-0" />
-        <h2 className="font-semibold">Published Schedules</h2>
+        <h2 className="font-semibold">Published schedules</h2>
         <div className="ml-auto flex items-center gap-2">
           {refreshing && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">

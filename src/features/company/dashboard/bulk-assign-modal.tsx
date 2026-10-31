@@ -293,10 +293,10 @@ export function BulkAssignModal({
       <button
         type="button"
         onClick={open}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-md shrink-0"
+        className="inline-flex items-center gap-1.5 text-sm font-medium btn-brand h-8 px-3 rounded-md shrink-0"
       >
         <Users className="w-4 h-4" />
-        <span className="hidden sm:inline">Assign shifts</span>
+        <span>Assign shifts</span>
       </button>
     );
   }
@@ -306,10 +306,10 @@ export function BulkAssignModal({
       <button
         type="button"
         onClick={open}
-        className="inline-flex items-center gap-2 text-sm font-medium btn-brand h-9 px-3 rounded-md shrink-0"
+        className="inline-flex items-center gap-1.5 text-sm font-medium btn-brand h-8 px-3 rounded-md shrink-0"
       >
         <Users className="w-4 h-4" />
-        <span className="hidden sm:inline">Assign shifts</span>
+        <span>Assign shifts</span>
       </button>
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">

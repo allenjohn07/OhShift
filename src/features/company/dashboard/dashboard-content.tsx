@@ -1,11 +1,24 @@
 import { useState } from "react";
-import { Users, Calendar, Settings } from "lucide-react";
+import { UserPlus } from "lucide-react";
+import { Link } from "@/lib/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { usePendingTimeOffSnapshot } from "@/hooks/use-pending-time-off";
+import { greeting, todayLabel } from "@/lib/greeting";
+import { cn } from "@/lib/utils";
 import { TeamMembersList } from "./team-members-list";
 import { InviteEmployeeForm } from "./invite-form";
+import { BulkAssignModal } from "./bulk-assign-modal";
 import { TeamScheduleGrid } from "@/features/company/dashboard/team-schedule-grid";
-import { TodayCompanySchedule } from "@/features/dashboard/today-company-schedule";
+import { DayAgenda } from "@/features/dashboard/day-agenda";
 import { ManageTeamModal } from "@/features/company/dashboard/manage-team-modal";
-import { ManageSettingsModal, type CompanySettings } from "./manage-settings-modal";
+import type { CompanySettings } from "./manage-settings-modal";
 import { ShiftSummary } from "@/features/dashboard/shift-summary";
 import { ActivityFeed } from "./activity-feed";
 
@@ -34,139 +47,203 @@ type MyShift = {
   end_time: string;
 };
 
-export function DashboardContent({ 
-  userName, 
-  company, 
-  employees, 
+/** Local Monday 00:00 of the current week. */
+function startOfThisWeek() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+function weekStats(shifts: DashboardShift[]) {
+  const monday = startOfThisWeek();
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(monday.getDate() + 7);
+  const today = new Date().toDateString();
+
+  let weekCount = 0;
+  let weekHours = 0;
+  let drafts = 0;
+  const workingToday = new Set<string>();
+  for (const s of shifts) {
+    const start = new Date(s.start_time);
+    const end = new Date(s.end_time);
+    if (start >= monday && start < nextMonday) {
+      weekCount += 1;
+      weekHours += (end.getTime() - start.getTime()) / 3_600_000;
+    }
+    if (s.status === "draft" && end >= monday) drafts += 1;
+    if (start.toDateString() === today) workingToday.add(s.employee_id);
+  }
+  return {
+    weekCount,
+    weekHours: Math.round(weekHours),
+    drafts,
+    workingToday: workingToday.size,
+  };
+}
+
+function Stat({
+  label,
+  value,
+  hint,
+  tone,
+  href,
+  className,
+}: {
+  className?: string;
+  label: string;
+  value: number | string;
+  hint?: string;
+  tone?: "warn";
+  href?: string;
+}) {
+  const body = (
+    <>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "mt-0.5 block text-2xl font-semibold tabular-nums",
+          tone === "warn" && "text-amber-600 dark:text-amber-400",
+        )}
+      >
+        {value}
+      </span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </>
+  );
+  const cls = cn("block bg-card px-4 py-3", className);
+  return href ? (
+    <Link href={href} className={cn(cls, "transition-colors hover:bg-accent/60")}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
+
+export function DashboardContent({
+  userName,
+  company,
+  employees,
   shifts,
   myShifts,
   currentUser,
   onScheduleChanged,
-}: { 
-  userName: string, 
-  company: CompanySettings, 
-  employees: DashboardEmployee[] | null, 
-  shifts: DashboardShift[] | null,
-  myShifts: MyShift[],
-  currentUser: { id: string; role: string },
-  onScheduleChanged?: () => void | Promise<void>,
+}: {
+  userName: string;
+  company: CompanySettings;
+  employees: DashboardEmployee[] | null;
+  shifts: DashboardShift[] | null;
+  myShifts: MyShift[];
+  currentUser: { id: string; role: string };
+  onScheduleChanged?: () => void | Promise<void>;
 }) {
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
-  const [isManageSettingsOpen, setIsManageSettingsOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+  const { pendingCount } = usePendingTimeOffSnapshot();
 
   const handleScheduleChanged = async () => {
     await onScheduleChanged?.();
     setActivityRefreshKey((k) => k + 1);
   };
 
+  const stats = weekStats(shifts ?? []);
+
   return (
     <>
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-8 sm:space-y-10 overflow-x-clip w-full">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1.5">
-            {company.name}
-          </p>
-          <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-            Welcome back, {userName}
-          </h1>
-        </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 overflow-x-clip w-full">
+        <header className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm text-muted-foreground mb-1.5">
+              {company.name} · {todayLabel()}
+            </p>
+            <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
+              {greeting(userName)}
+            </h1>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+              Invite
+            </Button>
+            <BulkAssignModal company={company} onAssigned={handleScheduleChanged} />
+          </div>
+        </header>
 
-        {/* Manager's own shift summary — only for managers, not owners */}
+        {/* Manager's own shifts — only for managers, not owners */}
         {currentUser.role === "manager" && (
           <ShiftSummary initialShifts={myShifts} employeeId={currentUser.id} />
         )}
 
-        {/* Quick stats — Notion-style property tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            type="button"
-            onClick={() => setIsManageTeamOpen(true)}
-            className="group w-full rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-accent/60 cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              Team
-            </span>
-            <span className="mt-1 block text-2xl font-semibold tabular-nums">
-              {employees?.length || 0}
-            </span>
-            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-              Manage team →
-            </span>
-          </button>
-          <div className="w-full rounded-lg border border-border bg-card px-4 py-3.5">
-            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5" />
-              Shifts scheduled
-            </span>
-            <span className="mt-1 block text-2xl font-semibold tabular-nums">
-              {shifts?.length || 0}
-            </span>
-            <span className="text-xs text-muted-foreground">All time</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsManageSettingsOpen(true)}
-            className="group w-full rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-accent/60 cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Settings className="h-3.5 w-3.5" />
-              Shift presets
-            </span>
-            <span className="mt-1 block text-sm font-medium tabular-nums">
-              {company.morning_start}–{company.morning_end} ·{" "}
-              {company.evening_start}–{company.evening_end}
-            </span>
-            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-              Edit settings →
-            </span>
-          </button>
-        </div>
-
-        {/* Dashboard Lower Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          {/* Team Members Area (takes 7/12 width on large screens) */}
-          <TeamMembersList
-            employees={employees}
-            company={company}
-            onShiftAssigned={handleScheduleChanged}
+        {/* At a glance */}
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-5">
+          <Stat label="Team" value={employees?.length ?? 0} hint="members" />
+          <Stat
+            label="Working today"
+            value={stats.workingToday}
+            hint={stats.workingToday === 1 ? "person" : "people"}
           />
-          
-          {/* Employee Invitation Form (takes 5/12 width on large screens) */}
-          <div className="lg:col-span-5">
-            <InviteEmployeeForm />
-          </div>
+          <Stat
+            label="This week"
+            value={stats.weekCount}
+            hint={`shifts · ${stats.weekHours}h`}
+          />
+          <Stat
+            label="Drafts"
+            value={stats.drafts}
+            hint={stats.drafts > 0 ? "not published yet" : "all published"}
+            tone={stats.drafts > 0 ? "warn" : undefined}
+          />
+          <Stat
+            label="Requests"
+            value={pendingCount}
+            hint={pendingCount > 0 ? "pending review →" : "all caught up"}
+            tone={pendingCount > 0 ? "warn" : undefined}
+            href="/company/dashboard/requests"
+            className="col-span-2 lg:col-span-1"
+          />
         </div>
 
-        {/* Weekly Schedule Preview */}
         <TeamScheduleGrid
           shifts={shifts}
           company={company}
           onScheduleChanged={handleScheduleChanged}
         />
 
-        {/* Upcoming Team Schedule List */}
-        <TodayCompanySchedule 
-          initialShifts={shifts}
-          currentUserId={currentUser.id}
-        />
-
-        {/* Recent schedule changes */}
-        <ActivityFeed refreshKey={activityRefreshKey} />
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <div className="space-y-6 lg:col-span-3">
+            <DayAgenda shifts={shifts} currentUserId={currentUser.id} />
+            <ActivityFeed refreshKey={activityRefreshKey} />
+          </div>
+          <TeamMembersList
+            employees={employees}
+            company={company}
+            onShiftAssigned={handleScheduleChanged}
+            onManage={() => setIsManageTeamOpen(true)}
+            className="lg:col-span-2"
+          />
+        </div>
       </main>
 
-      <ManageTeamModal 
-        isOpen={isManageTeamOpen} 
-        onClose={() => setIsManageTeamOpen(false)} 
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite to {company.name}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Invite employees and share their invite codes.
+            </DialogDescription>
+          </DialogHeader>
+          <InviteEmployeeForm bare />
+        </DialogContent>
+      </Dialog>
+
+      <ManageTeamModal
+        isOpen={isManageTeamOpen}
+        onClose={() => setIsManageTeamOpen(false)}
         employees={employees}
         currentUserRole={currentUser.role}
-      />
-
-      <ManageSettingsModal
-        isOpen={isManageSettingsOpen}
-        onClose={() => setIsManageSettingsOpen(false)}
-        company={company}
       />
     </>
   );

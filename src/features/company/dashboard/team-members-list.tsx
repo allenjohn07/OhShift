@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { AssignShiftModal } from "./assign-shift-modal";
-import { BulkAssignModal } from "./bulk-assign-modal";
 import { Search, Shield } from "lucide-react";
+import { AssignShiftModal } from "./assign-shift-modal";
 import type { CompanySettings } from "./manage-settings-modal";
 import { ScrollFade } from "@/components/scroll-fade";
+import { getEmployeeColor } from "@/lib/tag-colors";
+import { cn } from "@/lib/utils";
 
 interface Employee {
   id: string;
@@ -13,101 +14,124 @@ interface Employee {
   role?: "employee" | "manager";
 }
 
+/** Show the search box only once the list is long enough to need it. */
+const SEARCH_THRESHOLD = 8;
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function TeamMembersList({
   employees,
   company,
   onShiftAssigned,
+  onManage,
+  className,
 }: {
   employees: Employee[] | null;
   company: CompanySettings;
   onShiftAssigned?: () => void | Promise<void>;
+  onManage?: () => void;
+  className?: string;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredEmployees = employees?.filter(
+  const all = employees ?? [];
+  const query = searchQuery.toLowerCase();
+  const filtered = all.filter(
     (emp) =>
-      emp.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase()),
+      emp.full_name.toLowerCase().includes(query) ||
+      emp.email.toLowerCase().includes(query),
   );
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden lg:col-span-7 flex flex-col">
-      <div className="border-b border-border px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-4 shrink-0">
-        <h2 className="font-semibold">Team members</h2>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto sm:max-w-md">
-          <BulkAssignModal company={company} onAssigned={onShiftAssigned} />
-          <div className="relative flex-1 min-w-0">
-            <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none text-muted-foreground">
-              <Search className="h-4 w-4" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search team..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring dark:bg-white/[0.03]"
-            />
-          </div>
-        </div>
+    <section
+      className={cn(
+        "flex flex-col overflow-hidden rounded-lg border border-border bg-card",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
+        <h2 className="font-semibold">Team</h2>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {all.length}
+        </span>
+        {onManage && (
+          <button
+            type="button"
+            onClick={onManage}
+            className="ml-auto h-7 rounded-md px-2 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Manage
+          </button>
+        )}
       </div>
 
-      {filteredEmployees && filteredEmployees.length > 0 ? (
+      {all.length > SEARCH_THRESHOLD && (
+        <div className="relative border-b border-border">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground sm:left-5" />
+          <input
+            type="text"
+            placeholder="Search team…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 w-full bg-transparent pl-10 pr-4 text-sm outline-none placeholder:text-muted-foreground/70 sm:pl-11"
+          />
+        </div>
+      )}
+
+      {filtered.length > 0 ? (
         <ScrollFade
-          contentKey={`${filteredEmployees.length}:${searchQuery}`}
+          contentKey={`${filtered.length}:${searchQuery}`}
+          maxHeightClass="max-h-[340px]"
           className="divide-y divide-border"
         >
-          {filteredEmployees.map((emp) => (
+          {filtered.map((emp) => (
             <div
               key={emp.id}
-              className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-accent/60 transition-colors"
+              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent/60 sm:px-5"
             >
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-foreground">{emp.full_name}</p>
+              <span
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                  getEmployeeColor(emp.full_name),
+                )}
+              >
+                {initials(emp.full_name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                  {emp.full_name}
                   {emp.role === "manager" && (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md bg-brand-soft text-brand">
-                      <Shield className="w-3 h-3" />
-                      Manager
-                    </span>
+                    <Shield
+                      className="h-3 w-3 shrink-0 text-brand"
+                      aria-label="Manager"
+                    />
                   )}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <p className="text-sm text-muted-foreground">{emp.email}</p>
-                  {emp.designation && (
-                    <>
-                      <span className="w-1 h-1 rounded-full bg-border" />
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                        {emp.designation}
-                      </span>
-                    </>
-                  )}
-                </div>
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {emp.designation || emp.email}
+                </p>
               </div>
-              <div>
-                <AssignShiftModal
-                  employee={emp}
-                  company={company}
-                  onAssigned={onShiftAssigned}
-                />
-              </div>
+              <AssignShiftModal
+                employee={emp}
+                company={company}
+                onAssigned={onShiftAssigned}
+              />
             </div>
           ))}
         </ScrollFade>
       ) : (
-        <div className="p-12 text-center text-muted-foreground border-border border-dashed border-2 m-6 rounded-lg bg-background flex flex-col items-center justify-center">
-          <p>
-            {employees && employees.length === 0
-              ? `You haven't added any employees yet.`
-              : `No team members found matching "${searchQuery}".`}
-          </p>
-          {employees && employees.length === 0 && (
-            <p className="text-sm mt-1">
-              Start by inviting your employees to join {company.name}.
-            </p>
-          )}
-        </div>
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+          {all.length === 0
+            ? `No one here yet — invite your team to ${company.name}.`
+            : `No team members match "${searchQuery}".`}
+        </p>
       )}
-    </div>
+    </section>
   );
 }

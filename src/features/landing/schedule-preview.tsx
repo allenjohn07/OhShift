@@ -1,46 +1,64 @@
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Clock,
+  ClipboardList,
   Inbox,
-  LayoutGrid,
+  LayoutDashboard,
+  Megaphone,
+  Send,
   Settings,
+  Sparkles,
+  Timer,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
+/**
+ * Static, non-interactive replica of the real owner Overview page
+ * (src/features/company/dashboard/dashboard-content.tsx) for the landing hero.
+ * Keep it in sync when the Overview layout changes.
+ */
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-/** [day, start, end, name, title] — static demo data for the marketing mock. */
-const DEMO_SHIFTS: Array<[number, string, string, string, string]> = [
-  [0, "7am", "3pm", "Casey R.", "Opening"],
-  [0, "3pm", "11pm", "Taylor K.", "Closing"],
-  [1, "7am", "3pm", "Jordan L.", "Opening"],
-  [1, "10am", "6pm", "Sam C.", "Register"],
-  [2, "7am", "3pm", "Avery P.", "Opening"],
-  [2, "3pm", "11pm", "Casey R.", "Closing"],
-  [3, "7am", "3pm", "Taylor K.", "Opening"],
-  [4, "7am", "3pm", "Sam C.", "Opening"],
-  [4, "3pm", "11pm", "Jordan L.", "Closing"],
-  [5, "9am", "5pm", "Avery P.", "Weekend"],
-  [6, "9am", "5pm", "Casey R.", "Weekend"],
+/** [day, time, name, title, draft?] */
+const DEMO_SHIFTS: Array<[number, string, string, string, boolean?]> = [
+  [0, "7 am – 3 pm", "Casey", "Opening"],
+  [0, "3 pm – 11 pm", "Taylor", "Closing"],
+  [1, "7 am – 3 pm", "Jordan", "Opening"],
+  [1, "10 am – 6 pm", "Sam", "Register"],
+  [2, "7 am – 3 pm", "Avery", "Opening"],
+  [2, "3 pm – 11 pm", "Casey", "Closing"],
+  [3, "7 am – 3 pm", "Taylor", "Opening"],
+  [4, "7 am – 3 pm", "Sam", "Opening"],
+  [4, "3 pm – 11 pm", "Jordan", "Closing"],
+  [5, "9 am – 5 pm", "Avery", "Weekend", true],
+  [6, "9 am – 5 pm", "Casey", "Weekend", true],
 ];
 
 const NAV = [
-  { icon: LayoutGrid, label: "Overview", active: true },
+  { icon: LayoutDashboard, label: "Overview", active: true },
   { icon: Inbox, label: "Requests", count: 2 },
-  { icon: Clock, label: "Timesheets" },
-  { icon: CalendarDays, label: "Availability" },
+  { icon: ClipboardList, label: "Timesheets" },
+  { icon: Megaphone, label: "Inbox", count: 1 },
+  { icon: Timer, label: "Hours" },
   { icon: Settings, label: "Settings" },
 ];
 
-/** Static, non-interactive product screenshot for the landing page. */
+const STATS: Array<[string, string, string, boolean?]> = [
+  ["Team", "6", "members"],
+  ["Working today", "3", "people"],
+  ["This week", "11", "shifts · 88h"],
+  ["Drafts", "2", "not published yet", true],
+];
+
 export function SchedulePreview() {
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border bg-background shadow-popover"
+      className="overflow-hidden rounded-lg border border-border bg-background text-left shadow-popover"
       aria-hidden="true"
     >
       {/* Window chrome */}
@@ -50,18 +68,21 @@ export function SchedulePreview() {
         <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
       </div>
 
-      <div className="flex min-h-[380px]">
-        {/* Sidebar */}
-        <div className="hidden w-48 shrink-0 flex-col gap-px border-r border-border bg-sidebar p-2 sm:flex">
-          <div className="mb-2 flex items-center gap-2 px-2 py-1.5">
+      <div className="flex">
+        {/* Sidebar — same structure as AppShell */}
+        <div className="hidden w-48 shrink-0 flex-col gap-px border-r border-border bg-sidebar p-2 md:flex">
+          <div className="mb-2 flex items-center gap-2 px-1.5 py-1">
             <BrandMark size={16} />
-            <span className="text-[13px] font-semibold">Brew &amp; Co.</span>
+            <div className="leading-tight">
+              <div className="text-[12px] font-semibold">Brew &amp; Co.</div>
+              <div className="text-[9px] text-muted-foreground">OhShift workspace</div>
+            </div>
           </div>
           {NAV.map(({ icon: Icon, label, active, count }) => (
             <div
               key={label}
               className={cn(
-                "flex h-7 items-center gap-2 rounded-md px-2 text-[13px]",
+                "flex h-7 items-center gap-2 rounded-md px-2 text-[12px]",
                 active
                   ? "bg-accent font-medium text-foreground"
                   : "text-muted-foreground",
@@ -78,64 +99,106 @@ export function SchedulePreview() {
           ))}
         </div>
 
-        {/* Page */}
-        <div className="min-w-0 flex-1 px-4 py-5 sm:px-8 sm:py-7">
-          <p className="text-xs text-muted-foreground">Brew &amp; Co.</p>
-          <p className="mb-4 text-xl font-bold tracking-tight sm:text-2xl">
-            Team schedule
-          </p>
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1 text-[13px]">
-              <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">This week</span>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        {/* Overview page */}
+        <div className="min-w-0 flex-1 space-y-4 px-4 py-5 sm:px-7 sm:py-6">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground">
+                Brew &amp; Co. · Monday, October 26
+              </p>
+              <p className="text-xl font-bold tracking-tight sm:text-2xl">
+                Good morning, Alex
+              </p>
             </div>
-            <span className="rounded-md bg-brand px-2.5 py-1 text-[12px] font-medium text-brand-foreground">
-              Publish
-            </span>
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <span className="inline-flex h-6 items-center gap-1 rounded-md border border-input px-2 text-[11px] font-medium">
+                <UserPlus className="h-3 w-3" />
+                Invite
+              </span>
+              <span className="inline-flex h-6 items-center gap-1 rounded-md bg-brand px-2 text-[11px] font-medium text-brand-foreground">
+                <Users className="h-3 w-3" />
+                Assign shifts
+              </span>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[560px] grid-cols-7 overflow-hidden rounded-lg border border-border">
-              {DAYS.map((day, i) => (
+          {/* At a glance */}
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4">
+            {STATS.map(([label, value, hint, warn]) => (
+              <div key={label} className="bg-background px-3 py-2">
+                <div className="text-[10px] text-muted-foreground">{label}</div>
                 <div
-                  key={day}
                   className={cn(
-                    "border-b border-border px-2 py-1.5 text-[11px] text-muted-foreground",
-                    i > 0 && "border-l",
+                    "text-lg font-semibold leading-tight tabular-nums",
+                    warn && "text-amber-600 dark:text-amber-400",
                   )}
                 >
-                  {day}
+                  {value}
                 </div>
-              ))}
-              {DAYS.map((day, i) => (
-                <div
-                  key={day}
-                  className={cn(
-                    "min-h-[150px] space-y-1 p-1.5",
-                    i > 0 && "border-l border-border",
-                  )}
-                >
-                  {DEMO_SHIFTS.filter(([d]) => d === i).map(
-                    ([, start, end, name, title]) => (
-                      <div
-                        key={name + start}
-                        className={cn(
-                          "rounded-sm px-1.5 py-1 text-[10px] leading-tight",
-                          getEmployeeColor(name),
-                        )}
-                      >
-                        <div className="font-medium">
-                          {start}–{end}
+                <div className="text-[9px] text-muted-foreground">{hint}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Schedule card */}
+          <div className="overflow-hidden rounded-md border border-border">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+              <span className="text-[12px] font-semibold">Schedule</span>
+              <span className="hidden items-center gap-1 rounded-md border border-input px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex">
+                <Sparkles className="h-2.5 w-2.5 text-brand" />
+                Ask OhShift
+              </span>
+              <div className="ml-auto flex items-center gap-1.5 text-[10px]">
+                <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+                <span className="font-medium tabular-nums">Oct 26 – Nov 1</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <span className="inline-flex items-center gap-1 rounded-md bg-brand px-1.5 py-0.5 font-medium text-brand-foreground">
+                  <Send className="h-2.5 w-2.5" />
+                  Publish (2)
+                </span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[560px] grid-cols-7">
+                {DAYS.map((day, i) => (
+                  <div
+                    key={day}
+                    className={cn(
+                      "border-b border-border py-1.5 text-center text-[10px] text-muted-foreground",
+                      i > 0 && "border-l",
+                    )}
+                  >
+                    {day}
+                  </div>
+                ))}
+                {DAYS.map((day, i) => (
+                  <div
+                    key={day}
+                    className={cn(
+                      "min-h-[118px] space-y-1 p-1.5",
+                      i > 0 && "border-l border-border",
+                    )}
+                  >
+                    {DEMO_SHIFTS.filter(([d]) => d === i).map(
+                      ([, time, name, title, draft]) => (
+                        <div
+                          key={name + time}
+                          className={cn(
+                            "rounded-sm border border-transparent px-1.5 py-1 text-[10px] leading-tight",
+                            getEmployeeColor(name),
+                            draft && "border-dashed border-current/40 opacity-75",
+                          )}
+                        >
+                          <div className="font-medium">{time}</div>
+                          <div className="truncate opacity-80">
+                            {name}: {title}
+                          </div>
                         </div>
-                        <div className="opacity-80">
-                          {name} · {title}
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              ))}
+                      ),
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

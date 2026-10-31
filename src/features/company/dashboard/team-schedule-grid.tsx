@@ -276,11 +276,10 @@ export function TeamScheduleGrid({
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-card overflow-hidden mt-8">
-        <div className="border-b border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="border-b border-border px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <Calendar className="h-5 w-5 text-emerald-500" />
-            <h2 className="font-semibold text-lg">Team Schedule</h2>
+            <h2 className="font-semibold">Schedule</h2>
             <AskOhShiftModal
               onCreated={onScheduleChanged}
               company={company}
@@ -340,12 +339,12 @@ export function TeamScheduleGrid({
         <div className="relative w-full overflow-hidden">
           <div 
             ref={scrollRef}
-            className="p-3 sm:p-6 overflow-x-auto overscroll-x-none snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="overflow-x-auto overscroll-x-none snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
           >
-            <div className="min-w-[560px] rounded-lg border border-border bg-card overflow-hidden">
+            <div className="min-w-[560px] bg-card">
               <div className="grid grid-cols-7 gap-px bg-border/30">
                 {[
                   ["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"],

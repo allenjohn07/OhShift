@@ -5,8 +5,17 @@
  * and frozen in their finished state when the user prefers reduced motion.
  */
 import type { CSSProperties, ReactNode } from "react";
-import { Check, Clock, Lock, Send, Unlock, Zap } from "lucide-react";
-import { BrandMark } from "@/components/brand-mark";
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  Clock,
+  Lock,
+  Send,
+  Shield,
+  Unlock,
+  Zap,
+} from "lucide-react";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
@@ -85,49 +94,72 @@ function SchedulingScene() {
   );
 }
 
-/** A new teammate slides into the avatar stack and gets a role tag. */
+/** Mini Team panel (like the Overview's): a new teammate's row slides in. */
 function TeamScene() {
+  const rows: Array<[string, string, boolean?]> = [
+    ["Casey R", "Barista"],
+    ["Jordan L", "Cashier"],
+    ["Avery P", "Shift Lead", true],
+  ];
   return (
-    <Frame className="flex flex-col items-center justify-center gap-3">
-      <div className="flex items-center -space-x-1.5">
-        <Avatar name="Casey R" />
-        <Avatar name="Jordan L" />
-        <Avatar name="Sam C" />
-        <Avatar name="Avery P" style={anim("scene-slide-in")} />
+    <Frame className="flex items-center justify-center px-4">
+      <div className="w-full max-w-60 overflow-hidden rounded-md border border-border bg-background">
+        <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-1.5 text-[11px]">
+          <span className="font-semibold">Team</span>
+          <span className="text-muted-foreground tabular-nums">3</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">Manage</span>
+        </div>
+        {rows.map(([name, role, isNew]) => (
+          <div
+            key={name}
+            style={isNew ? anim("scene-slide-in") : undefined}
+            className="flex items-center gap-2 border-b border-border px-2.5 py-1 last:border-b-0"
+          >
+            <Avatar name={name} className="h-5 w-5 text-[8px] ring-0" />
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex items-center gap-1 text-[10px] font-medium">
+                {name}
+                {isNew && <Shield className="h-2.5 w-2.5 text-brand" />}
+              </div>
+              <div className="text-[9px] text-muted-foreground">{role}</div>
+            </div>
+            <span className="text-[9px] text-muted-foreground">Assign</span>
+          </div>
+        ))}
       </div>
-      <span
-        style={anim("scene-arrive")}
-        className="rounded-sm bg-brand-soft px-1.5 py-0.5 text-[10px] font-medium text-brand"
-      >
-        Avery joined as Manager
-      </span>
     </Frame>
   );
 }
 
-/** A phone-sized "next shift" card with a filling progress bar. */
+/** Mini "Up next" card (like the employee Overview's) filling in. */
 function PortalScene() {
+  const next: Array<[string, number, string, string]> = [
+    ["Mon", 2, "Morning bar", "8 am – 2 pm"],
+    ["Tue", 3, "Register", "10 am – 4 pm"],
+    ["Thu", 5, "Evening bar", "2 pm – 8 pm"],
+  ];
   return (
-    <Frame className="flex items-end justify-center pt-4">
-      <div className="h-full w-40 rounded-t-lg border border-b-0 border-border bg-background px-3 pt-3">
-        <div className="mb-2 flex items-center gap-1.5">
-          <BrandMark size={11} />
-          <span className="text-[9px] font-semibold">Next shift</span>
+    <Frame className="flex items-center justify-center px-4">
+      <div className="w-full max-w-60 overflow-hidden rounded-md border border-border bg-background">
+        <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1.5 text-[10px] text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          Up next
+          <span className="ml-auto tabular-nums">3 scheduled</span>
         </div>
-        <div className="rounded-sm bg-[#dbeddb] px-2 py-1.5 text-[9px] text-[#1c3829] dark:bg-[#1f3b2b] dark:text-[#b7e0c2]">
-          <div className="font-semibold">Today · 9am–3pm</div>
-          <div className="opacity-80">Morning bar</div>
-        </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+        {next.map(([wd, d, title, time], i) => (
           <div
-            style={anim("scene-fill")}
-            className="h-full origin-left rounded-full bg-emerald-500"
-          />
-        </div>
-        <div className="mt-2 space-y-1">
-          <div className="h-1.5 w-20 rounded-full bg-muted" />
-          <div className="h-1.5 w-14 rounded-full bg-muted" />
-        </div>
+            key={wd}
+            style={anim("scene-pop", i * 350)}
+            className="flex items-center gap-2 border-t border-border px-2.5 py-1"
+          >
+            <span className="flex w-6 flex-col items-center rounded-sm border border-border leading-none">
+              <span className="text-[7px] font-medium uppercase text-brand">{wd}</span>
+              <span className="text-[10px] font-semibold tabular-nums">{d}</span>
+            </span>
+            <span className="flex-1 truncate text-[10px] font-medium">{title}</span>
+            <span className="text-[9px] text-muted-foreground tabular-nums">{time}</span>
+          </div>
+        ))}
       </div>
     </Frame>
   );
@@ -306,30 +338,35 @@ function CreateCompanyScene() {
   );
 }
 
-/** Invitees appear one by one with their invite codes. */
+/** Mini Invite dialog: name typed, Invite pressed, the code shows in a toast. */
 function InviteTeamScene() {
-  const rows: Array<[string, string]> = [
-    ["Sam C", "7F3A21C4"],
-    ["Jordan L", "B90E5D12"],
-    ["Avery P", "4C7712AF"],
-  ];
   return (
-    <Frame className="flex items-center justify-center">
-      <div className="w-56 space-y-1.5">
-        {rows.map(([name, code], i) => (
-          <div
-            key={name}
-            style={anim("scene-pop", i * 450)}
-            className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+    <Frame className="flex items-center justify-center px-4">
+      <div className="relative w-full max-w-60 rounded-md bg-background p-2.5 shadow-popover">
+        <div className="mb-1.5 text-[11px] font-semibold">Invite to Brew &amp; Co.</div>
+        <span className="text-[9px] text-muted-foreground">Full name</span>
+        <div className="mt-0.5 flex h-5 items-center rounded-sm border border-input px-1.5 text-[10px]">
+          <span
+            style={{ ...anim("scene-type"), animationTimingFunction: "steps(10, end)" }}
+            className="whitespace-nowrap"
           >
-            <Avatar name={name} className="h-5 w-5 text-[8px] ring-0" />
-            <span className="text-[11px] font-medium">{name}</span>
-            <span className="ml-auto rounded-sm bg-muted px-1 font-mono text-[9px] text-muted-foreground">
-              {code}
-            </span>
-            <Send className="h-3 w-3 text-brand" />
-          </div>
-        ))}
+            Avery Park
+          </span>
+        </div>
+        <span
+          style={anim("scene-press")}
+          className="mt-2 inline-flex items-center gap-1 rounded-md bg-brand px-2 py-0.5 text-[10px] font-medium text-brand-foreground"
+        >
+          <Send className="h-2.5 w-2.5" />
+          Invite
+        </span>
+        <div
+          style={anim("scene-swap-in")}
+          className="absolute -bottom-1 right-2 flex items-center gap-1 rounded-md bg-popover px-2 py-1 text-[9px] shadow-popover"
+        >
+          <Check className="h-2.5 w-2.5 text-emerald-500" />
+          Employee invited · <span className="font-mono">4C7712AF</span>
+        </div>
       </div>
     </Frame>
   );
@@ -371,12 +408,24 @@ function PublishScene() {
           </div>
         ))}
       </div>
-      <span
-        style={anim("scene-press")}
-        className="self-end rounded-md bg-brand px-2.5 py-1 text-[10px] font-medium text-brand-foreground"
-      >
-        Publish
-      </span>
+      <Swap
+        className="self-end justify-items-end"
+        before={
+          <span
+            style={anim("scene-press")}
+            className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-[10px] font-medium text-brand-foreground"
+          >
+            <Send className="h-2.5 w-2.5" />
+            Publish (4)
+          </span>
+        }
+        after={
+          <span className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-[10px] font-medium text-brand-foreground opacity-50">
+            <Send className="h-2.5 w-2.5" />
+            Publish
+          </span>
+        }
+      />
     </Frame>
   );
 }
@@ -385,32 +434,36 @@ export const STEP_SCENES = [CreateCompanyScene, InviteTeamScene, PublishScene] a
 
 // ── "For teams" role cards ───────────────────────────────────────────────
 
-/** Owner flips the manager toggle; the role tag updates. */
+/** Owner changes Priya's role in Manage team; the manager shield appears. */
 function OwnerScene() {
   return (
     <Frame className="flex flex-col justify-center gap-2 px-4">
       <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2">
         <Avatar name="Priya P" className="h-6 w-6 text-[9px] ring-0" />
         <div className="min-w-0 leading-tight">
-          <div className="text-[11px] font-medium">Priya Patel</div>
-          <Swap
-            before={<span className="text-[9px] text-muted-foreground">Employee</span>}
-            after={<span className="text-[9px] font-medium text-brand">Manager</span>}
-          />
+          <div className="flex items-center gap-1 text-[11px] font-medium">
+            Priya Patel
+            <Shield style={anim("scene-swap-in")} className="h-3 w-3 text-brand" />
+          </div>
+          <div className="text-[9px] text-muted-foreground">Shift Lead</div>
         </div>
         <span
-          style={anim("scene-track")}
-          className="ml-auto flex h-4 w-7 items-center rounded-full bg-input px-0.5"
+          style={anim("scene-press")}
+          className="ml-auto inline-flex items-center gap-1 rounded-md border border-input px-1.5 py-0.5 text-[10px]"
         >
-          <span
-            style={anim("scene-knob")}
-            className="h-3 w-3 rounded-full bg-white shadow-sm"
+          <Swap
+            before={<span>Employee</span>}
+            after={<span className="font-medium text-brand">Manager</span>}
           />
+          <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
         </span>
       </div>
-      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-[10px]">
-        <span className="text-muted-foreground">Shift presets</span>
-        <span className="ml-auto font-medium tabular-nums">08–16 · 16–00</span>
+      <div
+        style={anim("scene-swap-in")}
+        className="flex items-center gap-1.5 self-end rounded-md bg-popover px-2 py-1 text-[9px] shadow-popover"
+      >
+        <Check className="h-2.5 w-2.5 text-emerald-500" />
+        Priya is now a manager
       </div>
     </Frame>
   );
@@ -457,50 +510,42 @@ function ManagerScene() {
   );
 }
 
-/** The employee clocks in and goes "on shift". */
+/** Mini "Today" card (like the employee Overview's): Clock in → Clocked in. */
 function EmployeeScene() {
   return (
-    <Frame className="flex flex-col justify-center gap-2 px-4">
-      <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2">
-        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-        <div className="leading-tight">
-          <div className="text-[11px] font-medium">Morning bar</div>
-          <div className="text-[9px] text-muted-foreground">Today · 9am–3pm</div>
-        </div>
-        <Swap
-          className="ml-auto justify-items-end"
-          before={
-            <span
-              style={anim("scene-press")}
-              className="block rounded-md bg-brand px-2 py-0.5 text-[10px] font-medium text-brand-foreground"
-            >
-              Clock in
-            </span>
-          }
-          after={
-            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-              <span
-                style={{ ...anim("scene-blink"), animationDuration: "1.2s" }}
-                className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-              />
-              On shift
-            </span>
-          }
-        />
-      </div>
-      <div className="flex items-center gap-1 px-1">
-        <span className="mr-1 text-[9px] text-muted-foreground">Available</span>
-        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-          <span
-            key={i}
-            className={cn(
-              "flex h-4 w-4 items-center justify-center rounded-sm text-[8px]",
-              i < 5 ? "bg-brand-soft text-brand" : "bg-background text-muted-foreground",
-            )}
-          >
-            {d}
+    <Frame className="flex items-center justify-center px-4">
+      <div className="w-full max-w-60 rounded-md border border-border bg-background p-2.5">
+        <div className="mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <Calendar className="h-3 w-3" />
+          Today
+          <span className="ml-auto rounded-sm bg-emerald-500/15 px-1 text-[9px] font-medium text-emerald-600 dark:text-emerald-400">
+            Ongoing
           </span>
-        ))}
+        </div>
+        <div className="text-[12px] font-semibold">Morning bar</div>
+        <div className="text-[9px] text-muted-foreground tabular-nums">9:00 AM – 3:00 PM</div>
+        <div className="mt-2">
+          <Swap
+            className="justify-items-start"
+            before={
+              <span
+                style={anim("scene-press")}
+                className="inline-block rounded-md bg-brand px-2 py-0.5 text-[10px] font-medium text-brand-foreground"
+              >
+                Clock in
+              </span>
+            }
+            after={
+              <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                <span
+                  style={{ ...anim("scene-blink"), animationDuration: "1.2s" }}
+                  className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                />
+                Clocked in at 9:02 AM
+              </span>
+            }
+          />
+        </div>
       </div>
     </Frame>
   );
