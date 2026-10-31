@@ -1,17 +1,18 @@
 import { Link } from "@/lib/navigation";
+import { scrollToSection } from "@/lib/scroll-to-section";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand-mark";
 
 const COLUMNS: Array<{
   title: string;
-  links: Array<{ label: string; href: string; external?: boolean; anchor?: boolean }>;
+  links: Array<{ label: string; href: string; external?: boolean; section?: string }>;
 }> = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "/#features", anchor: true },
-      { label: "How it works", href: "/#how-it-works", anchor: true },
-      { label: "For teams", href: "/#roles", anchor: true },
+      { label: "Features", href: "/#features", section: "features" },
+      { label: "How it works", href: "/#how-it-works", section: "how-it-works" },
+      { label: "For teams", href: "/#roles", section: "roles" },
     ],
   },
   {
@@ -70,8 +71,12 @@ export function Footer({ className }: { className?: string }) {
                       >
                         {link.label}
                       </a>
-                    ) : link.anchor ? (
-                      <a href={link.href} className={linkClass}>
+                    ) : link.section ? (
+                      <a
+                        href={link.href}
+                        onClick={(e) => scrollToSection(e, link.section!)}
+                        className={linkClass}
+                      >
                         {link.label}
                       </a>
                     ) : (

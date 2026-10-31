@@ -6,15 +6,16 @@ import { useTheme } from "next-themes";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { scrollToSection } from "@/lib/scroll-to-section";
 import { cn } from "@/lib/utils";
 
 const MENU_CLOSE_MS = 200;
 
-/** In-page sections on the landing page (plain anchors). */
+/** In-page sections on the landing page — scrolled to without changing the URL. */
 const SECTION_LINKS = [
-  { href: "/#features", label: "Features" },
-  { href: "/#how-it-works", label: "How it works" },
-  { href: "/#roles", label: "For teams" },
+  { id: "features", label: "Features" },
+  { id: "how-it-works", label: "How it works" },
+  { id: "roles", label: "For teams" },
 ];
 
 function subscribe() {
@@ -104,8 +105,9 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-0.5">
               {SECTION_LINKS.map((link) => (
                 <a
-                  key={link.href}
-                  href={link.href}
+                  key={link.id}
+                  href={`/#${link.id}`}
+                  onClick={(e) => scrollToSection(e, link.id)}
                   className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 >
                   {link.label}
@@ -189,9 +191,12 @@ export function Navbar() {
             <div className="flex flex-col">
               {SECTION_LINKS.map((link) => (
                 <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={closeMenu}
+                  key={link.id}
+                  href={`/#${link.id}`}
+                  onClick={(e) => {
+                    scrollToSection(e, link.id);
+                    closeMenu();
+                  }}
                   className="border-b border-border px-2 py-3.5 text-lg font-medium"
                 >
                   {link.label}
