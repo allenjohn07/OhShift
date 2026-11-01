@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
+import { ScrollFade } from "@/components/scroll-fade";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
@@ -112,6 +113,11 @@ export function DayAgenda({
           Nobody is scheduled {offset === 0 ? "today" : "this day"}.
         </PanelEmpty>
       ) : (
+        <ScrollFade
+          contentKey={`${offset}:${rows.length}`}
+          maxHeightClass="max-h-none"
+          className="min-h-0 flex-1"
+        >
         <ul className="divide-y divide-border">
           {rows.map((shift) => {
             const name = shift.users?.full_name || "Unknown member";
@@ -145,6 +151,12 @@ export function DayAgenda({
                         You
                       </span>
                     )}
+                    {live && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-emerald-500/15 px-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Now
+                      </span>
+                    )}
                     {shift.status === "draft" && (
                       <span className="rounded-sm border border-dashed border-muted-foreground/40 px-1 text-[10px] font-medium text-muted-foreground">
                         Draft
@@ -155,19 +167,14 @@ export function DayAgenda({
                     {shift.title}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
-                  {live && (
-                    <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 px-1.5 py-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Now
-                    </span>
-                  )}
+                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
                   {timeFmt.format(start)} – {timeFmt.format(end)}
-                </div>
+                </span>
               </li>
             );
           })}
         </ul>
+        </ScrollFade>
       )}
     </Panel>
   );

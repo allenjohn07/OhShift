@@ -169,6 +169,7 @@ Every content box is a `Panel` from `src/components/panel.tsx`:
 - Never put a second line (subtitle/date) under a panel title — put it in `meta` on the same line.
 - Stacked boxes in one column: wrap in `flex flex-col gap-6` and give the last/main box `flex-1` so the column ends level with its neighbour.
 - Custom headers (calendars, collapsibles) must keep `min-h-12 py-2` and h-7 controls so they match 48px.
+- Only boxes that share a row are made equal height. Lists whose length changes at runtime (Overview's Who's working, Team, Activity) get their own full-width row and size to their content — never put them side by side.
 
 ## Cards & chrome
 

@@ -83,8 +83,8 @@ export function TeamMembersList({
       {filtered.length > 0 ? (
         <ScrollFade
           contentKey={`${filtered.length}:${searchQuery}`}
-          maxHeightClass="max-h-[340px]"
-          className="divide-y divide-border"
+          maxHeightClass="max-h-none"
+          className="min-h-0 flex-1 divide-y divide-border"
         >
           {filtered.map((emp) => (
             <div

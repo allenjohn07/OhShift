@@ -210,23 +210,15 @@ export function DashboardContent({
           onScheduleChanged={handleScheduleChanged}
         />
 
-        <div className="grid gap-6 lg:grid-cols-5">
-          <div className="flex flex-col gap-6 lg:col-span-3">
-            <DayAgenda
-              shifts={shifts}
-              currentUserId={currentUser.id}
-              className="flex-1"
-            />
-            <ActivityFeed refreshKey={activityRefreshKey} />
-          </div>
-          <TeamMembersList
-            employees={employees}
-            company={company}
-            onShiftAssigned={handleScheduleChanged}
-            onManage={() => setIsManageTeamOpen(true)}
-            className="lg:col-span-2"
-          />
-        </div>
+        {/* One section per row — each sizes to its own content */}
+        <DayAgenda shifts={shifts} currentUserId={currentUser.id} />
+        <TeamMembersList
+          employees={employees}
+          company={company}
+          onShiftAssigned={handleScheduleChanged}
+          onManage={() => setIsManageTeamOpen(true)}
+        />
+        <ActivityFeed refreshKey={activityRefreshKey} />
       </PageMain>
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>

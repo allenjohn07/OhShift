@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState, useId } from "react";
-import { Send, Clock, ChevronUp, ChevronRight, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Send, ChevronRight } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
+import { useVisiblePoll } from "@/hooks/use-visible-poll";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { ScrollFade } from "@/components/scroll-fade";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,7 +45,8 @@ function formatDate(dateStr: string) {
 
 function formatWeek(weekStart: string | null) {
   if (!weekStart) return null;
-  const start = new Date(weekStart);
+  // YYYY-MM-DD is a local calendar date — parse as local midnight, not UTC.
+  const start = new Date(`${weekStart}T00:00:00`);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const fmt = (d: Date) =>
@@ -147,46 +150,35 @@ function PublishedScheduleDialog({
 
 function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const week = formatWeek(log.week_start);
+  const count = log.shifts.length;
 
   return (
     <>
-      <div className="border-b border-border last:border-0">
-        <button
-          onClick={() => setModalOpen(true)}
-          className="w-full px-4 sm:px-6 py-3 flex items-start gap-3 hover:bg-accent transition-colors text-left"
-        >
-          <div className="mt-0.5 p-1.5 rounded-lg shrink-0 bg-brand-soft text-brand">
-            <Send className="w-3.5 h-3.5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm leading-snug">{log.detail}</p>
-              {isLatest && (
-                <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 leading-none">
-                  Latest
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              by{" "}
-              <span className="font-medium text-foreground">{log.actor.full_name}</span>
-              {" "}
-              <span className="capitalize">({log.actor.role})</span>
-            </p>
-          </div>
-          <div className="shrink-0 flex flex-col items-end gap-1.5">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-              <Clock className="w-3 h-3" />
-              {timeAgo(log.created_at)}
-            </div>
-            {log.shifts.length > 0 && (
-              <span className="text-xs text-brand">
-                {log.shifts.length} shift{log.shifts.length !== 1 ? "s" : ""} →
+      <button
+        type="button"
+        onClick={() => setModalOpen(true)}
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent/60 sm:px-5"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand">
+          <Send className="h-3.5 w-3.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 text-sm font-medium">
+            <span className="truncate">{week ? `Week of ${week}` : "Schedule published"}</span>
+            {isLatest && (
+              <span className="shrink-0 rounded-sm bg-emerald-500/15 px-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                Latest
               </span>
             )}
-          </div>
-        </button>
-      </div>
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {count} shift{count !== 1 ? "s" : ""} · {log.actor.full_name} ·{" "}
+            {timeAgo(log.created_at)}
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
 
       <PublishedScheduleDialog
         log={log}
@@ -197,85 +189,64 @@ function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
   );
 }
 
-export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
+/** Always-visible list of published weeks (fixed-height panel, scrolls inside). */
+export function ActivityFeed({
+  refreshKey,
+  className,
+}: {
+  refreshKey?: number;
+  className?: string;
+}) {
   const api = useApi();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
 
-  const fetchLogs = useCallback(async (showUpdating = false) => {
-    if (showUpdating) setRefreshing(true);
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await api("/company/activity");
       if (!res.ok) return;
       const data = await res.json();
       if (data.activity) setLogs(data.activity);
     } catch {
-      // Network/CORS/5xx — keep existing list, don't throw into React.
+      // Network/CORS/5xx — keep existing list (background refresh stays quiet).
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [api]);
 
-  useEffect(() => {
-    if (!open) return;
-    fetchLogs();
-  }, [open, fetchLogs]);
+  // Live: other managers publishing show up without a reload.
+  useVisiblePoll(true, fetchLogs);
 
   const prevKeyRef = useRef(refreshKey);
   useEffect(() => {
-    if (!open) return;
     if (refreshKey !== undefined && refreshKey !== prevKeyRef.current) {
       prevKeyRef.current = refreshKey;
-      fetchLogs(true);
+      fetchLogs();
     }
-  }, [open, refreshKey, fetchLogs]);
+  }, [refreshKey, fetchLogs]);
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        className={`w-full min-h-12 px-4 sm:px-5 py-2 bg-card flex items-center gap-2 hover:bg-accent/60 transition-colors ${open ? "border-b border-border" : ""}`}
-      >
-        <h2 className="font-semibold">Published schedules</h2>
-        <div className="ml-auto flex items-center gap-2">
-          {refreshing && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Updating...
-            </span>
-          )}
-          {open
-            ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            : <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          }
+    <Panel className={className}>
+      <PanelHeader title="Activity" meta={logs.length ? `${logs.length} published` : undefined} />
+      {loading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
         </div>
-      </button>
-
-      {open && (
-        <div id={panelId}>
-          {loading ? (
-            <div className="px-6 py-8 flex justify-center">
-              <div className="h-5 w-5 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="px-6 py-8 text-center text-sm text-muted-foreground">
-              No schedules published yet.
-            </div>
-          ) : (
-            <ScrollFade contentKey={`${logs.length}:${open ? 1 : 0}`}>
-              {logs.map((log, i) => (
-                <PublishEntry key={log.id} log={log} isLatest={i === 0} />
-              ))}
-            </ScrollFade>
-          )}
-        </div>
+      ) : logs.length === 0 ? (
+        <PanelEmpty icon={<Send />} title="Nothing published yet">
+          Publish a week from the schedule above and it will show up here.
+        </PanelEmpty>
+      ) : (
+        <ScrollFade
+          contentKey={logs.length}
+          maxHeightClass="max-h-none"
+          className="min-h-0 flex-1 divide-y divide-border"
+        >
+          {logs.map((log, i) => (
+            <PublishEntry key={log.id} log={log} isLatest={i === 0} />
+          ))}
+        </ScrollFade>
       )}
-    </div>
+    </Panel>
   );
 }
