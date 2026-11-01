@@ -38,7 +38,7 @@ export function PageHeader({
 }) {
   return (
     <header className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {eyebrow && (
           <p className="mb-1.5 text-sm text-muted-foreground">{eyebrow}</p>
         )}
@@ -46,7 +46,7 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground sm:text-base">
+          <p className="mt-1.5 text-sm text-pretty text-muted-foreground sm:text-base">
             {description}
           </p>
         )}
