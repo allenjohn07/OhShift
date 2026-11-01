@@ -197,7 +197,7 @@ export function Navbar() {
                     scrollToSection(e, link.id);
                     closeMenu();
                   }}
-                  className="border-b border-border px-2 py-3.5 text-lg font-medium"
+                  className="border-b border-border px-2 py-3 text-base font-medium"
                 >
                   {link.label}
                 </a>
@@ -205,18 +205,18 @@ export function Navbar() {
               <Link
                 href="/login"
                 onClick={closeMenu}
-                className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+                className="flex items-center gap-3 border-b border-border px-2 py-3"
               >
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-lg font-medium">Employee login</span>
+                <span className="text-base font-medium">Employee login</span>
               </Link>
               <Link
                 href="/company/login"
                 onClick={closeMenu}
-                className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+                className="flex items-center gap-3 border-b border-border px-2 py-3"
               >
                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-lg font-medium">Company login</span>
+                <span className="text-base font-medium">Company login</span>
               </Link>
             </div>
             <Link href="/company/register" onClick={closeMenu}>

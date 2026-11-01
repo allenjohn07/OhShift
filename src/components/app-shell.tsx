@@ -1,5 +1,5 @@
 import { Link, usePathname, useRouter } from "@/lib/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
   LogOut,
@@ -258,7 +258,11 @@ function NavLink({
           {flush && <NavBadge count={count} />}
         </>
       )}
-      {compact && <span className="leading-none">{label}</span>}
+      {compact && (
+        <span data-tab-label className="leading-none">
+          {label}
+        </span>
+      )}
     </Link>
   );
 
@@ -314,7 +318,7 @@ function AccountPanel({
         className={cn(
           "flex min-w-0 w-full items-center rounded-md text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
           // flush = mobile sheet: same 20px icon column, gap and padding as the link rows
-          flush ? "h-12 gap-3 px-2" : "h-8 gap-2 px-2 pr-3",
+          flush ? "h-12 gap-3" : "h-8 gap-2 px-2 pr-3",
         )}
       >
         <Avatar className={cn("shrink-0 rounded-sm", flush ? "h-5 w-5" : "h-6 w-6")}>
@@ -335,7 +339,7 @@ function AccountPanel({
           )}
           aria-hidden={rail || undefined}
         >
-          <p className={cn("font-medium truncate whitespace-nowrap", flush ? "text-lg" : "text-sm")}>
+          <p className={cn("font-medium truncate whitespace-nowrap", flush ? "text-base" : "text-sm")}>
             {flush ? displayName : firstName}
           </p>
         </div>
@@ -355,7 +359,7 @@ function AccountPanel({
             {avatarTrigger}
           </IconTooltip>
           <DropdownMenuContent
-            className="z-[80] w-52"
+            className="z-[80] w-52 border border-border shadow-none!"
             side="top"
             align="start"
             sideOffset={8}
@@ -413,7 +417,7 @@ function AccountPanel({
             className={cn(
               "flex shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer",
               // flush: icon lines up with the rows' right padding
-              flush ? "h-12 w-12 justify-end pr-2" : "h-8 w-8",
+              flush ? "h-12 w-12 justify-end" : "h-8 w-8",
             )}
             aria-label={mounted && isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
@@ -473,6 +477,29 @@ export function AppShell({
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  // Mobile sheet insets = where the first tab label starts / the last one ends,
+  // so the sheet's icons line up with "Overview" (left) and "Close" (right).
+  const tabRowRef = useRef<HTMLDivElement>(null);
+  const [sheetInset, setSheetInset] = useState<{ left: number; right: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const measure = () => {
+      const row = tabRowRef.current;
+      const labels = row?.querySelectorAll<HTMLElement>("[data-tab-label]");
+      if (!row || !labels || labels.length === 0) return;
+      const box = row.getBoundingClientRect();
+      const first = labels[0]!.getBoundingClientRect();
+      const last = labels[labels.length - 1]!.getBoundingClientRect();
+      setSheetInset({
+        left: Math.round(first.left - box.left),
+        right: Math.round(box.right - last.right),
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -624,7 +651,7 @@ export function AppShell({
         aria-hidden
         onClick={() => setMenuOpen(false)}
         className={cn(
-          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-150 motion-reduce:transition-none",
+          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
           menuOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -644,19 +671,20 @@ export function AppShell({
 
       {/* Mobile bottom tabs (+ Menu, which opens the sheet above) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background">
-        {/* Bottom sheet — sized to its content, anchored right above the tabs.
-            Side padding is derived from the 4-column tab bar (px-2, gap-1) so the row
-            icons line up with the first tab icon and the theme icon with the Close ×. */}
+        {/* Bottom sheet — sized to its content; slides up from behind the tab bar.
+            Side insets are measured from the tab labels (see sheetInset). */}
         <div
           className={cn(
-            "absolute inset-x-0 bottom-full max-h-[75dvh] overflow-y-auto rounded-t-xl border-y border-border bg-background px-[calc((100%_-_28px)/8_-_10px)] pt-2 pb-2 transition-[opacity,transform] duration-150 motion-reduce:transition-none",
-            menuOpen
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-2 opacity-0",
+            "absolute inset-x-0 bottom-full max-h-[75dvh] overflow-y-auto rounded-t-xl border-y border-border bg-background pt-1 pb-1 transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+            menuOpen ? "visible translate-y-0" : "pointer-events-none invisible translate-y-full",
           )}
+          style={
+            sheetInset
+              ? { paddingLeft: sheetInset.left, paddingRight: sheetInset.right }
+              : { paddingLeft: 16, paddingRight: 16 }
+          }
           aria-hidden={!menuOpen}
         >
-          <div className="mx-auto mb-1 h-1 w-9 rounded-full bg-foreground/15" aria-hidden />
           {menuExtras.length > 0 && (
             <nav className="flex flex-col">
               {menuExtras.map((item) => {
@@ -667,14 +695,14 @@ export function AppShell({
                     key={item.id}
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+                    className="flex items-center gap-3 border-b border-border py-3"
                     aria-current={active ? "page" : undefined}
                     tabIndex={menuOpen ? undefined : -1}
                   >
                     <item.icon
                       className={cn("h-5 w-5", active ? "text-brand" : "text-muted-foreground")}
                     />
-                    <span className={cn("text-lg font-medium", active && "text-brand")}>
+                    <span className={cn("text-base font-medium", active && "text-brand")}>
                       {item.label}
                     </span>
                     {count > 0 && (
@@ -700,7 +728,10 @@ export function AppShell({
           </div>
         </div>
 
-        <div className="flex gap-1 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div
+          ref={tabRowRef}
+          className="relative z-10 flex gap-1 bg-background px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        >
           {mobileTabs.map((item) => (
             <div key={item.id} className="flex-1 min-w-0">
               <NavLink
@@ -728,7 +759,9 @@ export function AppShell({
               aria-expanded={menuOpen}
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              <span className="leading-none">{menuOpen ? "Close" : "Menu"}</span>
+              <span data-tab-label className="leading-none">
+                {menuOpen ? "Close" : "Menu"}
+              </span>
             </button>
           </div>
         </div>

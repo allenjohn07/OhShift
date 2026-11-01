@@ -131,8 +131,8 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 
 - Nav items live in `src/lib/nav.ts` — only link real routes; mark unfinished with `comingSoon`.
 - Desktop: Notion-style sidebar (`bg-sidebar`, workspace header with company name, 32px rows, active row = `bg-accent` + brand icon); collapsible to an icon rail (saved in localStorage).
-- Mobile: bottom tabs + a **Menu** tab (the only menu button). It opens a **bottom sheet** attached to the top of the tab bar, sized to its content (dimmed page behind): large rows for extra pages, then the account row (name → Profile / Log out popup, theme button) — same component as the desktop sidebar. The same tab (now "Close"), tapping the dimmed page, or Escape closes it.
-- Sidebar bottom: avatar menu (Profile, theme, Log out) + theme button; in the collapsed rail only the avatar shows and the menu carries theme + Log out. Transitions are 150ms — keep them snappy.
+- Mobile: bottom tabs + a **Menu** tab (the only menu button). It opens a **bottom sheet** attached to the top of the tab bar, sized to its content (dimmed page behind): large rows for extra pages, then the account row (name → Profile / Log out popup, theme button) — same component as the desktop sidebar. The same tab (now "Close"), tapping the dimmed page, or Escape closes it. The sheet slides up from behind the tab bar (300ms, iOS-style ease), has no handle or shadow, uses 16px rows (same as the logged-out menu), and its side insets are measured from the first/last tab labels so icons line up with \"Overview\" and \"Close\".
+- Sidebar bottom: avatar menu (Profile, theme, Log out — hairline border, no shadow) + theme button; in the collapsed rail only the avatar shows and the menu carries theme + Log out. Transitions are 150ms — keep them snappy.
 - Marketing/auth pages still use `Navbar` (logged-out only). Logged-in visits to `/` redirect via `AuthHomeRedirect`.
 - Loading spinner: full remaining viewport, centered:
 
