@@ -290,7 +290,7 @@ export function TeamScheduleGrid({
   return (
     <>
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+        <div className="border-b border-border px-4 sm:px-5 py-2 min-h-12 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="font-semibold">Schedule</h2>
             <AskOhShiftModal
@@ -299,11 +299,11 @@ export function TeamScheduleGrid({
             />
           </div>
           
-          <div className="flex w-full items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto sm:w-auto">
+          <div className="flex w-full items-center gap-1 sm:gap-2 self-start sm:self-auto sm:w-auto">
              <IconTooltip label="Previous week" side="bottom">
                <button 
                  onClick={() => setWeekOffset(prev => prev - 1)}
-                 className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                  aria-label="Previous week"
                >
                  <ChevronLeft className="w-4 h-4" />
@@ -315,7 +315,7 @@ export function TeamScheduleGrid({
              <IconTooltip label="Next week" side="bottom">
                <button 
                  onClick={() => setWeekOffset(prev => prev + 1)}
-                 className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                  aria-label="Next week"
                >
                  <ChevronRight className="w-4 h-4" />
@@ -323,14 +323,14 @@ export function TeamScheduleGrid({
              </IconTooltip>
              <button
                onClick={() => setWeekOffset(0)}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-accent border border-border rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+               className="h-7 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
              >
                <span>Reset</span>
              </button>
              <button
                onClick={handlePublishWeek}
                disabled={isPublishing || draftCount === 0}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium btn-brand rounded-md ml-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+               className="ml-1 flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium btn-brand disabled:cursor-not-allowed disabled:opacity-50"
              >
                {isPublishing ? (
                  <Loader2 className="w-3.5 h-3.5 animate-spin" />

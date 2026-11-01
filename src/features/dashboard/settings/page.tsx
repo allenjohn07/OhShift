@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { useAuth } from "@/components/auth-provider";
 import {
   SettingsLinkRow,
   SettingsPageShell,
@@ -19,6 +20,7 @@ import {
 } from "@/components/settings-ui";
 
 export default function EmployeeSettingsPage() {
+  const { user } = useAuth();
   const [schedulePublished, setSchedulePublished] = useState(true);
   const [shiftReminders, setShiftReminders] = useState(true);
   const [timeOffUpdates, setTimeOffUpdates] = useState(true);
@@ -30,6 +32,7 @@ export default function EmployeeSettingsPage() {
     <AppShell role="employee">
       <AuthGuard allowedRoles={["employee"]}>
         <SettingsPageShell
+          eyebrow={user?.profile.companies?.name}
           title="Settings"
           description="Notifications, display preferences, and account shortcuts."
         >
@@ -95,7 +98,7 @@ export default function EmployeeSettingsPage() {
             />
           </SettingsSection>
 
-          <SettingsSection title="Account">
+          <SettingsSection title="Account" wide>
             <SettingsLinkRow
               icon={User}
               title="Profile"

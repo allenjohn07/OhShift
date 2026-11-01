@@ -210,9 +210,13 @@ export function DashboardContent({
           onScheduleChanged={handleScheduleChanged}
         />
 
-        <div className="grid items-start gap-6 lg:grid-cols-5">
-          <div className="space-y-6 lg:col-span-3">
-            <DayAgenda shifts={shifts} currentUserId={currentUser.id} />
+        <div className="grid gap-6 lg:grid-cols-5">
+          <div className="flex flex-col gap-6 lg:col-span-3">
+            <DayAgenda
+              shifts={shifts}
+              currentUserId={currentUser.id}
+              className="flex-1"
+            />
             <ActivityFeed refreshKey={activityRefreshKey} />
           </div>
           <TeamMembersList

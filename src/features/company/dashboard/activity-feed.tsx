@@ -240,7 +240,7 @@ export function ActivityFeed({ refreshKey }: { refreshKey?: number }) {
         onClick={() => setOpen((p) => !p)}
         aria-expanded={open}
         aria-controls={panelId}
-        className={`w-full px-4 sm:px-5 py-3 bg-card flex items-center gap-2 hover:bg-accent/60 transition-colors ${open ? "border-b border-border" : ""}`}
+        className={`w-full min-h-12 px-4 sm:px-5 py-2 bg-card flex items-center gap-2 hover:bg-accent/60 transition-colors ${open ? "border-b border-border" : ""}`}
       >
         <h2 className="font-semibold">Published schedules</h2>
         <div className="ml-auto flex items-center gap-2">

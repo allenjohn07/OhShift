@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Loader2, Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
+import { Panel, PanelEmpty, PanelFooter, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input, fieldClass } from "@/components/ui/input";
@@ -19,10 +21,18 @@ import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
+import {
+  TIME_OFF_STATUS_STYLES,
+  TIME_OFF_TYPE_LABELS,
+  TIME_OFF_TYPE_STYLES,
+  dayCount,
+  formatDateRange,
+  localToday,
+  type TimeOffStatus,
+  type TimeOffType,
+} from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 
-type TimeOffType = "vacation" | "sick" | "personal" | "other";
-type TimeOffStatus = "pending" | "approved" | "denied" | "cancelled";
 
 type TimeOffRequest = {
   id: string;
@@ -34,42 +44,9 @@ type TimeOffRequest = {
   created_at: string;
 };
 
-const TYPE_LABELS: Record<TimeOffType, string> = {
-  vacation: "Vacation",
-  sick: "Sick",
-  personal: "Personal",
-  other: "Other",
-};
-
-const STATUS_STYLES: Record<TimeOffStatus, string> = {
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  approved: "bg-emerald-500/15 text-emerald-500",
-  denied: "bg-red-500/15 text-red-500",
-  cancelled: "bg-muted text-muted-foreground",
-};
-
-function formatRange(start: string, end: string) {
-  const opts: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  };
-  const s = new Date(`${start}T00:00:00.000Z`);
-  const e = new Date(`${end}T00:00:00.000Z`);
-  if (start === end) {
-    return new Intl.DateTimeFormat("en-US", {
-      ...opts,
-      year: "numeric",
-    }).format(s);
-  }
-  return `${new Intl.DateTimeFormat("en-US", opts).format(s)} – ${new Intl.DateTimeFormat("en-US", {
-    ...opts,
-    year: "numeric",
-  }).format(e)}`;
-}
-
 function TimeOffPageContent() {
   const api = useApi();
+  const { user } = useAuth();
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -171,6 +148,21 @@ function TimeOffPageContent() {
     }
   };
 
+  const today = localToday();
+  const year = String(new Date().getFullYear());
+  const approved = requests.filter((r) => r.status === "approved");
+  const upcomingApproved = approved
+    .filter((r) => r.end_date >= today)
+    .sort((x, y) => x.start_date.localeCompare(y.start_date));
+  const summary = {
+    pending: requests.filter((r) => r.status === "pending").length,
+    upcoming: upcomingApproved.length,
+    daysThisYear: approved
+      .filter((r) => r.start_date.startsWith(year))
+      .reduce((sum, r) => sum + dayCount(r.start_date, r.end_date), 0),
+    next: upcomingApproved[0] ?? null,
+  };
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
@@ -181,100 +173,114 @@ function TimeOffPageContent() {
 
   return (
     <>
-      <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-              Time off
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-              Request days off and track approval status. Another manager or the
-              owner reviews each request.
-            </p>
-          </div>
-          <Button
-            onClick={openModal}
-            className="btn-brand rounded-md h-9 px-5 shrink-0 w-full sm:w-auto"
-          >
-            Request time off
-          </Button>
-        </div>
+      <PageMain>
+        <PageHeader
+          eyebrow={user?.profile.companies?.name}
+          title="Time off"
+          description="Request days off and track approval status. Another manager or the owner reviews each request."
+          actions={<Button onClick={openModal}>Request time off</Button>}
+        />
 
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
-            <h2 className="font-semibold">Upcoming & past</h2>
-          </div>
-
-          {requests.length === 0 ? (
-            <div className="px-4 sm:px-6 py-16 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
-                <Palmtree className="h-6 w-6" />
-              </div>
-              <p className="font-medium">No requests yet</p>
-              <p className="text-sm text-muted-foreground mt-1 mb-6">
+        <div className="grid gap-6 lg:grid-cols-5">
+          <Panel className="lg:col-span-3">
+            <PanelHeader title="Your requests" meta={requests.length || undefined} />
+            {requests.length === 0 ? (
+              <PanelEmpty icon={<Palmtree />} title="No requests yet">
                 Submit a request when you need days off.
-              </p>
-              <Button
-                onClick={openModal}
-                className="btn-brand rounded-md h-9 px-5"
-              >
-                Request time off
-              </Button>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {requests.map((req) => (
-                <li
-                  key={req.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold">
-                        {TYPE_LABELS[req.type]}
-                      </p>
-                      <span className="text-muted-foreground text-sm">·</span>
-                      <p className="text-sm text-muted-foreground">
-                        {formatRange(req.start_date, req.end_date)}
-                      </p>
-                    </div>
-                    {req.note && (
-                      <p className="text-sm text-muted-foreground">
-                        Note: {req.note}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 self-start">
-                    <span
-                      className={cn(
-                        "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize",
-                        STATUS_STYLES[req.status],
-                      )}
-                    >
-                      {req.status}
-                    </span>
-                    {req.status === "pending" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-md h-8 text-muted-foreground"
-                        disabled={cancellingId === req.id}
-                        onClick={() => handleCancel(req.id)}
-                      >
-                        {cancellingId === req.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Cancel"
+              </PanelEmpty>
+            ) : (
+              <ul className="divide-y divide-border">
+                {requests.map((req) => {
+                  const days = dayCount(req.start_date, req.end_date);
+                  return (
+                    <li key={req.id} className="flex items-start gap-3 px-4 py-3 sm:px-5">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded-sm px-1.5 py-0.5 text-xs font-medium",
+                              TIME_OFF_TYPE_STYLES[req.type],
+                            )}
+                          >
+                            {TIME_OFF_TYPE_LABELS[req.type]}
+                          </span>
+                          <span className="text-sm tabular-nums">
+                            {formatDateRange(req.start_date, req.end_date)}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            · {days} day{days === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        {req.note && (
+                          <p className="border-l-2 border-border pl-2.5 text-sm text-foreground/80">
+                            {req.note}
+                          </p>
                         )}
-                      </Button>
-                    )}
-                  </div>
-                </li>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {req.status === "pending" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground"
+                            disabled={cancellingId === req.id}
+                            onClick={() => handleCancel(req.id)}
+                          >
+                            {cancellingId === req.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Cancel"
+                            )}
+                          </Button>
+                        )}
+                        <span
+                          className={cn(
+                            "rounded-sm px-1.5 py-0.5 text-xs font-medium capitalize",
+                            TIME_OFF_STATUS_STYLES[req.status],
+                          )}
+                        >
+                          {req.status}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel className="lg:col-span-2">
+            <PanelHeader title="Summary" meta={new Date().getFullYear()} />
+            <dl className="grid flex-1 grid-cols-2 content-start gap-px bg-border">
+              {[
+                ["Pending", summary.pending, "awaiting review"],
+                ["Upcoming", summary.upcoming, "approved, not taken yet"],
+                ["Days off", summary.daysThisYear, "approved this year"],
+                ["Requests", requests.length, "all time"],
+              ].map(([label, value, hint]) => (
+                <div key={label as string} className="bg-card px-4 py-3 sm:px-5">
+                  <dt className="text-[13px] text-muted-foreground">{label}</dt>
+                  <dd className="text-2xl font-semibold tabular-nums">{value}</dd>
+                  <dd className="text-xs text-muted-foreground">{hint}</dd>
+                </div>
               ))}
-            </ul>
-          )}
+            </dl>
+            <PanelFooter>
+              {summary.next ? (
+                <>
+                  Next time off:{" "}
+                  <span className="font-medium text-foreground">
+                    {TIME_OFF_TYPE_LABELS[summary.next.type]} ·{" "}
+                    {formatDateRange(summary.next.start_date, summary.next.end_date)}
+                  </span>
+                </>
+              ) : (
+                "No approved time off coming up."
+              )}
+            </PanelFooter>
+          </Panel>
         </div>
-      </main>
+      </PageMain>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -289,7 +295,7 @@ function TimeOffPageContent() {
             <div className="space-y-2">
               <label className="text-[13px] font-medium text-muted-foreground">Type</label>
               <div className="flex flex-wrap gap-1 rounded-md border border-input p-1">
-                {(Object.keys(TYPE_LABELS) as TimeOffType[]).map((t) => (
+                {(Object.keys(TIME_OFF_TYPE_LABELS) as TimeOffType[]).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -301,7 +307,7 @@ function TimeOffPageContent() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {TYPE_LABELS[t]}
+                    {TIME_OFF_TYPE_LABELS[t]}
                   </button>
                 ))}
               </div>

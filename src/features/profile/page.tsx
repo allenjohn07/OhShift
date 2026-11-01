@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
@@ -59,17 +60,14 @@ function ProfilePageContent() {
   }
 
   return (
-    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 flex-1 w-full space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-          Your Profile
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Update how you appear to your team.
-        </p>
-      </div>
+    <PageMain>
+      <PageHeader
+        eyebrow={profile.companies?.name}
+        title="Profile"
+        description="Update how you appear to your team."
+      />
       <ProfileForm user={profile} />
-    </main>
+    </PageMain>
   );
 }
 

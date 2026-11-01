@@ -1,7 +1,8 @@
 import { Link } from "@/lib/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
@@ -274,18 +275,21 @@ export function ShiftSummary({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Today */}
-      <section className="flex flex-col rounded-lg border border-border bg-card p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium text-muted-foreground">Today</h2>
-          {todayShift && (
-            <span
-              className={`ml-auto text-xs font-medium px-1.5 py-0.5 rounded-sm ${statusConfig[getStatus(todayShift)].className}`}
-            >
-              {statusConfig[getStatus(todayShift)].label}
-            </span>
-          )}
-        </div>
+      <Panel>
+        <PanelHeader
+          title="Today"
+          meta={new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(now)}
+          actions={
+            todayShift && (
+              <span
+                className={`text-xs font-medium px-1.5 py-0.5 rounded-sm ${statusConfig[getStatus(todayShift)].className}`}
+              >
+                {statusConfig[getStatus(todayShift)].label}
+              </span>
+            )
+          }
+        />
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
 
         {todayShift ? (
           <>
@@ -340,30 +344,26 @@ export function ShiftSummary({
             </div>
           </>
         )}
-      </section>
+        </div>
+      </Panel>
 
       {/* Up next */}
-      <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
-        <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium text-muted-foreground">Up next</h2>
-          {upcomingShifts.length > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-              {upcomingShifts.length} scheduled
-            </span>
-          )}
-        </div>
+      <Panel>
+        <PanelHeader
+          title="Up next"
+          meta={upcomingShifts.length > 0 ? `${upcomingShifts.length} scheduled` : undefined}
+        />
         {nextShifts.length === 0 ? (
-          <p className="px-5 pb-5 text-sm text-muted-foreground">
+          <PanelEmpty>
             No upcoming shifts yet. New shifts appear here once your manager
             publishes the schedule.
-          </p>
+          </PanelEmpty>
         ) : (
-          <ul className="divide-y divide-border border-t border-border">
+          <ul className="divide-y divide-border">
             {nextShifts.map((shift) => {
               const d = new Date(shift.start_time);
               return (
-                <li key={shift.id} className="flex items-center gap-3 px-5 py-2.5">
+                <li key={shift.id} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
                   <span className="flex w-9 shrink-0 flex-col items-center rounded-md border border-border py-0.5 leading-none">
                     <span className="text-[9px] font-medium uppercase text-brand">
                       {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(d)}
@@ -383,7 +383,7 @@ export function ShiftSummary({
             })}
           </ul>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

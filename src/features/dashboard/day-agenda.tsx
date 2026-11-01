@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
@@ -67,56 +68,49 @@ export function DayAgenda({
   }).format(day);
 
   return (
-    <section
-      className={cn(
-        "flex flex-col overflow-hidden rounded-lg border border-border bg-card",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
-        <div className="min-w-0">
-          <h2 className="font-semibold">Who&apos;s working</h2>
-          <p className="text-xs text-muted-foreground">
-            {dayHeading(day)} · {dateLabel}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-0.5">
-          {offset !== 0 && (
-            <button
-              type="button"
-              onClick={() => setOffset(0)}
-              className="mr-1 h-7 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              Today
-            </button>
-          )}
-          <IconTooltip label="Previous day" side="bottom">
-            <button
-              type="button"
-              onClick={() => setOffset((o) => o - 1)}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Previous day"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </IconTooltip>
-          <IconTooltip label="Next day" side="bottom">
-            <button
-              type="button"
-              onClick={() => setOffset((o) => o + 1)}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Next day"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </IconTooltip>
-        </div>
-      </div>
+    <Panel className={className}>
+      <PanelHeader
+        title="Who's working"
+        meta={`${dayHeading(day)} · ${dateLabel}`}
+        actions={
+          <>
+            {offset !== 0 && (
+              <button
+                type="button"
+                onClick={() => setOffset(0)}
+                className="mr-1 h-7 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                Today
+              </button>
+            )}
+            <IconTooltip label="Previous day" side="bottom">
+              <button
+                type="button"
+                onClick={() => setOffset((o) => o - 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label="Previous day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </IconTooltip>
+            <IconTooltip label="Next day" side="bottom">
+              <button
+                type="button"
+                onClick={() => setOffset((o) => o + 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label="Next day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </IconTooltip>
+          </>
+        }
+      />
 
       {rows.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center px-5 py-10 text-sm text-muted-foreground">
+        <PanelEmpty>
           Nobody is scheduled {offset === 0 ? "today" : "this day"}.
-        </div>
+        </PanelEmpty>
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((shift) => {
@@ -175,6 +169,6 @@ export function DayAgenda({
           })}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

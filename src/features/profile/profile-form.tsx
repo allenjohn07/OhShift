@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Building2, Calendar, Lock, Loader2, Link as LinkIcon, Eye, EyeOff } from "lucide-react";
+import { User, Building2, Calendar, Loader2, Eye, EyeOff } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +7,10 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { useApi } from "@/hooks/use-api";
 import { apiFetch } from "@/lib/api";
+import { Panel, PanelHeader } from "@/components/panel";
+import { fieldClass } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { getEmployeeColor } from "@/lib/tag-colors";
 
 type ProfileUser = {
   full_name?: string | null;
@@ -117,81 +121,63 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Left Column - Profile Summary */}
-      <div className="md:col-span-1 space-y-6">
-        <div className="rounded-lg border border-border bg-card p-6 flex flex-col items-center text-center">
-          <Avatar className="h-24 w-24 border-2 border-border mb-4">
+    <div className="grid gap-6 lg:grid-cols-5">
+      {/* Who you are */}
+      <Panel className="lg:col-span-2">
+        <PanelHeader title="Profile" />
+        <div className="flex flex-col items-center px-4 pt-6 pb-5 text-center sm:px-5">
+          <Avatar className="mb-3 h-20 w-20">
             <AvatarImage src={user.avatar_url || ""} alt={user.full_name || "User"} />
-            <AvatarFallback className="bg-brand-soft text-brand text-2xl font-medium">
+            <AvatarFallback
+              className={cn("text-xl font-semibold", getEmployeeColor(user.full_name || "User"))}
+            >
               {initials}
             </AvatarFallback>
           </Avatar>
-          <h2 className="text-xl font-bold">{user.full_name}</h2>
+          <p className="text-lg font-semibold">{user.full_name}</p>
           <p className="text-sm text-muted-foreground">{user.email}</p>
-          <div className="mt-4 py-1.5 px-3 bg-accent rounded-full text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="mt-2 rounded-sm bg-brand-soft px-1.5 py-0.5 text-xs font-medium capitalize text-brand">
             {user.role}
-          </div>
+          </span>
         </div>
-
-        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">About</h3>
-          
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
-              <Building2 className="w-4 h-4 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Company</p>
-              <p className="text-sm font-medium">{companyName}</p>
-            </div>
-          </div>
-          
+        <dl className="mt-auto grid grid-cols-[7rem_1fr] gap-x-3 gap-y-3 border-t border-border px-4 py-4 text-sm sm:px-5">
+          <dt className="flex items-center gap-2 text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            Company
+          </dt>
+          <dd className="truncate">{companyName}</dd>
           {user.role !== "owner" && (
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-violet-500/10 rounded-lg shrink-0">
-                <User className="w-4 h-4 text-violet-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Designation</p>
-                <p className="text-sm font-medium">{user.designation || "Not set"}</p>
-              </div>
-            </div>
+            <>
+              <dt className="flex items-center gap-2 text-muted-foreground">
+                <User className="h-4 w-4" />
+                Designation
+              </dt>
+              <dd className="truncate">{user.designation || "Not set"}</dd>
+            </>
           )}
+          <dt className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            Joined
+          </dt>
+          <dd>
+            {user.created_at
+              ? new Date(user.created_at).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })
+              : "—"}
+          </dd>
+        </dl>
+      </Panel>
 
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-              <Calendar className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Joined</p>
-              <p className="text-sm font-medium">
-                {user.created_at
-                  ? new Date(user.created_at).toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })
-                  : "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column - Forms */}
-      <div className="md:col-span-2 space-y-6">
-        {/* Avatar Settings */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
-              <LinkIcon className="w-5 h-5 text-emerald-500" />
-            </div>
-            <h3 className="text-lg font-semibold">Profile Picture</h3>
-          </div>
-          <form onSubmit={handleUpdateAvatar} className="space-y-4">
+      {/* Settings */}
+      <div className="flex flex-col gap-6 lg:col-span-3">
+        <Panel>
+          <PanelHeader title="Profile picture" />
+          <form onSubmit={handleUpdateAvatar} className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
             <div className="space-y-2">
-              <label htmlFor="avatarUrl" className="text-sm font-medium">
-                Avatar Image URL
+              <label htmlFor="avatarUrl" className="text-[13px] font-medium text-muted-foreground">
+                Image URL
               </label>
               <input
                 type="url"
@@ -200,38 +186,32 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 placeholder="https://example.com/avatar.jpg"
                 defaultValue={user.avatar_url || ""}
                 required
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-emerald-500"
+                className={cn(fieldClass, "h-9")}
               />
               <p className="text-xs text-muted-foreground">
                 Provide a valid image URL for your profile picture.
               </p>
             </div>
-            <div className="flex justify-end">
+            <div className="mt-auto flex justify-end">
               <Button
                 type="submit"
                 disabled={isUpdatingAvatar}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+
               >
-                {isUpdatingAvatar && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Save Changes
+                {isUpdatingAvatar && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save picture
               </Button>
             </div>
           </form>
-        </div>
+        </Panel>
 
-        {/* Security Settings */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-rose-500/10 rounded-lg shrink-0">
-              <Lock className="w-5 h-5 text-rose-500" />
-            </div>
-            <h3 className="text-lg font-semibold">Security</h3>
-          </div>
-          <form onSubmit={handleUpdatePassword} className="space-y-4">
+        <Panel className="flex-1">
+          <PanelHeader title="Password" />
+          <form onSubmit={handleUpdatePassword} className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="currentPassword" className="text-sm font-medium">
-                  Current Password
+                <label htmlFor="currentPassword" className="text-[13px] font-medium text-muted-foreground">
+                  Current password
                 </label>
                 <IconTooltip label="Reset password" side="top">
                   <button 
@@ -250,12 +230,12 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 name="currentPassword"
                 placeholder="••••••••"
                 required
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500"
+                className={cn(fieldClass, "h-9")}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="newPassword" className="text-sm font-medium">
-                New Password
+              <label htmlFor="newPassword" className="text-[13px] font-medium text-muted-foreground">
+                New password
               </label>
               <div className="relative">
                 <input
@@ -265,7 +245,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 pr-10"
+                  className={cn(fieldClass, "h-9 pr-10")}
                 />
                 <IconTooltip
                   label={showPassword ? "Hide password" : "Show password"}
@@ -288,19 +268,18 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 </IconTooltip>
               </div>
             </div>
-            <div className="flex justify-end pt-2">
+            <div className="mt-auto flex justify-end">
               <Button
                 type="submit"
                 disabled={isUpdatingPassword}
-                variant="destructive"
-                className="rounded-lg"
+
               >
-                {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Update Password
+                {isUpdatingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+                Update password
               </Button>
             </div>
           </form>
-        </div>
+        </Panel>
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import { Link } from "@/lib/navigation";
 import type { LucideIcon } from "lucide-react";
 import { Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader, PageMain } from "@/components/page";
+import { Panel, PanelEmpty } from "@/components/panel";
 
 export function ComingSoon({
   title,
@@ -17,21 +19,18 @@ export function ComingSoon({
   backLabel?: string;
 }) {
   return (
-    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 flex-1">
-      <div className="rounded-lg border border-border bg-card px-6 py-16 sm:py-20 text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
-          <Icon className="h-6 w-6" />
+    <PageMain>
+      <PageHeader title={title} description={description} />
+      <Panel className="min-h-[20rem]">
+        <PanelEmpty icon={<Icon />} title="Coming soon">
+          We&apos;re still building this page.
+        </PanelEmpty>
+        <div className="flex justify-center pb-10">
+          <Link href={backHref}>
+            <Button variant="outline">{backLabel}</Button>
+          </Link>
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 max-w-md mx-auto text-sm sm:text-base text-muted-foreground">
-          {description}
-        </p>
-        <Link href={backHref} className="inline-block mt-8">
-          <Button variant="outline" className="rounded-lg">
-            {backLabel}
-          </Button>
-        </Link>
-      </div>
-    </main>
+      </Panel>
+    </PageMain>
   );
 }

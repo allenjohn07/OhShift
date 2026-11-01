@@ -3,6 +3,9 @@ import { toast } from "sonner";
 import { ClipboardList, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
+import { PersonAvatar } from "@/components/person-avatar";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,13 +20,14 @@ import type {
   PendingTimeEntry,
   TimeEntryStatus,
 } from "@/lib/pending-timesheets-store";
+
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<TimeEntryStatus, string> = {
-  open: "bg-emerald-500/15 text-emerald-500",
+  open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  approved: "bg-emerald-500/15 text-emerald-500",
-  denied: "bg-red-500/15 text-red-500",
+  approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  denied: "bg-destructive/10 text-destructive",
 };
 
 function formatTime(iso: string) {
@@ -156,36 +160,21 @@ function TimesheetsContent() {
   }
 
   return (
-    <main className="max-w-4xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
-      <div>
-        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-          Timesheets
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-          Review clocked hours. You can adjust times before approving. You
-          cannot approve your own entries.
-        </p>
-      </div>
+    <PageMain>
+      <PageHeader
+        eyebrow={user?.profile.companies?.name}
+        title="Timesheets"
+        description="Review clocked hours. You can adjust times before approving. You cannot approve your own entries."
+      />
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-          <h2 className="font-semibold">Pending</h2>
-          {pending.length > 0 && (
-            <span className="text-xs font-medium bg-brand-soft text-brand px-1.5 py-0.5 rounded-sm">
-              {pending.length}
-            </span>
-          )}
-        </div>
+      <div className="grid gap-6 lg:grid-cols-5">
+      <Panel className="lg:col-span-3">
+        <PanelHeader title="Pending" meta={pending.length} />
 
         {pending.length === 0 ? (
-          <div className="px-4 sm:px-6 py-12 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <ClipboardList className="h-5 w-5" />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              No pending timesheets.
-            </p>
-          </div>
+          <PanelEmpty icon={<ClipboardList />} title="All caught up">
+            Clocked-out shifts waiting for approval show up here.
+          </PanelEmpty>
         ) : (
           <ul className="divide-y divide-border">
             {pending.map((entry) => {
@@ -201,10 +190,12 @@ function TimesheetsContent() {
                 );
 
               return (
-                <li key={entry.id} className="px-4 sm:px-6 py-4 space-y-3">
+                <li key={entry.id} className="flex gap-3 px-4 py-4 sm:px-5">
+                  <PersonAvatar name={entry.employee?.full_name ?? "Employee"} />
+                  <div className="min-w-0 flex-1 space-y-3">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 space-y-1">
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-medium">
                         {entry.employee?.full_name ?? "Employee"}
                         {isOwn && (
                           <span className="ml-2 text-xs font-medium text-brand">
@@ -239,10 +230,10 @@ function TimesheetsContent() {
                   </div>
 
                   {!isOwn && edit && (
-                    <div className="space-y-3 rounded-lg border border-border bg-background p-3 sm:p-4">
+                    <div className="space-y-3 rounded-md border border-border p-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">
+                          <label className="text-[13px] font-medium text-muted-foreground">
                             Clock in
                           </label>
                           <Input
@@ -257,11 +248,11 @@ function TimesheetsContent() {
                                 },
                               }))
                             }
-                            className="h-10 rounded-md bg-card border-border"
+                            className="h-9"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">
+                          <label className="text-[13px] font-medium text-muted-foreground">
                             Clock out
                           </label>
                           <Input
@@ -276,12 +267,12 @@ function TimesheetsContent() {
                                 },
                               }))
                             }
-                            className="h-10 rounded-md bg-card border-border"
+                            className="h-9"
                           />
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label className="text-[13px] font-medium text-muted-foreground">
                           Note{" "}
                           <span className="font-normal">(optional)</span>
                         </label>
@@ -295,7 +286,7 @@ function TimesheetsContent() {
                           }
                           maxLength={500}
                           placeholder="Adjustment reason…"
-                          className="h-10 rounded-md bg-card border-border"
+                          className="h-9"
                         />
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -309,7 +300,7 @@ function TimesheetsContent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-md h-9"
+                            
                             disabled={actingId === entry.id}
                             onClick={() => review(entry, "denied")}
                           >
@@ -317,7 +308,7 @@ function TimesheetsContent() {
                           </Button>
                           <Button
                             size="sm"
-                            className="btn-brand rounded-md h-9"
+                            
                             disabled={actingId === entry.id}
                             onClick={() => review(entry, "approved")}
                           >
@@ -331,60 +322,45 @@ function TimesheetsContent() {
                       </div>
                     </div>
                   )}
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
-      </section>
+      </Panel>
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
-          <h2 className="font-semibold">Recent</h2>
-        </div>
+      <Panel className="lg:col-span-2">
+        <PanelHeader title="Recently reviewed" meta={recent.length || undefined} />
 
         {recent.length === 0 ? (
-          <div className="px-4 sm:px-6 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No reviewed timesheets yet.
-            </p>
-          </div>
+          <PanelEmpty>Reviewed timesheets will show up here.</PanelEmpty>
         ) : (
           <ul className="divide-y divide-border">
             {recent.map((entry) => (
-              <li
-                key={entry.id}
-                className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-semibold">
+              <li key={entry.id} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                <PersonAvatar name={entry.employee?.full_name ?? "Employee"} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
                     {entry.employee?.full_name ?? "Employee"}
-                    <span className="font-normal text-muted-foreground">
-                      {" "}
-                      · {entry.shift?.title ?? "Shift"} ·{" "}
-                      {formatDateTime(entry.clock_in_at)}
-                      {entry.clock_out_at
-                        ? ` – ${formatTime(entry.clock_out_at)}`
-                        : ""}
-                      {entry.clock_out_at
-                        ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
-                        : ""}
-                    </span>
                   </p>
-                  {entry.reviewed_by && (
-                    <p className="text-xs text-muted-foreground">
-                      Reviewed by {entry.reviewed_by.full_name}
-                    </p>
-                  )}
+                  <p className="truncate text-xs text-muted-foreground">
+                    {entry.shift?.title ?? "Shift"} ·{" "}
+                    {formatDateTime(entry.clock_in_at)}
+                    {entry.clock_out_at
+                      ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
+                      : ""}
+                    {entry.reviewed_by && ` · by ${entry.reviewed_by.full_name}`}
+                  </p>
                   {entry.review_note && (
-                    <p className="text-xs text-muted-foreground">
-                      Note: {entry.review_note}
+                    <p className="truncate text-xs text-muted-foreground">
+                      {entry.review_note}
                     </p>
                   )}
                 </div>
                 <span
                   className={cn(
-                    "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize self-start",
+                    "shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize",
                     STATUS_STYLES[entry.status],
                   )}
                 >
@@ -394,8 +370,9 @@ function TimesheetsContent() {
             ))}
           </ul>
         )}
-      </section>
-    </main>
+      </Panel>
+      </div>
+    </PageMain>
   );
 }
 

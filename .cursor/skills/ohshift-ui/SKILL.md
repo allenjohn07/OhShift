@@ -151,6 +151,25 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Company login: center form on large screens (`items-start sm:items-center`).
 - Company register: two columns on `lg+` — left: company + first/last name; right: email + password + confirm. Submit full-width below.
 
+## Panels (boxes) — same height, same header
+
+Every content box is a `Panel` from `src/components/panel.tsx`:
+
+```tsx
+<div className="grid gap-6 lg:grid-cols-5">          {/* no items-start: boxes in a row stretch to equal height */}
+  <Panel className="lg:col-span-3">
+    <PanelHeader title="Pending" meta={count} actions={…} />  {/* one line, fixed 48px; meta = counts/dates inline */}
+    {empty ? <PanelEmpty icon={<Inbox />} title="All caught up">…</PanelEmpty> : <ul className="divide-y divide-border">…</ul>}
+    <PanelFooter>Muted note</PanelFooter>
+  </Panel>
+  <Panel className="lg:col-span-2">…</Panel>
+</div>
+```
+
+- Never put a second line (subtitle/date) under a panel title — put it in `meta` on the same line.
+- Stacked boxes in one column: wrap in `flex flex-col gap-6` and give the last/main box `flex-1` so the column ends level with its neighbour.
+- Custom headers (calendars, collapsibles) must keep `min-h-12 py-2` and h-7 controls so they match 48px.
+
 ## Cards & chrome
 
 - Panels: `rounded-lg border border-border bg-card` — header row `px-4 sm:px-6 py-3 border-b border-border` with a `font-semibold` title (sentence case).

@@ -170,14 +170,14 @@ export function EmployeeScheduleGrid({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="border-b border-border px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-3">
+      <div className="border-b border-border px-4 sm:px-5 py-2 min-h-12 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-2">
         <h2 className="font-semibold">Your schedule</h2>
 
-        <div className="flex items-center gap-1 sm:gap-2 bg-background border border-border rounded-lg p-1 self-start sm:self-auto">
+        <div className="flex items-center gap-1 sm:gap-2 self-start sm:self-auto">
            <IconTooltip label="Previous week" side="bottom">
              <button 
                onClick={() => setWeekOffset(prev => prev - 1)}
-               className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                aria-label="Previous week"
              >
                <ChevronLeft className="w-4 h-4" />
@@ -189,7 +189,7 @@ export function EmployeeScheduleGrid({
            <IconTooltip label="Next week" side="bottom">
              <button 
                onClick={() => setWeekOffset(prev => prev + 1)}
-               className="p-1.5 hover:bg-card rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                aria-label="Next week"
              >
                <ChevronRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ export function EmployeeScheduleGrid({
            <IconTooltip label="Reset to current week" side="bottom">
              <button 
                onClick={() => setWeekOffset(0)}
-               className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-card hover:bg-accent border border-border rounded-lg ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+               className="h-7 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
              >
                <span>Reset</span>
              </button>

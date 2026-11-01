@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PageHeader, PageMain } from "@/components/page";
+import { Panel, PanelFooter, PanelHeader } from "@/components/panel";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -180,15 +181,10 @@ function AvailabilityEditor() {
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5">
         {/* Weekly editor */}
-        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-3">
-          <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
-            <h2 className="font-semibold">Weekly hours</h2>
-            <span className="ml-auto text-xs text-muted-foreground">
-              Times are in your local timezone
-            </span>
-          </div>
+        <Panel className="lg:col-span-3">
+          <PanelHeader title="Weekly hours" meta="Local time" />
           <ul className="divide-y divide-border">
             {days.map((day, index) => (
               <li
@@ -238,18 +234,15 @@ function AvailabilityEditor() {
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
 
         {/* Week at a glance */}
-        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-2">
-          <div className="border-b border-border px-4 py-3 sm:px-5">
-            <h2 className="font-semibold">Your week</h2>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {availableDays.length} day{availableDays.length === 1 ? "" : "s"} ·{" "}
-              {Math.round(totalHours * 10) / 10}h available
-            </p>
-          </div>
-          <div className="space-y-2 px-4 py-4 sm:px-5">
+        <Panel className="lg:col-span-2">
+          <PanelHeader
+            title="Your week"
+            meta={`${availableDays.length} day${availableDays.length === 1 ? "" : "s"} · ${Math.round(totalHours * 10) / 10}h`}
+          />
+          <div className="flex flex-1 flex-col justify-center gap-2.5 px-4 py-4 sm:px-5">
             {days.map((day, index) => {
               const start = toMinutes(day.start_time);
               const end = toMinutes(day.end_time);
@@ -281,11 +274,11 @@ function AvailabilityEditor() {
               ))}
             </div>
           </div>
-          <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground sm:px-5">
+          <PanelFooter>
             Managers can only assign shifts inside these hours. Approved time
             off is blocked separately.
-          </p>
-        </section>
+          </PanelFooter>
+        </Panel>
       </div>
     </PageMain>
   );

@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/use-api";
@@ -116,6 +118,7 @@ function readPeriodMode(): PeriodMode {
 
 function HoursPageContent() {
   const api = useApi();
+  const { user } = useAuth();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [todayEntries, setTodayEntries] = useState<TimeEntry[]>([]);
@@ -332,6 +335,22 @@ function HoursPageContent() {
     }
   };
 
+  const sumHours = (status: string) =>
+    entries
+      .filter((e) => e.status === status && e.clock_out_at)
+      .reduce((sum, e) => sum + hoursBetween(e.clock_in_at, e.clock_out_at), 0);
+  const periodStats: Array<[string, string | number, string]> = [
+    ["Approved", formatHours(sumHours("approved")), "paid hours"],
+    ["Pending", formatHours(sumHours("pending")), "awaiting review"],
+    ["Entries", entries.length, "clock-ins"],
+    ["Shifts today", todayShifts.length, "published"],
+  ];
+  const todayLabelShort = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date());
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
@@ -341,29 +360,117 @@ function HoursPageContent() {
   }
 
   return (
-    <main className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-10 sm:pb-16 space-y-6 flex-1">
-      <div>
-        <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">Hours</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-          Clock in for your published shifts and review hours by week or
-          biweekly period.
-        </p>
-      </div>
+    <PageMain>
+      <PageHeader
+        eyebrow={user?.profile.companies?.name}
+        title="Hours"
+        description="Clock in for your published shifts and review hours by week or biweekly period."
+        actions={
+          <Link
+            href="/dashboard"
+            className="inline-flex h-8 items-center rounded-md border border-input px-3 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            View schedule
+          </Link>
+        }
+      />
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card">
-          <h2 className="font-semibold">Today</h2>
-        </div>
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Panel className="lg:col-span-3">
+          <PanelHeader
+            title="Period hours"
+            meta={`${formatHours(totalHours)} total`}
+            actions={
+              <>
+                <div className="flex gap-0.5 rounded-md border border-input p-0.5">
+                  {(["week", "biweek"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setMode(mode)}
+                      className={cn(
+                        "rounded-sm px-2 py-1 text-xs font-medium transition-colors cursor-pointer",
+                        periodMode === mode
+                          ? "bg-brand-soft text-brand"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {mode === "week" ? "Weekly" : "Biweekly"}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setPeriodOffset((o) => o - 1)}
+                  aria-label="Previous period"
+                  tooltip="Previous period"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-[8.5rem] text-center text-xs text-muted-foreground tabular-nums">
+                  {headerRange}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setPeriodOffset((o) => o + 1)}
+                  aria-label="Next period"
+                  tooltip="Next period"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            }
+          />
+        {entries.length === 0 ? (
+          <PanelEmpty>No time entries in this period.</PanelEmpty>
+        ) : (
+          <ul className="divide-y divide-border">
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-medium">
+                    {entry.shift?.title ?? "Shift"}
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      · {formatEntryDate(entry.clock_in_at)}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTime(entry.clock_in_at)}
+                    {entry.clock_out_at
+                      ? ` – ${formatTime(entry.clock_out_at)}`
+                      : " – …"}
+                    {entry.clock_out_at
+                      ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
+                      : ""}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize",
+                    STATUS_STYLES[entry.status],
+                  )}
+                >
+                  {entry.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        </Panel>
 
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <Panel>
+            <PanelHeader title="Today" meta={todayLabelShort} />
         {todayShifts.length === 0 ? (
-          <div className="px-4 sm:px-6 py-12 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <Timer className="h-5 w-5" />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              No published shifts scheduled for today.
-            </p>
-          </div>
+          <PanelEmpty icon={<Timer />}>
+            No published shifts scheduled for today.
+          </PanelEmpty>
         ) : (
           <ul className="divide-y divide-border">
             {todayShifts.map((shift) => {
@@ -380,13 +487,13 @@ function HoursPageContent() {
               return (
                 <li
                   key={shift.id}
-                  className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="px-4 sm:px-5 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold">{shift.title}</p>
+                      <p className="text-sm font-medium">{shift.title}</p>
                       {isOpen && (
-                        <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-500">
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                           Clocked in
                         </span>
                       )}
@@ -421,7 +528,7 @@ function HoursPageContent() {
                   <div className="flex items-center gap-2 shrink-0">
                     {canClockOut ? (
                       <Button
-                        className="btn-brand rounded-md h-9 px-4"
+                        
                         disabled={actingShiftId === shift.id}
                         onClick={() => clockOut(shift.id)}
                       >
@@ -433,7 +540,7 @@ function HoursPageContent() {
                       </Button>
                     ) : canClockIn && earlyOk && notEnded ? (
                       <Button
-                        className="btn-brand rounded-md h-9 px-4"
+                        
                         disabled={actingShiftId === shift.id}
                         onClick={() => clockIn(shift.id)}
                       >
@@ -460,114 +567,23 @@ function HoursPageContent() {
             })}
           </ul>
         )}
-      </section>
+          </Panel>
 
-      <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="font-semibold">Period hours</h2>
-            <span className="text-sm text-muted-foreground">
-              {formatHours(totalHours)} total
-            </span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1 p-1 rounded-lg bg-background border border-border">
-              {(["week", "biweek"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setMode(mode)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-                    periodMode === mode
-                      ? "bg-brand-soft text-brand"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {mode === "week" ? "Weekly" : "Biweekly"}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => setPeriodOffset((o) => o - 1)}
-                aria-label="Previous period"
-                tooltip="Previous period"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-xs sm:text-sm text-muted-foreground min-w-[9rem] sm:min-w-[11rem] text-center">
-                {headerRange}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => setPeriodOffset((o) => o + 1)}
-                aria-label="Next period"
-                tooltip="Next period"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {entries.length === 0 ? (
-          <div className="px-4 sm:px-6 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No time entries in this period.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {entries.map((entry) => (
-              <li
-                key={entry.id}
-                className="px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-semibold">
-                    {entry.shift?.title ?? "Shift"}
-                    <span className="font-normal text-muted-foreground">
-                      {" "}
-                      · {formatEntryDate(entry.clock_in_at)}
-                    </span>
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatTime(entry.clock_in_at)}
-                    {entry.clock_out_at
-                      ? ` – ${formatTime(entry.clock_out_at)}`
-                      : " – …"}
-                    {entry.clock_out_at
-                      ? ` · ${formatHours(hoursBetween(entry.clock_in_at, entry.clock_out_at))}`
-                      : ""}
-                  </p>
+          <Panel className="flex-1">
+            <PanelHeader title="This period" meta={headerRange} />
+            <dl className="grid flex-1 grid-cols-2 content-start gap-px bg-border">
+              {periodStats.map(([label, value, hint]) => (
+                <div key={label} className="bg-card px-4 py-3 sm:px-5">
+                  <dt className="text-[13px] text-muted-foreground">{label}</dt>
+                  <dd className="text-2xl font-semibold tabular-nums">{value}</dd>
+                  <dd className="text-xs text-muted-foreground">{hint}</dd>
                 </div>
-                <span
-                  className={cn(
-                    "text-xs font-medium px-1.5 py-0.5 rounded-sm capitalize self-start",
-                    STATUS_STYLES[entry.status],
-                  )}
-                >
-                  {entry.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <p className="text-xs text-muted-foreground">
-        Need your schedule?{" "}
-        <Link href="/dashboard" className="text-brand hover:underline">
-          View Schedule
-        </Link>
-      </p>
-    </main>
+              ))}
+            </dl>
+          </Panel>
+        </div>
+      </div>
+    </PageMain>
   );
 }
 

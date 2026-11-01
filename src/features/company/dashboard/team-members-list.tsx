@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Shield } from "lucide-react";
 import { AssignShiftModal } from "./assign-shift-modal";
 import type { CompanySettings } from "./company-settings";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { ScrollFade } from "@/components/scroll-fade";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -49,27 +50,22 @@ export function TeamMembersList({
   );
 
   return (
-    <section
-      className={cn(
-        "flex flex-col overflow-hidden rounded-lg border border-border bg-card",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
-        <h2 className="font-semibold">Team</h2>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {all.length}
-        </span>
-        {onManage && (
-          <button
-            type="button"
-            onClick={onManage}
-            className="ml-auto h-7 rounded-md px-2 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Manage
-          </button>
-        )}
-      </div>
+    <Panel className={className}>
+      <PanelHeader
+        title="Team"
+        meta={all.length}
+        actions={
+          onManage && (
+            <button
+              type="button"
+              onClick={onManage}
+              className="h-7 rounded-md px-2 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Manage
+            </button>
+          )
+        }
+      />
 
       {all.length > SEARCH_THRESHOLD && (
         <div className="relative border-b border-border">
@@ -126,12 +122,12 @@ export function TeamMembersList({
           ))}
         </ScrollFade>
       ) : (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+        <PanelEmpty>
           {all.length === 0
             ? `No one here yet — invite your team to ${company.name}.`
             : `No team members match "${searchQuery}".`}
-        </p>
+        </PanelEmpty>
       )}
-    </section>
+    </Panel>
   );
 }

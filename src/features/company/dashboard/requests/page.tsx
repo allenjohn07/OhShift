@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { CalendarDays, Inbox, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PageHeader, PageMain } from "@/components/page";
+import { PersonAvatar } from "@/components/person-avatar";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -13,61 +15,16 @@ import {
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
-import type {
-  PendingTimeOffStatus,
-  PendingTimeOffType,
-} from "@/lib/pending-time-off-store";
-import { getEmployeeColor } from "@/lib/tag-colors";
+import type { PendingTimeOffType } from "@/lib/pending-time-off-store";
+
+import {
+  TIME_OFF_STATUS_STYLES,
+  TIME_OFF_TYPE_LABELS,
+  TIME_OFF_TYPE_STYLES,
+  dayCount,
+  formatDateRange,
+} from "@/lib/time-off";
 import { cn } from "@/lib/utils";
-
-const TYPE_LABELS: Record<PendingTimeOffType, string> = {
-  vacation: "Vacation",
-  sick: "Sick",
-  personal: "Personal",
-  other: "Other",
-};
-
-const STATUS_STYLES: Record<PendingTimeOffStatus, string> = {
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  denied: "bg-destructive/10 text-destructive",
-  cancelled: "bg-muted text-muted-foreground",
-};
-
-/** Notion tag colors per time-off type. */
-const TYPE_STYLES: Record<PendingTimeOffType, string> = {
-  vacation: "bg-[#d3e5ef] text-[#183347] dark:bg-[#1f3a52] dark:text-[#b9dcf3]",
-  sick: "bg-[#ffe2dd] text-[#5d1715] dark:bg-[#4a2321] dark:text-[#f5c2bd]",
-  personal: "bg-[#e8deee] text-[#412454] dark:bg-[#3a2a4a] dark:text-[#ddc7f0]",
-  other: "bg-[#e3e2e0] text-[#32302c] dark:bg-[#373737] dark:text-[#d4d4d4]",
-};
-
-function formatRange(start: string, end: string) {
-  const opts: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  };
-  const s = new Date(`${start}T00:00:00.000Z`);
-  const e = new Date(`${end}T00:00:00.000Z`);
-  if (start === end) {
-    return new Intl.DateTimeFormat("en-US", {
-      ...opts,
-      year: "numeric",
-    }).format(s);
-  }
-  return `${new Intl.DateTimeFormat("en-US", opts).format(s)} – ${new Intl.DateTimeFormat("en-US", {
-    ...opts,
-    year: "numeric",
-  }).format(e)}`;
-}
-
-function dayCount(start: string, end: string) {
-  const ms =
-    new Date(`${end}T00:00:00.000Z`).getTime() -
-    new Date(`${start}T00:00:00.000Z`).getTime();
-  return Math.round(ms / 86_400_000) + 1;
-}
 
 function timeAgo(iso?: string | null) {
   if (!iso) return null;
@@ -79,37 +36,15 @@ function timeAgo(iso?: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function PersonAvatar({ name }: { name: string }) {
-  return (
-    <span
-      className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-        getEmployeeColor(name),
-      )}
-    >
-      {initials(name)}
-    </span>
-  );
-}
-
 function TypeTag({ type }: { type: PendingTimeOffType }) {
   return (
     <span
       className={cn(
         "rounded-sm px-1.5 py-0.5 text-xs font-medium",
-        TYPE_STYLES[type],
+        TIME_OFF_TYPE_STYLES[type],
       )}
     >
-      {TYPE_LABELS[type]}
+      {TIME_OFF_TYPE_LABELS[type]}
     </span>
   );
 }
@@ -158,26 +93,15 @@ function RequestsContent() {
         description="Approve or deny time-off from your team. Approved days block shifts from being assigned."
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5">
         {/* Pending */}
-        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-3">
-          <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
-            <h2 className="font-semibold">Pending</h2>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {pending.length}
-            </span>
-          </div>
+        <Panel className="lg:col-span-3">
+          <PanelHeader title="Pending" meta={pending.length} />
 
           {pending.length === 0 ? (
-            <div className="px-5 py-14 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <Inbox className="h-5 w-5" />
-              </div>
-              <p className="text-sm font-medium">All caught up</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                New time-off requests from your team will show up here.
-              </p>
-            </div>
+            <PanelEmpty icon={<Inbox />} title="All caught up">
+              New time-off requests from your team will show up here.
+            </PanelEmpty>
           ) : (
             <ul className="divide-y divide-border">
               {pending.map((req) => {
@@ -205,7 +129,7 @@ function RequestsContent() {
                       </div>
                       <p className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        {formatRange(req.start_date, req.end_date)}
+                        {formatDateRange(req.start_date, req.end_date)}
                         <span>· {days} day{days === 1 ? "" : "s"}</span>
                       </p>
                       {req.note && (
@@ -246,17 +170,13 @@ function RequestsContent() {
               })}
             </ul>
           )}
-        </section>
+        </Panel>
 
         {/* Recently reviewed */}
-        <section className="overflow-hidden rounded-lg border border-border bg-card lg:col-span-2">
-          <div className="border-b border-border px-4 py-3 sm:px-5">
-            <h2 className="font-semibold">Recently reviewed</h2>
-          </div>
+        <Panel className="lg:col-span-2">
+          <PanelHeader title="Recently reviewed" meta={recent.length || undefined} />
           {recent.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-              Reviewed requests will show up here.
-            </p>
+            <PanelEmpty>Reviewed requests will show up here.</PanelEmpty>
           ) : (
             <ul className="divide-y divide-border">
               {recent.map((req) => {
@@ -267,15 +187,15 @@ function RequestsContent() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{name}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {TYPE_LABELS[req.type]} ·{" "}
-                        {formatRange(req.start_date, req.end_date)}
+                        {TIME_OFF_TYPE_LABELS[req.type]} ·{" "}
+                        {formatDateRange(req.start_date, req.end_date)}
                         {req.reviewed_by && ` · by ${req.reviewed_by.full_name}`}
                       </p>
                     </div>
                     <span
                       className={cn(
                         "shrink-0 rounded-sm px-1.5 py-0.5 text-xs font-medium capitalize",
-                        STATUS_STYLES[req.status],
+                        TIME_OFF_STATUS_STYLES[req.status],
                       )}
                     >
                       {req.status}
@@ -285,7 +205,7 @@ function RequestsContent() {
               })}
             </ul>
           )}
-        </section>
+        </Panel>
       </div>
     </PageMain>
   );

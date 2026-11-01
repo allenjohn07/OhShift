@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
+import { PageHeader, PageMain } from "@/components/page";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -412,25 +414,19 @@ function InboxPageContent() {
 
   return (
     <>
-      <div className="flex-1 w-full">
-        <div className="max-w-6xl w-full mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-12 pb-8">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1.5">Team</p>
-              <h1 className="text-[1.75rem] sm:text-[2.5rem] leading-[1.15] font-bold tracking-tight">
-                Inbox
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Announcements and direct messages with your team.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
+      <PageMain>
+          <PageHeader
+            eyebrow={user?.profile.companies?.name}
+            title="Inbox"
+            description="Announcements and direct messages with your team."
+            actions={
+            <>
               {tab === "announcements" && canManage && (
                 <Button
                   
                   onClick={() => openCompose()}
                 >
-                  <Plus className="h-4 w-4 mr-1.5" />
+                  <Plus className="h-4 w-4" />
                   New announcement
                 </Button>
               )}
@@ -448,28 +444,29 @@ function InboxPageContent() {
                   
                   onClick={openNewDm}
                 >
-                  <Plus className="h-4 w-4 mr-1.5" />
+                  <Plus className="h-4 w-4" />
                   New message
                 </Button>
               )}
-            </div>
-          </div>
+            </>
+            }
+          />
 
-          <div className="flex gap-1 p-1 rounded-lg border border-border bg-card w-fit mb-6">
+          <div className="flex w-fit gap-0.5 rounded-md border border-input p-0.5">
             <button
               type="button"
               onClick={() => setTab("announcements")}
               className={cn(
-                "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                "inline-flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer",
                 tab === "announcements"
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-accent text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Megaphone className="h-4 w-4" />
               Announcements
               {unreadAnnouncements > 0 && (
-                <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
+                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-brand-soft px-1 text-[11px] font-medium tabular-nums text-brand">
                   {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
                 </span>
               )}
@@ -478,16 +475,16 @@ function InboxPageContent() {
               type="button"
               onClick={() => setTab("messages")}
               className={cn(
-                "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                "inline-flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer",
                 tab === "messages"
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-accent text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
               <MessageSquare className="h-4 w-4" />
               Messages
               {conversations.some((c) => c.unread_count > 0) && (
-                <span className="min-w-5 h-5 px-1.5 rounded-full bg-brand text-brand-foreground text-[10px] font-semibold flex items-center justify-center">
+                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-brand-soft px-1 text-[11px] font-medium tabular-nums text-brand">
                   {conversations.reduce((n, c) => n + c.unread_count, 0) > 99
                     ? "99+"
                     : conversations.reduce((n, c) => n + c.unread_count, 0)}
@@ -497,46 +494,42 @@ function InboxPageContent() {
           </div>
 
           {tab === "announcements" && (
-            <div className="space-y-3">
+            <Panel className="min-h-[28rem]">
+              <PanelHeader
+                title="Announcements"
+                meta={announcements.length || undefined}
+              />
               {announcements.length === 0 ? (
-                <div className="rounded-lg border border-border bg-card px-6 py-16 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
-                    <Megaphone className="h-5 w-5" />
-                  </div>
-                  <p className="font-medium">No announcements yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {canManage
-                      ? "Post an update for your whole team."
-                      : "When managers post updates, they’ll show up here."}
-                  </p>
-                </div>
+                <PanelEmpty icon={<Megaphone />} title="No announcements yet">
+                  {canManage
+                    ? "Post an update for your whole team."
+                    : "When managers post updates, they’ll show up here."}
+                </PanelEmpty>
               ) : (
+                <ul className="divide-y divide-border">{
                 announcements.map((ann) => {
                   const open = expandedId === ann.id;
                   const unread = !ann.is_read && ann.author_id !== userId;
                   const isAuthor = ann.author_id === userId;
                   return (
-                    <div
-                      key={ann.id}
-                      className={cn(
-                        "rounded-lg border border-border bg-card overflow-hidden transition-colors",
-                        unread && "border-brand/40",
-                      )}
-                    >
+                    <li key={ann.id}>
                       <button
                         type="button"
                         onClick={() => handleExpandAnnouncement(ann)}
-                        className="w-full text-left px-4 sm:px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                        className="w-full text-left px-4 sm:px-5 py-3 cursor-pointer hover:bg-accent/60 transition-colors"
                       >
                         <div className="flex items-start gap-3">
-                          {unread && (
-                            <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand" />
-                          )}
+                          <span
+                            className={cn(
+                              "mt-2 h-2 w-2 shrink-0 rounded-full",
+                              unread ? "bg-brand" : "bg-transparent",
+                            )}
+                          />
                           <div className={cn("min-w-0 flex-1", !unread && "ml-0")}>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <h2 className="font-semibold tracking-tight truncate">
+                              <h3 className={cn("truncate text-sm", unread ? "font-semibold" : "font-medium")}>
                                 {ann.title}
-                              </h2>
+                              </h3>
                               <span className="text-xs text-muted-foreground">
                                 {formatRelative(ann.created_at)}
                               </span>
@@ -555,7 +548,7 @@ function InboxPageContent() {
                         </div>
                       </button>
                       {open && (
-                        <div className="px-4 sm:px-5 pb-4 border-t border-border pt-3">
+                        <div className="px-4 pb-4 pl-9 sm:px-5 sm:pl-10">
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">
                             {ann.body}
                           </p>
@@ -568,23 +561,23 @@ function InboxPageContent() {
                                   
                                   onClick={() => openCompose(ann)}
                                 >
-                                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                                  <Pencil className="h-3.5 w-3.5" />
                                   Edit
                                 </Button>
                               )}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="rounded-lg text-red-500 hover:text-red-500"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                 disabled={deletingId === ann.id}
                                 onClick={() =>
                                   handleDeleteAnnouncement(ann.id)
                                 }
                               >
                                 {deletingId === ann.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 )}
                                 Delete
                               </Button>
@@ -592,15 +585,15 @@ function InboxPageContent() {
                           )}
                         </div>
                       )}
-                    </div>
+                    </li>
                   );
-                })
+                })}</ul>
               )}
-            </div>
+            </Panel>
           )}
 
           {tab === "messages" && (
-            <div className="rounded-lg border border-border bg-card overflow-hidden min-h-[28rem] sm:min-h-[32rem] flex flex-col md:flex-row">
+            <Panel className="min-h-[28rem] md:flex-row">
               {/* Conversation list */}
               <div
                 className={cn(
@@ -608,14 +601,10 @@ function InboxPageContent() {
                   activeId ? "hidden md:flex" : "flex",
                 )}
               >
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-medium">Conversations</p>
-                </div>
+                <PanelHeader title="Conversations" meta={conversations.length || undefined} />
                 <div className="flex-1 overflow-y-auto max-h-[40vh] md:max-h-none">
                   {conversations.length === 0 ? (
-                    <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      No conversations yet. Start one with a teammate.
-                    </div>
+                    <PanelEmpty>No conversations yet. Start one with a teammate.</PanelEmpty>
                   ) : (
                     conversations.map((c) => (
                       <button
@@ -625,8 +614,8 @@ function InboxPageContent() {
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors border-b border-border last:border-0",
                           activeId === c.id
-                            ? "bg-brand-soft/60"
-                            : "hover:bg-muted/30",
+                            ? "bg-accent"
+                            : "hover:bg-accent/60",
                         )}
                       >
                         <Avatar className="h-9 w-9 shrink-0">
@@ -675,10 +664,10 @@ function InboxPageContent() {
                 {!activeId ? (
                   <div className="flex-1 flex items-center justify-center p-8 text-center">
                     <div>
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-brand-soft text-brand">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
                         <MessageSquare className="h-5 w-5" />
                       </div>
-                      <p className="font-medium">Select a conversation</p>
+                      <p className="text-sm font-medium">Select a conversation</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         Or start a new message with a teammate.
                       </p>
@@ -686,7 +675,7 @@ function InboxPageContent() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-border">
+                    <div className="flex min-h-12 items-center gap-2 border-b border-border px-3 py-2 sm:px-4">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -719,7 +708,7 @@ function InboxPageContent() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 max-h-[50vh] md:max-h-none">
+                    <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 max-h-[50vh] md:max-h-[28rem]">
                       {messages.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground py-8">
                           Say hello — send the first message.
@@ -740,7 +729,7 @@ function InboxPageContent() {
                                   "max-w-[85%] sm:max-w-[70%] rounded-lg px-3.5 py-2 text-sm",
                                   mine
                                     ? "bg-brand text-brand-foreground rounded-br-md"
-                                    : "bg-muted/60 text-foreground rounded-bl-md",
+                                    : "bg-muted text-foreground rounded-bl-md",
                                 )}
                               >
                                 <p className="whitespace-pre-wrap break-words">
@@ -777,7 +766,7 @@ function InboxPageContent() {
                       <Button
                         type="submit"
                         disabled={sending || !draft.trim()}
-                        className="btn-brand rounded-md shrink-0 h-9 px-5"
+                        className="h-9 shrink-0 px-4"
                       >
                         {sending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -789,10 +778,9 @@ function InboxPageContent() {
                   </>
                 )}
               </div>
-            </div>
+            </Panel>
           )}
-        </div>
-      </div>
+      </PageMain>
 
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
         <DialogContent className="sm:max-w-lg">

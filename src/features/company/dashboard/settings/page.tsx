@@ -39,6 +39,7 @@ export default function CompanySettingsPage() {
     <AppShell role={role}>
       <AuthGuard loginPath="/company/login" allowedRoles={["owner", "manager"]}>
         <SettingsPageShell
+          eyebrow={user?.profile.companies?.name}
           title="Settings"
           description="Workspace schedule defaults, notifications, and team preferences."
         >
@@ -136,6 +137,7 @@ export default function CompanySettingsPage() {
           </SettingsSection>
 
           <SettingsSection
+            wide
             title="Team & workspace"
             description="How invites and company details behave."
           >
