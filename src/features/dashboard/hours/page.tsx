@@ -590,15 +590,12 @@ function HoursPageContent() {
 export default function HoursPage() {
   const { user } = useAuth();
   const role: AppRole =
-    user?.profile.role === "owner"
-      ? "owner"
-      : user?.profile.role === "manager"
-        ? "manager"
-        : "employee";
+    user?.profile.role === "manager" ? "manager" : "employee";
 
   return (
     <AppShell role={role}>
-      <AuthGuard allowedRoles={["employee", "manager", "owner"]}>
+      {/* Owners don't clock in — the guard sends them back to Overview. */}
+      <AuthGuard allowedRoles={["employee", "manager"]}>
         <HoursPageContent />
       </AuthGuard>
     </AppShell>

@@ -106,13 +106,13 @@ export const NAV_ITEMS: NavItem[] = [
     mobileTab: true,
   },
   // Managers also work shifts — self-service Hours / Availability / Time off.
-  // Owners get Hours only (no Availability / Time off nav).
+  // Owners run the workspace and don't clock in, so they get none of these.
   {
     id: "mgr-hours",
     label: "Hours",
     href: "/dashboard/hours",
     icon: Timer,
-    roles: ["manager", "owner"],
+    roles: ["manager"],
   },
   {
     id: "mgr-availability",
