@@ -82,12 +82,12 @@ Outbound email is not wired. Invite codes and password-reset temps are returned 
 
 ## Frontend
 
-The static Next.js app on Cloudflare Pages uses:
+The Vite SPA on Cloudflare Pages uses:
 
 ```env
-NEXT_PUBLIC_API_URL=https://ohshift-api.<subdomain>.workers.dev
-NEXT_PUBLIC_APP_URL=https://ohshift.pages.dev
-NEXT_PUBLIC_BASE_PATH=
+VITE_API_URL=https://ohshift-api.<subdomain>.workers.dev
+VITE_APP_URL=https://ohshift.pages.dev
+VITE_BASE_PATH=
 ```
 
 Worker secret `FRONTEND_URL` must match the Pages **origin** for CORS.

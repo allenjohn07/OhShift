@@ -1,8 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { Link, usePathname, useRouter } from "@/lib/navigation";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
   LogOut,
@@ -57,15 +54,15 @@ const SIDEBAR_EXPANDED_PL = "md:pl-60";
 const SIDEBAR_COLLAPSED_PL = "md:pl-16";
 /** No overshoot — previous curve felt like a bounce */
 const SIDEBAR_EASE =
-  "duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
+  "duration-150 ease-out motion-reduce:transition-none";
 
 /** Neon-style label fade: hide quickly on collapse, reveal after width opens */
 function sidebarLabelClass(collapsed: boolean) {
   return cn(
     "min-w-0 truncate whitespace-nowrap transition-opacity motion-reduce:transition-none",
     collapsed
-      ? "opacity-0 duration-150 pointer-events-none"
-      : "opacity-100 duration-200 delay-100",
+      ? "opacity-0 duration-75 pointer-events-none"
+      : "opacity-100 duration-100 delay-75",
   );
 }
 
@@ -123,7 +120,7 @@ function useSidebarCollapsed() {
 }
 
 const compactTabClass =
-  "flex w-full flex-col items-center gap-1 px-2 py-2 text-[10px] font-medium rounded-xl transition-colors cursor-pointer";
+  "flex w-full flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium rounded-md transition-colors cursor-pointer";
 
 function NavBadge({
   count,
@@ -142,7 +139,7 @@ function NavBadge({
     return (
       <span
         className={cn(
-          "absolute flex items-center justify-center rounded-full bg-brand text-[9px] font-bold leading-none text-brand-foreground",
+          "absolute flex items-center justify-center rounded-full bg-brand text-[9px] font-semibold leading-none text-brand-foreground",
           corner
             ? "-right-1 -top-1 h-4 min-w-4 px-0.5"
             : "-right-2 -top-1.5 h-4 min-w-4 px-0.5",
@@ -154,7 +151,7 @@ function NavBadge({
   }
 
   return (
-    <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft px-1.5 text-[10px] font-bold text-brand">
+    <span className="ml-auto flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-sm bg-brand-soft px-1 text-[11px] font-medium tabular-nums text-brand">
       {text}
     </span>
   );
@@ -195,16 +192,20 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center rounded-xl transition-colors cursor-pointer",
+        "group/nav flex items-center rounded-md transition-colors cursor-pointer",
         compact
           ? compactTabClass
           : flush
-            ? "gap-3 py-2.5 text-sm font-medium"
+            ? "gap-2.5 px-2 py-2 text-sm"
             : // Fixed padding forever — never justify-center (that shifts icons)
-              "w-full gap-3 px-3 py-2.5 text-sm font-medium",
-        active
-          ? "bg-brand-soft text-brand"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+              "h-8 w-full gap-2.5 px-3 text-sm",
+        compact
+          ? active
+            ? "text-brand"
+            : "text-muted-foreground hover:text-foreground"
+          : active
+            ? "bg-accent font-medium text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent",
       )}
       aria-current={active ? "page" : undefined}
       aria-label={ariaLabel}
@@ -215,7 +216,12 @@ function NavLink({
           compact ? "h-5 w-5" : "h-4 w-4",
         )}
       >
-        <Icon className={cn(compact ? "h-5 w-5" : "h-4 w-4")} />
+        <Icon
+          className={cn(
+            compact ? "h-5 w-5" : "h-4 w-4",
+            !compact && active && "text-brand",
+          )}
+        />
         {compact && <NavBadge count={count} compact />}
         {!compact && !flush && count > 0 && (
           <span
@@ -252,7 +258,11 @@ function NavLink({
           {flush && <NavBadge count={count} />}
         </>
       )}
-      {compact && <span className="leading-none">{label}</span>}
+      {compact && (
+        <span data-tab-label className="leading-none">
+          {label}
+        </span>
+      )}
     </Link>
   );
 
@@ -306,13 +316,19 @@ function AccountPanel({
       <button
         type="button"
         className={cn(
-          "flex h-9 min-w-0 w-full items-center gap-2.5 rounded-xl text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-          flush ? "px-0" : "px-2.5 pr-3",
+          "flex min-w-0 w-full items-center rounded-md text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+          // flush = mobile sheet: same 20px icon column, gap and padding as the link rows
+          flush ? "h-12 gap-3" : "h-8 gap-2 px-2 pr-3",
         )}
       >
-        <Avatar className="h-7 w-7 border border-border/50 shrink-0">
+        <Avatar className={cn("shrink-0 rounded-sm", flush ? "h-5 w-5" : "h-6 w-6")}>
           <AvatarImage src={avatarUrl || ""} alt={displayName} />
-          <AvatarFallback className="bg-brand-soft text-brand font-medium text-[10px]">
+          <AvatarFallback
+            className={cn(
+              "rounded-sm bg-brand-soft text-brand font-medium",
+              flush ? "text-[8px]" : "text-[10px]",
+            )}
+          >
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -323,8 +339,8 @@ function AccountPanel({
           )}
           aria-hidden={rail || undefined}
         >
-          <p className="text-sm font-medium truncate whitespace-nowrap">
-            {firstName}
+          <p className={cn("font-medium truncate whitespace-nowrap", flush ? "text-base" : "text-sm")}>
+            {flush ? displayName : firstName}
           </p>
         </div>
       </button>
@@ -343,7 +359,7 @@ function AccountPanel({
             {avatarTrigger}
           </IconTooltip>
           <DropdownMenuContent
-            className="z-[80] w-52"
+            className="z-[80] w-52 border border-border shadow-none!"
             side="top"
             align="start"
             sideOffset={8}
@@ -379,44 +395,40 @@ function AccountPanel({
             )}
             <DropdownMenuItem
               onClick={onLogout}
-              className="text-red-500 focus:text-red-500 cursor-pointer focus:bg-red-500/10"
+              variant="destructive"
+              className="cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <IconTooltip
-        label={
-          mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
-        }
-        side="top"
-        enabled={!rail}
-      >
-        <button
-          type="button"
-          onClick={toggle}
-          className={cn(
-            "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent border border-border/50 transition-opacity cursor-pointer motion-reduce:transition-none",
-            rail
-              ? "opacity-0 duration-150 pointer-events-none"
-              : "opacity-100 duration-200 delay-100",
-          )}
-          aria-label={
-            mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
-          }
-          tabIndex={rail ? -1 : undefined}
-          aria-hidden={rail || undefined}
+      {/* Rail is too narrow for two buttons — theme lives in the avatar menu there. */}
+      {!rail && (
+        <IconTooltip
+          label={mounted && isDark ? "Switch to light mode" : "Switch to dark mode"}
+          side="top"
         >
-          {mounted && isDark ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
-        </button>
-      </IconTooltip>
+          <button
+            type="button"
+            onClick={toggle}
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer",
+              // flush: icon lines up with the rows' right padding
+              flush ? "h-12 w-12 justify-end" : "h-8 w-8",
+            )}
+            aria-label={mounted && isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {mounted && isDark ? (
+              <Sun className={flush ? "h-5 w-5" : "h-4 w-4"} />
+            ) : (
+              <Moon className={flush ? "h-5 w-5" : "h-4 w-4"} />
+            )}
+          </button>
+        </IconTooltip>
+      )}
     </div>
   );
 }
@@ -461,11 +473,45 @@ export function AppShell({
     }
     return undefined;
   };
-  const profileActive = isNavActive(pathname, "/profile");
-  const menuActive =
-    menuOpen ||
-    profileActive ||
-    menuExtras.some((item) => isNavActive(pathname, item.href));
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Mobile sheet insets = where the first tab label starts / the last one ends,
+  // so the sheet's icons line up with "Overview" (left) and "Close" (right).
+  const tabRowRef = useRef<HTMLDivElement>(null);
+  const [sheetInset, setSheetInset] = useState<{ left: number; right: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const measure = () => {
+      const row = tabRowRef.current;
+      const labels = row?.querySelectorAll<HTMLElement>("[data-tab-label]");
+      if (!row || !labels || labels.length === 0) return;
+      const box = row.getBoundingClientRect();
+      const first = labels[0]!.getBoundingClientRect();
+      const last = labels[labels.length - 1]!.getBoundingClientRect();
+      setSheetInset({
+        left: Math.round(first.left - box.left),
+        right: Math.round(box.right - last.right),
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Escape closes the account popup first, not the whole menu behind it.
+      if (document.querySelector("[data-slot=dropdown-menu-content]")) return;
+      setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -490,6 +536,7 @@ export function AppShell({
   const displayName = user?.profile.full_name || "User";
   const email = user?.email;
   const avatarUrl = user?.profile.avatar_url;
+  const companyName = user?.profile.companies?.name;
 
   // Hold the shell until auth resolves so we never paint the wrong role's nav.
   if (loading) {
@@ -505,29 +552,39 @@ export function AppShell({
       {/* Desktop sidebar — width + label opacity only; icons never move or resize */}
       <aside
         className={cn(
-          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col overflow-hidden border-r border-border/40 bg-background transition-[width]",
+          "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col overflow-hidden border-r border-border bg-sidebar transition-[width]",
           SIDEBAR_EASE,
           collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W,
         )}
       >
-        <div className="flex h-16 shrink-0 items-center gap-1.5 border-b border-border/40 px-5">
+        {/* Workspace header (Notion-style) */}
+        <div className="shrink-0 px-3 pt-3 pb-2">
           <Link
             href={homeHref}
-            className="inline-flex min-w-0 items-center gap-1.5"
+            className="flex h-9 min-w-0 items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-accent"
           >
-            <BrandMark size={22} />
+            <span className="flex h-6 w-7 shrink-0 items-center justify-center">
+              <BrandMark size={20} />
+            </span>
             <span
               className={cn(
-                "text-lg font-semibold tracking-tight",
+                "flex min-w-0 flex-col leading-tight",
                 sidebarLabelClass(collapsed),
               )}
               aria-hidden={collapsed || undefined}
             >
-              OhShift
+              <span className="truncate text-sm font-semibold">
+                {companyName || "OhShift"}
+              </span>
+              {companyName && (
+                <span className="truncate text-[11px] text-muted-foreground">
+                  OhShift workspace
+                </span>
+              )}
             </span>
           </Link>
         </div>
-        <nav className="flex-1 space-y-1 overflow-x-hidden overflow-y-auto p-3">
+        <nav className="flex-1 space-y-px overflow-x-hidden overflow-y-auto px-3 pb-3">
           {items.map((item) => (
             <NavLink
               key={item.id}
@@ -540,7 +597,7 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div className="shrink-0 space-y-2 border-t border-border/40 p-3">
+        <div className="shrink-0 space-y-px border-t border-border p-3">
           <IconTooltip
             label="Expand sidebar"
             enabled={collapsed}
@@ -549,7 +606,7 @@ export function AppShell({
             <button
               type="button"
               onClick={toggleSidebar}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+              className="flex h-8 w-full items-center gap-2.5 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? (
@@ -576,80 +633,30 @@ export function AppShell({
       </aside>
 
       {/* Mobile top bar */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-50 h-16 border-b border-border/40 backdrop-blur-xl bg-background/70">
+      <header className="md:hidden fixed top-0 inset-x-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-full items-center px-4 sm:px-6">
-          <Link href={homeHref} className="inline-flex items-center gap-1.5">
-            <BrandMark size={22} />
-            <span className="text-lg font-semibold tracking-tight">OhShift</span>
+          <Link href={homeHref} className="inline-flex min-w-0 items-center gap-2">
+            <BrandMark size={20} />
+            <span className="truncate text-sm font-semibold">
+              {companyName || "OhShift"}
+            </span>
           </Link>
         </div>
       </header>
 
-      {/* Mobile menu sheet */}
-      <div
+      {/* Mobile menu backdrop — sits under the tab bar; tap to close */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        onClick={() => setMenuOpen(false)}
         className={cn(
-          "md:hidden fixed inset-0 z-[60] transition-opacity duration-200",
-          menuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+          menuOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
-        aria-hidden={!menuOpen}
-      >
-        <button
-          type="button"
-          className="absolute inset-0 bg-black/50 cursor-pointer"
-          aria-label="Close menu"
-          onClick={() => setMenuOpen(false)}
-        />
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 rounded-t-2xl border border-border/40 bg-background shadow-xl transition-transform duration-200",
-            menuOpen ? "translate-y-0" : "translate-y-full",
-          )}
-        >
-          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Menu</span>
-              <IconTooltip label="Close menu" side="bottom">
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center w-9 h-9 -mr-1.5 rounded-xl hover:bg-accent cursor-pointer"
-                  aria-label="Close menu"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </IconTooltip>
-            </div>
-            {menuExtras.length > 0 && (
-              <nav className="space-y-1 pb-3 border-b border-border/40">
-                {menuExtras.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    href={item.href}
-                    label={item.label}
-                    icon={item.icon}
-                    active={isNavActive(pathname, item.href)}
-                    onClick={() => setMenuOpen(false)}
-                    flush
-                    badge={badgeFor(item.id)}
-                  />
-                ))}
-              </nav>
-            )}
-            <AccountPanel
-              displayName={displayName}
-              email={email}
-              avatarUrl={avatarUrl}
-              onLogout={handleLogout}
-              onNavigate={() => setMenuOpen(false)}
-              flush
-            />
-          </div>
-        </div>
-      </div>
+      />
 
-      <div className="h-16 w-full shrink-0 md:hidden" />
+      <div className="h-12 w-full shrink-0 md:hidden" />
       <ColdStartBanner />
 
       <div
@@ -662,9 +669,69 @@ export function AppShell({
         {children}
       </div>
 
-      {/* Mobile bottom tabs */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl">
-        <div className="flex gap-1 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* Mobile bottom tabs (+ Menu, which opens the sheet above) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background">
+        {/* Bottom sheet — sized to its content; slides up from behind the tab bar.
+            Side insets are measured from the tab labels (see sheetInset). */}
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-full max-h-[75dvh] overflow-y-auto rounded-t-xl border-y border-border bg-background pt-1 pb-1 transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+            menuOpen ? "visible translate-y-0" : "pointer-events-none invisible translate-y-full",
+          )}
+          style={
+            sheetInset
+              ? { paddingLeft: sheetInset.left, paddingRight: sheetInset.right }
+              : { paddingLeft: 16, paddingRight: 16 }
+          }
+          aria-hidden={!menuOpen}
+        >
+          {menuExtras.length > 0 && (
+            <nav className="flex flex-col">
+              {menuExtras.map((item) => {
+                const active = isNavActive(pathname, item.href);
+                const count = badgeFor(item.id) ?? 0;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 border-b border-border py-3"
+                    aria-current={active ? "page" : undefined}
+                    tabIndex={menuOpen ? undefined : -1}
+                  >
+                    <item.icon
+                      className={cn("h-5 w-5", active ? "text-brand" : "text-muted-foreground")}
+                    />
+                    <span className={cn("text-base font-medium", active && "text-brand")}>
+                      {item.label}
+                    </span>
+                    {count > 0 && (
+                      <span className="ml-auto rounded-sm bg-brand-soft px-1.5 text-sm font-medium text-brand tabular-nums">
+                        {count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
+          {/* Name (menu: Profile, Log out) + theme — same as the desktop sidebar */}
+          <div className="pt-2">
+            <AccountPanel
+              displayName={displayName}
+              email={email}
+              avatarUrl={avatarUrl}
+              onLogout={handleLogout}
+              onNavigate={() => setMenuOpen(false)}
+              flush
+            />
+          </div>
+        </div>
+
+        <div
+          ref={tabRowRef}
+          className="relative z-10 flex gap-1 bg-background px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        >
           {mobileTabs.map((item) => (
             <div key={item.id} className="flex-1 min-w-0">
               <NavLink
@@ -678,23 +745,24 @@ export function AppShell({
             </div>
           ))}
           <div className="flex-1 min-w-0">
-            <IconTooltip label="Open menu" side="top" className="flex w-full justify-center">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(true)}
-                className={cn(
-                  compactTabClass,
-                  menuActive
-                    ? "bg-brand-soft text-brand"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                )}
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="leading-none">Menu</span>
-              </button>
-            </IconTooltip>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className={cn(
+                compactTabClass,
+                menuOpen || menuExtras.some((item) => isNavActive(pathname, item.href)) ||
+                  isNavActive(pathname, "/profile")
+                  ? "text-brand"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <span data-tab-label className="leading-none">
+                {menuOpen ? "Close" : "Menu"}
+              </span>
+            </button>
           </div>
         </div>
       </nav>

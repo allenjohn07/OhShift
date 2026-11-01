@@ -13,6 +13,8 @@ export type PendingTimeOffRequest = {
   end_date: string;
   note: string | null;
   status: PendingTimeOffStatus;
+  created_at?: string;
+  reviewed_at?: string | null;
   employee?: { full_name: string };
   reviewed_by?: { full_name: string };
 };
