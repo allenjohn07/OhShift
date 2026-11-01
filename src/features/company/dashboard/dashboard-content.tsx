@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { usePendingTimeOffSnapshot } from "@/hooks/use-pending-time-off";
 import { greeting, todayLabel } from "@/lib/greeting";
 import { cn } from "@/lib/utils";
 import { TeamMembersList } from "./team-members-list";
@@ -144,7 +143,6 @@ export function DashboardContent({
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
-  const { pendingCount } = usePendingTimeOffSnapshot();
 
   const handleScheduleChanged = async () => {
     await onScheduleChanged?.();
@@ -176,7 +174,7 @@ export function DashboardContent({
         )}
 
         {/* At a glance */}
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
           <Stat label="Team" value={employees?.length ?? 0} hint="members" />
           <Stat
             label="Working today"
@@ -193,14 +191,6 @@ export function DashboardContent({
             value={stats.drafts}
             hint={stats.drafts > 0 ? "not published yet" : "all published"}
             tone={stats.drafts > 0 ? "warn" : undefined}
-          />
-          <Stat
-            label="Requests"
-            value={pendingCount}
-            hint={pendingCount > 0 ? "pending review →" : "all caught up"}
-            tone={pendingCount > 0 ? "warn" : undefined}
-            href="/company/dashboard/requests"
-            className="col-span-2 lg:col-span-1"
           />
         </div>
 
