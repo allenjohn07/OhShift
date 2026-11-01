@@ -54,15 +54,15 @@ const SIDEBAR_EXPANDED_PL = "md:pl-60";
 const SIDEBAR_COLLAPSED_PL = "md:pl-16";
 /** No overshoot — previous curve felt like a bounce */
 const SIDEBAR_EASE =
-  "duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
+  "duration-150 ease-out motion-reduce:transition-none";
 
 /** Neon-style label fade: hide quickly on collapse, reveal after width opens */
 function sidebarLabelClass(collapsed: boolean) {
   return cn(
     "min-w-0 truncate whitespace-nowrap transition-opacity motion-reduce:transition-none",
     collapsed
-      ? "opacity-0 duration-150 pointer-events-none"
-      : "opacity-100 duration-200 delay-100",
+      ? "opacity-0 duration-75 pointer-events-none"
+      : "opacity-100 duration-100 delay-75",
   );
 }
 
@@ -312,13 +312,19 @@ function AccountPanel({
       <button
         type="button"
         className={cn(
-          "flex h-8 min-w-0 w-full items-center gap-2 rounded-md text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-          flush ? "px-1" : "px-2 pr-3",
+          "flex min-w-0 w-full items-center rounded-md text-left transition-colors hover:bg-accent cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+          // flush = mobile sheet: same 20px icon column, gap and padding as the link rows
+          flush ? "h-12 gap-3 px-2" : "h-8 gap-2 px-2 pr-3",
         )}
       >
-        <Avatar className="h-6 w-6 shrink-0 rounded-sm">
+        <Avatar className={cn("shrink-0 rounded-sm", flush ? "h-5 w-5" : "h-6 w-6")}>
           <AvatarImage src={avatarUrl || ""} alt={displayName} />
-          <AvatarFallback className="rounded-sm bg-brand-soft text-brand font-medium text-[10px]">
+          <AvatarFallback
+            className={cn(
+              "rounded-sm bg-brand-soft text-brand font-medium",
+              flush ? "text-[8px]" : "text-[10px]",
+            )}
+          >
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -329,8 +335,8 @@ function AccountPanel({
           )}
           aria-hidden={rail || undefined}
         >
-          <p className="text-sm font-medium truncate whitespace-nowrap">
-            {firstName}
+          <p className={cn("font-medium truncate whitespace-nowrap", flush ? "text-lg" : "text-sm")}>
+            {flush ? displayName : firstName}
           </p>
         </div>
       </button>
@@ -389,41 +395,36 @@ function AccountPanel({
               className="cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <IconTooltip
-        label={
-          mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
-        }
-        side="top"
-        enabled={!rail}
-      >
-        <button
-          type="button"
-          onClick={toggle}
-          className={cn(
-            "flex shrink-0 items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-opacity cursor-pointer motion-reduce:transition-none",
-            rail
-              ? "opacity-0 duration-150 pointer-events-none"
-              : "opacity-100 duration-200 delay-100",
-          )}
-          aria-label={
-            mounted && isDark ? "Switch to light mode" : "Switch to dark mode"
-          }
-          tabIndex={rail ? -1 : undefined}
-          aria-hidden={rail || undefined}
+      {/* Rail is too narrow for two buttons — theme lives in the avatar menu there. */}
+      {!rail && (
+        <IconTooltip
+          label={mounted && isDark ? "Switch to light mode" : "Switch to dark mode"}
+          side="top"
         >
-          {mounted && isDark ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
-        </button>
-      </IconTooltip>
+          <button
+            type="button"
+            onClick={toggle}
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer",
+              // flush: icon lines up with the rows' right padding
+              flush ? "h-12 w-12 justify-end pr-2" : "h-8 w-8",
+            )}
+            aria-label={mounted && isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {mounted && isDark ? (
+              <Sun className={flush ? "h-5 w-5" : "h-4 w-4"} />
+            ) : (
+              <Moon className={flush ? "h-5 w-5" : "h-4 w-4"} />
+            )}
+          </button>
+        </IconTooltip>
+      )}
     </div>
   );
 }
@@ -468,11 +469,22 @@ export function AppShell({
     }
     return undefined;
   };
-  const profileActive = isNavActive(pathname, "/profile");
-  const menuActive =
-    menuOpen ||
-    profileActive ||
-    menuExtras.some((item) => isNavActive(pathname, item.href));
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Escape closes the account popup first, not the whole menu behind it.
+      if (document.querySelector("[data-slot=dropdown-menu-content]")) return;
+      setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -605,69 +617,17 @@ export function AppShell({
         </div>
       </header>
 
-      {/* Mobile menu sheet */}
-      <div
+      {/* Mobile menu backdrop — sits under the tab bar; tap to close */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        onClick={() => setMenuOpen(false)}
         className={cn(
-          "md:hidden fixed inset-0 z-[60] transition-opacity duration-200",
-          menuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-150 motion-reduce:transition-none",
+          menuOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
-        aria-hidden={!menuOpen}
-      >
-        <button
-          type="button"
-          className="absolute inset-0 bg-black/40 cursor-pointer"
-          aria-label="Close menu"
-          onClick={() => setMenuOpen(false)}
-        />
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 rounded-t-xl bg-popover shadow-popover transition-transform duration-200",
-            menuOpen ? "translate-y-0" : "translate-y-full",
-          )}
-        >
-          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Menu</span>
-              <IconTooltip label="Close menu" side="bottom">
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center w-8 h-8 -mr-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
-                  aria-label="Close menu"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </IconTooltip>
-            </div>
-            {menuExtras.length > 0 && (
-              <nav className="space-y-px pb-3 border-b border-border">
-                {menuExtras.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    href={item.href}
-                    label={item.label}
-                    icon={item.icon}
-                    active={isNavActive(pathname, item.href)}
-                    onClick={() => setMenuOpen(false)}
-                    flush
-                    badge={badgeFor(item.id)}
-                  />
-                ))}
-              </nav>
-            )}
-            <AccountPanel
-              displayName={displayName}
-              email={email}
-              avatarUrl={avatarUrl}
-              onLogout={handleLogout}
-              onNavigate={() => setMenuOpen(false)}
-              flush
-            />
-          </div>
-        </div>
-      </div>
+      />
 
       <div className="h-12 w-full shrink-0 md:hidden" />
       <ColdStartBanner />
@@ -682,8 +642,64 @@ export function AppShell({
         {children}
       </div>
 
-      {/* Mobile bottom tabs */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background/95 backdrop-blur">
+      {/* Mobile bottom tabs (+ Menu, which opens the sheet above) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background">
+        {/* Bottom sheet — sized to its content, anchored right above the tabs.
+            Side padding is derived from the 4-column tab bar (px-2, gap-1) so the row
+            icons line up with the first tab icon and the theme icon with the Close ×. */}
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-full max-h-[75dvh] overflow-y-auto rounded-t-xl border-y border-border bg-background px-[calc((100%_-_28px)/8_-_10px)] pt-2 pb-2 transition-[opacity,transform] duration-150 motion-reduce:transition-none",
+            menuOpen
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0",
+          )}
+          aria-hidden={!menuOpen}
+        >
+          <div className="mx-auto mb-1 h-1 w-9 rounded-full bg-foreground/15" aria-hidden />
+          {menuExtras.length > 0 && (
+            <nav className="flex flex-col">
+              {menuExtras.map((item) => {
+                const active = isNavActive(pathname, item.href);
+                const count = badgeFor(item.id) ?? 0;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 border-b border-border px-2 py-3.5"
+                    aria-current={active ? "page" : undefined}
+                    tabIndex={menuOpen ? undefined : -1}
+                  >
+                    <item.icon
+                      className={cn("h-5 w-5", active ? "text-brand" : "text-muted-foreground")}
+                    />
+                    <span className={cn("text-lg font-medium", active && "text-brand")}>
+                      {item.label}
+                    </span>
+                    {count > 0 && (
+                      <span className="ml-auto rounded-sm bg-brand-soft px-1.5 text-sm font-medium text-brand tabular-nums">
+                        {count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
+          {/* Name (menu: Profile, Log out) + theme — same as the desktop sidebar */}
+          <div className="pt-2">
+            <AccountPanel
+              displayName={displayName}
+              email={email}
+              avatarUrl={avatarUrl}
+              onLogout={handleLogout}
+              onNavigate={() => setMenuOpen(false)}
+              flush
+            />
+          </div>
+        </div>
+
         <div className="flex gap-1 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {mobileTabs.map((item) => (
             <div key={item.id} className="flex-1 min-w-0">
@@ -698,23 +714,22 @@ export function AppShell({
             </div>
           ))}
           <div className="flex-1 min-w-0">
-            <IconTooltip label="Open menu" side="top" className="flex w-full justify-center">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(true)}
-                className={cn(
-                  compactTabClass,
-                  menuActive
-                    ? "text-brand"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="leading-none">Menu</span>
-              </button>
-            </IconTooltip>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className={cn(
+                compactTabClass,
+                menuOpen || menuExtras.some((item) => isNavActive(pathname, item.href)) ||
+                  isNavActive(pathname, "/profile")
+                  ? "text-brand"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <span className="leading-none">{menuOpen ? "Close" : "Menu"}</span>
+            </button>
           </div>
         </div>
       </nav>

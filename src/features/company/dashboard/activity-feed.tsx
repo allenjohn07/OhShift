@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Send, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { ChevronDown, ChevronRight, Send } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
-import { ScrollFade } from "@/components/scroll-fade";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getEmployeeColor } from "@/lib/tag-colors";
@@ -200,6 +200,8 @@ export function ActivityFeed({
   const api = useApi();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -225,27 +227,64 @@ export function ActivityFeed({
     }
   }, [refreshKey, fetchLogs]);
 
+  const toggle = () => setOpen((o) => !o);
+
   return (
     <Panel className={className}>
-      <PanelHeader title="Activity" meta={logs.length ? `${logs.length} published` : undefined} />
-      {loading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+      {/* Accordion header — collapsed by default so long histories don't crowd the page */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
+        className="cursor-pointer transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <PanelHeader
+          title="Activity"
+          className={open ? undefined : "border-b-0"}
+          meta={
+            logs.length
+              ? `${logs.length} published · latest ${timeAgo(logs[0]!.created_at)}`
+              : loading
+                ? undefined
+                : "Nothing published yet"
+          }
+          actions={
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform duration-150",
+                open && "rotate-180",
+              )}
+            />
+          }
+        />
+      </div>
+
+      {open && (
+        <div id={panelId}>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+            </div>
+          ) : logs.length === 0 ? (
+            <PanelEmpty icon={<Send />} title="Nothing published yet">
+              Publish a week from the schedule above and it will show up here.
+            </PanelEmpty>
+          ) : (
+            <div className="divide-y divide-border">
+              {logs.map((log, i) => (
+                <PublishEntry key={log.id} log={log} isLatest={i === 0} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : logs.length === 0 ? (
-        <PanelEmpty icon={<Send />} title="Nothing published yet">
-          Publish a week from the schedule above and it will show up here.
-        </PanelEmpty>
-      ) : (
-        <ScrollFade
-          contentKey={logs.length}
-          maxHeightClass="max-h-none"
-          className="min-h-0 flex-1 divide-y divide-border"
-        >
-          {logs.map((log, i) => (
-            <PublishEntry key={log.id} log={log} isLatest={i === 0} />
-          ))}
-        </ScrollFade>
       )}
     </Panel>
   );

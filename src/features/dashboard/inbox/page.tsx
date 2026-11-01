@@ -31,6 +31,7 @@ import { useRefreshInboxUnread } from "@/hooks/use-inbox-unread";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
+import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
 type TabId = "announcements" | "messages";
@@ -593,7 +594,7 @@ function InboxPageContent() {
           )}
 
           {tab === "messages" && (
-            <Panel className="min-h-[30rem] md:flex-row lg:h-[calc(100dvh-20rem)]">
+            <Panel className="h-[calc(100dvh-24.5rem)] min-h-[16rem] md:flex-row md:h-[calc(100dvh-20rem)] lg:min-h-[30rem]">
               {/* Conversation list */}
               <div
                 className={cn(
@@ -602,7 +603,7 @@ function InboxPageContent() {
                 )}
               >
                 <PanelHeader title="Conversations" meta={conversations.length || undefined} />
-                <div className="min-h-0 flex-1 overflow-y-auto max-h-[40vh] md:max-h-none">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   {conversations.length === 0 ? (
                     <PanelEmpty>No conversations yet. Start one with a teammate.</PanelEmpty>
                   ) : (
@@ -622,7 +623,9 @@ function InboxPageContent() {
                           {c.other.avatar_url && (
                             <AvatarImage src={c.other.avatar_url} />
                           )}
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback
+                            className={cn("text-[11px] font-semibold", getEmployeeColor(c.other.full_name))}
+                          >
                             {initials(c.other.full_name)}
                           </AvatarFallback>
                         </Avatar>
@@ -692,7 +695,12 @@ function InboxPageContent() {
                             src={activeConversation.other.avatar_url}
                           />
                         )}
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback
+                          className={cn(
+                            "text-[11px] font-semibold",
+                            getEmployeeColor(activeConversation?.other.full_name ?? ""),
+                          )}
+                        >
                           {initials(
                             activeConversation?.other.full_name ?? "?",
                           )}
@@ -708,7 +716,7 @@ function InboxPageContent() {
                       </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 max-h-[50vh] md:max-h-none">
+                    <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3">
                       {messages.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground py-8">
                           Say hello — send the first message.
@@ -729,7 +737,7 @@ function InboxPageContent() {
                                   "max-w-[85%] sm:max-w-[70%] rounded-lg px-3.5 py-2 text-sm",
                                   mine
                                     ? "bg-brand text-brand-foreground rounded-br-md"
-                                    : "bg-muted text-foreground rounded-bl-md",
+                                    : "bg-foreground/[0.06] text-foreground rounded-bl-md dark:bg-foreground/[0.1]",
                                 )}
                               >
                                 <p className="whitespace-pre-wrap break-words">
@@ -754,7 +762,7 @@ function InboxPageContent() {
 
                     <form
                       onSubmit={handleSend}
-                      className="flex gap-2 p-3 sm:p-4 border-t border-border"
+                      className="flex shrink-0 gap-2 border-t border-border p-3 sm:p-4"
                     >
                       <Input
                         value={draft}
@@ -876,7 +884,9 @@ function InboxPageContent() {
                 >
                   <Avatar className="h-9 w-9">
                     {m.avatar_url && <AvatarImage src={m.avatar_url} />}
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback
+                      className={cn("text-[11px] font-semibold", getEmployeeColor(m.full_name))}
+                    >
                       {initials(m.full_name)}
                     </AvatarFallback>
                   </Avatar>
