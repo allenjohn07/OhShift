@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShiftProperties } from "@/features/dashboard/shift-properties";
+import { toLocalDateInput, toLocalTimeInput } from "@/lib/dates";
 
 interface Shift {
   id: string;
@@ -470,7 +471,7 @@ export function TeamScheduleGrid({
                         id="date"
                         name="date"
                         required
-                        defaultValue={new Date(selectedShift.start_time).toISOString().split("T")[0]}
+                        defaultValue={toLocalDateInput(new Date(selectedShift.start_time))}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -481,7 +482,7 @@ export function TeamScheduleGrid({
                           id="startTime"
                           name="startTime"
                           required
-                          defaultValue={new Date(selectedShift.start_time).toTimeString().substring(0, 5)}
+                          defaultValue={toLocalTimeInput(new Date(selectedShift.start_time))}
                         />
                       </div>
                       <div className="space-y-2">
@@ -491,7 +492,7 @@ export function TeamScheduleGrid({
                           id="endTime"
                           name="endTime"
                           required
-                          defaultValue={new Date(selectedShift.end_time).toTimeString().substring(0, 5)}
+                          defaultValue={toLocalTimeInput(new Date(selectedShift.end_time))}
                         />
                       </div>
                     </div>

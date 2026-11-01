@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
@@ -29,7 +29,7 @@ function PageSpinner() {
 
 function ProfilePageContent() {
   const api = useApi();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ function ProfilePageContent() {
         const data = await parseApiJson<{ profile: ProfileData }>(res);
         if (cancelled) return;
         if (res.status === 401) {
-          router.replace("/login");
+          navigate({ to: "/login", replace: true });
           return;
         }
         if (!res.ok || !data.profile) return;
@@ -53,7 +53,7 @@ function ProfilePageContent() {
     return () => {
       cancelled = true;
     };
-  }, [api, router]);
+  }, [api, navigate]);
 
   if (!profile) {
     return <PageSpinner />;

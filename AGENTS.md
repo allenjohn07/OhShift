@@ -24,7 +24,7 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 ## Key paths
 
 - Frontend routes: `src/routes/**` (thin) → page components in `src/features/**`
-- Navigation helpers: `src/lib/navigation.tsx` (`Link href`, `useRouter`, `usePathname`)
+- Navigation: TanStack Router directly (`Link to`, `useNavigate`, `useLocation`); route paths typed as `RoutePath` in `src/lib/nav.ts`
 - API client: `src/lib/api.ts`
 - Backend routes: `backend/src/routes/**`
 - Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)

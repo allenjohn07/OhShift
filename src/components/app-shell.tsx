@@ -1,4 +1,4 @@
-import { Link, usePathname, useRouter } from "@/lib/navigation";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
@@ -32,6 +32,7 @@ import {
   mobileTabsForRole,
   navItemsForRole,
   shellRoleFromProfile,
+  type RoutePath,
 } from "@/lib/nav";
 import {
   usePendingTimeOffSnapshot,
@@ -168,7 +169,7 @@ function NavLink({
   rail,
   badge,
 }: {
-  href: string;
+  href: RoutePath;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   active: boolean;
@@ -189,7 +190,7 @@ function NavLink({
 
   const link = (
     <Link
-      href={href}
+      to={href}
       onClick={onClick}
       className={cn(
         "group/nav flex items-center rounded-md transition-colors cursor-pointer",
@@ -377,7 +378,7 @@ function AccountPanel({
                 <DropdownMenuSeparator />
               </>
             )}
-            <Link href="/profile" onClick={onNavigate}>
+            <Link to="/profile" onClick={onNavigate}>
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 Profile
@@ -441,8 +442,8 @@ export function AppShell({
   /** Fallback only — preferred role comes from auth once loaded */
   role: AppRole;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { collapsed, toggle: toggleSidebar } = useSidebarCollapsed();
@@ -527,7 +528,7 @@ export function AppShell({
       setMenuOpen(false);
       logout();
       toast.success("Logged out successfully");
-      router.replace("/");
+      navigate({ to: "/", replace: true });
     } catch {
       toast.error("Failed to logout");
     }
@@ -560,7 +561,7 @@ export function AppShell({
         {/* Workspace header (Notion-style) */}
         <div className="shrink-0 px-3 pt-3 pb-2">
           <Link
-            href={homeHref}
+            to={homeHref}
             className="flex h-9 min-w-0 items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-accent"
           >
             <span className="flex h-6 w-7 shrink-0 items-center justify-center">
@@ -635,7 +636,7 @@ export function AppShell({
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 inset-x-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-full items-center px-4 sm:px-6">
-          <Link href={homeHref} className="inline-flex min-w-0 items-center gap-2">
+          <Link to={homeHref} className="inline-flex min-w-0 items-center gap-2">
             <BrandMark size={20} />
             <span className="truncate text-sm font-semibold">
               {companyName || "OhShift"}
@@ -693,7 +694,7 @@ export function AppShell({
                 return (
                   <Link
                     key={item.id}
-                    href={item.href}
+                    to={item.href}
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-3 border-b border-border py-3"
                     aria-current={active ? "page" : undefined}

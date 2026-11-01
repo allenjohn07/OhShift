@@ -1,4 +1,5 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
+import type { RoutePath } from "@/lib/nav";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
@@ -135,12 +136,12 @@ export function SettingsLinkRow({
   icon: LucideIcon;
   title: string;
   description: string;
-  href: string;
+  href: RoutePath;
 }) {
   return (
     <li>
       <Link
-        href={href}
+        to={href}
         className="px-4 sm:px-5 py-3 flex items-start sm:items-center gap-3 sm:gap-4 justify-between hover:bg-accent/60 transition-colors"
       >
         <div className="flex items-start gap-3 min-w-0">

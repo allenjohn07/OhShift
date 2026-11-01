@@ -1,4 +1,4 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
@@ -165,13 +165,13 @@ export default function LandingPage() {
             </p>
 
             <div className="animate-fade-in delay-400 mt-9 flex flex-col items-center justify-center gap-2 sm:flex-row">
-              <Link href="/company/register">
+              <Link to="/company/register">
                 <Button size="lg" className="h-11 px-5 text-base">
                   Register your company
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link to="/login">
                 <Button
                   size="lg"
                   variant="ghost"
@@ -282,13 +282,13 @@ export default function LandingPage() {
               Set up your workspace in minutes.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-2 sm:flex-row">
-              <Link href="/company/register">
+              <Link to="/company/register">
                 <Button size="lg" className="h-11 px-5 text-base">
                   Register your company
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/company/login">
+              <Link to="/company/login">
                 <Button
                   size="lg"
                   variant="outline"

@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@/lib/navigation";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
 
 export default function CompanyRegisterPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -58,7 +58,7 @@ export default function CompanyRegisterPage() {
       toast.success("Company registered!", {
         description: "You can now sign in with your credentials.",
       });
-      router.push("/company/login");
+      navigate({ to: "/company/login" });
     } catch {
       toast.error("Something went wrong", {
         description: "Please try again later.",
@@ -76,7 +76,7 @@ export default function CompanyRegisterPage() {
         <div className="h-16 shrink-0 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
             <Link
-              href="/"
+              to="/"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 inline-flex items-center gap-1.5 animate-fade-in"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -88,7 +88,7 @@ export default function CompanyRegisterPage() {
         <div className="flex-1 flex items-start lg:items-center justify-center px-6 pt-8 pb-12 lg:py-8">
           <div className="w-full max-w-sm lg:max-w-3xl space-y-6 lg:space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
-              <Link href="/" className="inline-flex items-center gap-1.5 mb-4">
+              <Link to="/" className="inline-flex items-center gap-1.5 mb-4">
                 <BrandMark size={22} />
                 <span className="text-xl font-semibold tracking-tight">
                   OhShift
@@ -281,7 +281,7 @@ export default function CompanyRegisterPage() {
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link
-                  href="/company/login"
+                  to="/company/login"
                   className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
                 >
                   Sign in →

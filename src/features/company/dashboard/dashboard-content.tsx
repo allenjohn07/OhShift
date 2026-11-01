@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
-import { Link } from "@/lib/navigation";
+
 import { PageHeader, PageMain } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,18 +89,14 @@ function Stat({
   value,
   hint,
   tone,
-  href,
-  className,
 }: {
-  className?: string;
   label: string;
   value: number | string;
   hint?: string;
   tone?: "warn";
-  href?: string;
 }) {
-  const body = (
-    <>
+  return (
+    <div className="bg-card px-4 py-3">
       <span className="text-[13px] text-muted-foreground">{label}</span>
       <span
         className={cn(
@@ -110,16 +106,8 @@ function Stat({
       >
         {value}
       </span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-    </>
-  );
-  const cls = cn("block bg-card px-4 py-3", className);
-  return href ? (
-    <Link href={href} className={cn(cls, "transition-colors hover:bg-accent/60")}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
+      {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
+    </div>
   );
 }
 
@@ -220,7 +208,7 @@ export function DashboardContent({
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <InviteEmployeeForm bare />
+            <InviteEmployeeForm />
           </DialogBody>
         </DialogContent>
       </Dialog>
@@ -230,6 +218,7 @@ export function DashboardContent({
         onClose={() => setIsManageTeamOpen(false)}
         employees={employees}
         currentUserRole={currentUser.role}
+        onChanged={onScheduleChanged}
       />
     </>
   );

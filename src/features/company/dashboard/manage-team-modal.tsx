@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useRouter } from "@/lib/navigation";
 import { X, Loader2, Save, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Input, fieldClass } from "@/components/ui/input";
@@ -28,16 +27,18 @@ interface Employee {
 
 export function ManageTeamModal({
   isOpen,
+  onChanged,
   onClose,
   employees,
   currentUserRole,
 }: {
   isOpen: boolean;
+  /** Refetch team data after a role/title change or removal (same tab). */
+  onChanged?: () => void | Promise<void>;
   onClose: () => void;
   employees: Employee[] | null;
   currentUserRole: string;
 }) {
-  const router = useRouter();
   const api = useApi();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -59,7 +60,7 @@ export function ManageTeamModal({
 
       toast.success("Designation updated!");
       setEditingId(null);
-      router.refresh();
+      await onChanged?.();
     } catch {
       toast.error("Could not update designation");
     } finally {
@@ -89,7 +90,7 @@ export function ManageTeamModal({
           ? `${name} is now a manager`
           : `${name} is now an employee`,
       );
-      router.refresh();
+      await onChanged?.();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Could not update role",
@@ -119,7 +120,7 @@ export function ManageTeamModal({
       }
 
       toast.success(`${name} was removed from the team`);
-      router.refresh();
+      await onChanged?.();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to remove employee",

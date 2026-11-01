@@ -1,4 +1,4 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
@@ -321,7 +321,7 @@ export function ShiftSummary({
                 <span className="text-xs text-muted-foreground">{clockHint}</span>
               )}
               <Link
-                href="/dashboard/hours"
+                to="/dashboard/hours"
                 className="ml-auto text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 View hours →
@@ -336,7 +336,7 @@ export function ShiftSummary({
             </p>
             <div className="mt-auto pt-5">
               <Link
-                href="/dashboard/hours"
+                to="/dashboard/hours"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 View hours →

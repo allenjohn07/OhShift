@@ -1,4 +1,4 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Moon, Sun, User } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -96,7 +96,7 @@ export function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 w-full border-b border-transparent bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
               <BrandMark size={22} />
               <span className="text-[15px] font-semibold tracking-tight">
                 OhShift
@@ -119,18 +119,18 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             <ThemeToggle />
             <Link
-              href="/login"
+              to="/login"
               className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
             >
               Employee login
             </Link>
             <Link
-              href="/company/login"
+              to="/company/login"
               className="rounded-md px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
             >
               Company login
             </Link>
-            <Link href="/company/register" className="ml-1">
+            <Link to="/company/register" className="ml-1">
               <Button size="sm">Register your company</Button>
             </Link>
           </div>
@@ -203,7 +203,7 @@ export function Navbar() {
                 </a>
               ))}
               <Link
-                href="/login"
+                to="/login"
                 onClick={closeMenu}
                 className="flex items-center gap-3 border-b border-border px-2 py-3"
               >
@@ -211,7 +211,7 @@ export function Navbar() {
                 <span className="text-base font-medium">Employee login</span>
               </Link>
               <Link
-                href="/company/login"
+                to="/company/login"
                 onClick={closeMenu}
                 className="flex items-center gap-3 border-b border-border px-2 py-3"
               >
@@ -219,7 +219,7 @@ export function Navbar() {
                 <span className="text-base font-medium">Company login</span>
               </Link>
             </div>
-            <Link href="/company/register" onClick={closeMenu}>
+            <Link to="/company/register" onClick={closeMenu}>
               <Button size="lg" className="w-full h-11 text-base">
                 Register your company
                 <ArrowRight className="h-4 w-4" />

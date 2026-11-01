@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   ChevronLeft,
@@ -367,7 +367,7 @@ function HoursPageContent() {
         description="Clock in for your published shifts and review hours by week or biweekly period."
         actions={
           <Link
-            href="/dashboard"
+            to="/dashboard"
             className="inline-flex h-8 items-center rounded-md border border-input px-3 text-sm font-medium transition-colors hover:bg-accent"
           >
             View schedule

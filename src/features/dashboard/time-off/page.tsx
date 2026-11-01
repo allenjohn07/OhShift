@@ -406,7 +406,8 @@ export default function TimeOffPage() {
 
   return (
     <AppShell role={role}>
-      <AuthGuard allowedRoles={["employee", "manager", "owner"]}>
+      {/* Owners run the workspace and don't work shifts — the guard sends them to Overview. */}
+      <AuthGuard allowedRoles={["employee", "manager"]}>
         <TimeOffPageContent />
       </AuthGuard>
     </AppShell>

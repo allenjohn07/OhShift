@@ -7,7 +7,6 @@ export default tseslint.config(
   {
     ignores: [
       "dist/**",
-      ".next/**",
       "out/**",
       "backend/node_modules/**",
       "backend/worker-configuration.d.ts",
@@ -26,7 +25,7 @@ export default tseslint.config(
       "react-hooks": reactHooks,
     },
     rules: {
-      // Same hook rules the previous Next.js config enforced (no React Compiler rules).
+      // Classic hook rules only (no React Compiler rules).
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
     },

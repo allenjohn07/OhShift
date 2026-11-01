@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
@@ -46,7 +46,7 @@ function PageSpinner() {
 function EmployeeDashboard() {
   const { user } = useAuth();
   const api = useApi();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
 
   const load = useCallback(async () => {
@@ -54,17 +54,17 @@ function EmployeeDashboard() {
     const json = await parseApiJson<DashboardData & { error?: string }>(res);
 
     if (res.status === 401) {
-      router.replace("/login");
+      navigate({ to: "/login", replace: true });
       return;
     }
     if (!res.ok || !json.profile) return;
 
     if (json.profile.role === "owner" || json.profile.role === "manager") {
-      router.replace("/company/dashboard");
+      navigate({ to: "/company/dashboard", replace: true });
       return;
     }
     setData(json);
-  }, [api, router]);
+  }, [api, navigate]);
 
   useVisiblePoll(true, load);
 

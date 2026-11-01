@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
@@ -53,7 +53,7 @@ function PageSpinner() {
 
 function CompanyDashboard() {
   const api = useApi();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [data, setData] = useState<CompanyDashboardData | null>(null);
 
   const load = useCallback(async () => {
@@ -63,17 +63,17 @@ function CompanyDashboard() {
     );
 
     if (res.status === 401) {
-      router.replace("/company/login");
+      navigate({ to: "/company/login", replace: true });
       return;
     }
     if (!res.ok || !json.profile) return;
 
     if (json.profile.role === "employee") {
-      router.replace("/login");
+      navigate({ to: "/login", replace: true });
       return;
     }
     setData(json);
-  }, [api, router]);
+  }, [api, navigate]);
 
   const poll = useCallback(async () => {
     try {

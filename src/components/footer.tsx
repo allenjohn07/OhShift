@@ -1,11 +1,15 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
+import type { RoutePath } from "@/lib/nav";
 import { scrollToSection } from "@/lib/scroll-to-section";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand-mark";
 
 const COLUMNS: Array<{
   title: string;
-  links: Array<{ label: string; href: string; external?: boolean; section?: string }>;
+  links: Array<
+    | { label: string; to: RoutePath }
+    | { label: string; href: string; external?: boolean; section?: string }
+  >;
 }> = [
   {
     title: "Product",
@@ -18,9 +22,9 @@ const COLUMNS: Array<{
   {
     title: "Get started",
     links: [
-      { label: "Register your company", href: "/company/register" },
-      { label: "Company login", href: "/company/login" },
-      { label: "Employee login", href: "/login" },
+      { label: "Register your company", to: "/company/register" },
+      { label: "Company login", to: "/company/login" },
+      { label: "Employee login", to: "/login" },
     ],
   },
   {
@@ -62,7 +66,11 @@ export function Footer({ className }: { className?: string }) {
               <ul className="space-y-2">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    {link.external ? (
+                    {"to" in link ? (
+                      <Link to={link.to} className={linkClass}>
+                        {link.label}
+                      </Link>
+                    ) : link.external ? (
                       <a
                         href={link.href}
                         target="_blank"
@@ -71,18 +79,16 @@ export function Footer({ className }: { className?: string }) {
                       >
                         {link.label}
                       </a>
-                    ) : link.section ? (
+                    ) : (
                       <a
                         href={link.href}
-                        onClick={(e) => scrollToSection(e, link.section!)}
+                        onClick={(e) =>
+                          link.section && scrollToSection(e, link.section)
+                        }
                         className={linkClass}
                       >
                         {link.label}
                       </a>
-                    ) : (
-                      <Link href={link.href} className={linkClass}>
-                        {link.label}
-                      </Link>
                     )}
                   </li>
                 ))}

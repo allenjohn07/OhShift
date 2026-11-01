@@ -1,18 +1,18 @@
 import { useEffect } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth-provider";
 import { homeHrefForRole, type AppRole } from "@/lib/nav";
 
 /** Sends authenticated users to their dashboard instead of marketing pages. */
 export function AuthHomeRedirect({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (loading || !user) return;
     const role = user.profile.role as AppRole;
-    router.replace(homeHrefForRole(role));
-  }, [user, loading, router]);
+    navigate({ to: homeHrefForRole(role), replace: true });
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (

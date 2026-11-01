@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, UserPlus, Loader2, X, Plus, Pencil } from "lucide-react";
+import { Send, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { IconTooltip } from "@/components/icon-tooltip";
@@ -24,12 +24,8 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function InviteEmployeeForm({
-  bare = false,
-}: {
-  /** Render without card chrome/header (e.g. inside a dialog). */
-  bare?: boolean;
-} = {}) {
+/** Invite form body — rendered inside the Invite dialog on the Overview. */
+export function InviteEmployeeForm() {
   const api = useApi();
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [fullName, setFullName] = useState("");
@@ -207,29 +203,8 @@ export function InviteEmployeeForm({
   const canSubmitForm = Boolean(fullName.trim() && email.trim());
 
   return (
-    <div
-      className={
-        bare
-          ? "flex flex-col"
-          : "rounded-lg border border-border bg-card overflow-hidden h-full flex flex-col"
-      }
-    >
-      {!bare && (
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-emerald-500" />
-          <h2 className="font-semibold text-lg">Invite Employee</h2>
-        </div>
-      )}
-
-      <div className={bare ? "flex flex-col" : "p-4 sm:p-6 flex-1 flex flex-col"}>
-        {!bare && (
-          <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
-            Invite someone now, or add several to a list and send them together.
-            We generate an invite code for each person — share it so they can log
-            in (email delivery comes later).
-          </p>
-        )}
-
+    <div className="flex flex-col">
+      <div className="flex flex-col">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">

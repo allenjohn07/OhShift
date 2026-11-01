@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@/lib/navigation";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
 
 export default function EmployeeLoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,11 +28,9 @@ export default function EmployeeLoginPage() {
       toast.success("Welcome back!", {
         description: "Redirecting to your dashboard...",
       });
-      router.push(
-        authUser.profile.role === "employee"
+      navigate({ to: authUser.profile.role === "employee"
           ? "/dashboard"
-          : "/company/dashboard",
-      );
+          : "/company/dashboard" });
     } catch (err: unknown) {
       toast.error("Login failed", {
         description:
@@ -85,7 +83,7 @@ export default function EmployeeLoginPage() {
         <div className="h-16 shrink-0 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
             <Link
-              href="/"
+              to="/"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 inline-flex items-center gap-1.5 animate-fade-in"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -97,7 +95,7 @@ export default function EmployeeLoginPage() {
         <div className="flex-1 flex items-start justify-center px-6 pt-8 pb-12 sm:pt-12">
           <div className="w-full max-w-sm space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
-              <Link href="/" className="inline-flex items-center gap-1.5 mb-4">
+              <Link to="/" className="inline-flex items-center gap-1.5 mb-4">
                 <BrandMark size={22} />
                 <span className="text-xl font-semibold tracking-tight">
                   OhShift
@@ -210,7 +208,7 @@ export default function EmployeeLoginPage() {
               <p className="text-sm text-muted-foreground">
                 Managing a team?{" "}
                 <Link
-                  href="/company/login"
+                  to="/company/login"
                   className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
                 >
                   Company portal →

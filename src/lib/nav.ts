@@ -10,19 +10,21 @@ import {
   Megaphone,
   Timer,
 } from "lucide-react";
+import type { FileRoutesByTo } from "@/routeTree.gen";
+
+/** Any app route path — typos fail type-checking. */
+export type RoutePath = keyof FileRoutesByTo;
 
 export type AppRole = "employee" | "manager" | "owner";
 
 export type NavItem = {
   id: string;
   label: string;
-  href: string;
+  href: RoutePath;
   icon: LucideIcon;
   roles: AppRole[];
   /** Show in the mobile bottom tab bar */
   mobileTab?: boolean;
-  /** Feature not built yet — page shows a coming-soon state */
-  comingSoon?: boolean;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -154,7 +156,7 @@ export function mobileTabsForRole(role: AppRole) {
   return navItemsForRole(role).filter((item) => item.mobileTab);
 }
 
-export function homeHrefForRole(role: AppRole) {
+export function homeHrefForRole(role: AppRole): RoutePath {
   return role === "employee" ? "/dashboard" : "/company/dashboard";
 }
 
