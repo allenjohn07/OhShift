@@ -203,7 +203,8 @@ Every modal uses `@/components/ui/dialog` — never a hand-rolled `fixed inset-0
 ```
 
 - Header + hairline, scrollable `DialogBody`, footer bar with hairline. Close (×) comes from `DialogContent`.
-- Labels: sentence case, no icons (`<Label>` or `text-[13px] font-medium text-muted-foreground`). Raw `<select>`/`<textarea>` use `fieldClass` from `@/components/ui/input`.
+- Labels: sentence case, no icons (`<Label>` or `text-[13px] font-medium text-muted-foreground`). Raw `<textarea>` uses `fieldClass` from `@/components/ui/input`.
+- Dropdowns: never a native `<select>`. Use `<SimpleSelect value onValueChange options emptyLabel? size="sm"? />` (or the `Select*` parts) from `@/components/ui/select` — styled trigger, popover menu, brand check mark; works inside dialogs.
 - Read-only details use `ShiftProperties`-style property rows (muted icon + label, value).
 - Destructive actions go bottom-left (`DialogFooter className="sm:justify-between"`, ghost + `text-destructive`) and must not receive initial focus — focus the primary via `onOpenAutoFocus`.
 - Multi-step modals may pin a step's footer inside the body: `<DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">`.

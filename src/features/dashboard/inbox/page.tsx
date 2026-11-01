@@ -494,7 +494,7 @@ function InboxPageContent() {
           </div>
 
           {tab === "announcements" && (
-            <Panel className="min-h-[28rem]">
+            <Panel className="min-h-[30rem] lg:min-h-[calc(100dvh-20rem)]">
               <PanelHeader
                 title="Announcements"
                 meta={announcements.length || undefined}
@@ -593,16 +593,16 @@ function InboxPageContent() {
           )}
 
           {tab === "messages" && (
-            <Panel className="min-h-[28rem] md:flex-row">
+            <Panel className="min-h-[30rem] md:flex-row lg:h-[calc(100dvh-20rem)]">
               {/* Conversation list */}
               <div
                 className={cn(
-                  "md:w-80 md:border-r border-border flex flex-col shrink-0",
+                  "md:w-80 md:border-r border-border flex min-h-0 flex-col shrink-0",
                   activeId ? "hidden md:flex" : "flex",
                 )}
               >
                 <PanelHeader title="Conversations" meta={conversations.length || undefined} />
-                <div className="flex-1 overflow-y-auto max-h-[40vh] md:max-h-none">
+                <div className="min-h-0 flex-1 overflow-y-auto max-h-[40vh] md:max-h-none">
                   {conversations.length === 0 ? (
                     <PanelEmpty>No conversations yet. Start one with a teammate.</PanelEmpty>
                   ) : (
@@ -657,7 +657,7 @@ function InboxPageContent() {
               {/* Thread */}
               <div
                 className={cn(
-                  "flex-1 flex flex-col min-w-0",
+                  "flex-1 flex min-h-0 flex-col min-w-0",
                   !activeId ? "hidden md:flex" : "flex",
                 )}
               >
@@ -708,7 +708,7 @@ function InboxPageContent() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 max-h-[50vh] md:max-h-[28rem]">
+                    <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 max-h-[50vh] md:max-h-none">
                       {messages.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground py-8">
                           Say hello — send the first message.

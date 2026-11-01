@@ -4,9 +4,10 @@ import { ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelHeader } from "@/components/panel";
-import { fieldClass } from "@/components/ui/input";
+
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+
+import { SimpleSelect } from "@/components/ui/select";
 
 export function SettingsPageShell({
   title,
@@ -113,17 +114,14 @@ export function SettingsSelectRow({
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         </div>
       </div>
-      <select
+      <SimpleSelect
+        size="sm"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(fieldClass, "h-8 w-full shrink-0 cursor-pointer sm:w-48")}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+        options={options}
+        className="w-full shrink-0 sm:w-48"
+        aria-label={title}
+      />
     </li>
   );
 }

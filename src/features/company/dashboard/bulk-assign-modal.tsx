@@ -8,6 +8,7 @@ import { useApi } from "@/hooks/use-api";
 
 import { ScrollFade } from "@/components/scroll-fade";
 import { cn } from "@/lib/utils";
+import { SimpleSelect } from "@/components/ui/select";
 
 type EligibilityReason =
   | "unavailable"
@@ -402,19 +403,13 @@ export function BulkAssignModal({
                 <label htmlFor="bulk-designation" className="text-[13px] font-medium text-muted-foreground">
                   Designation
                 </label>
-                <select
+                <SimpleSelect
                   id="bulk-designation"
                   value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                  className={cn(fieldClass, "h-9")}
-                >
-                  <option value="">All designations</option>
-                  {designations.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setDesignation}
+                  emptyLabel="All designations"
+                  options={designations.map((d) => ({ value: d, label: d }))}
+                />
               </div>
               <div className="space-y-2">
                 <label htmlFor="bulk-title" className="text-[13px] font-medium text-muted-foreground">

@@ -93,9 +93,9 @@ function RequestsContent() {
         description="Approve or deny time-off from your team. Approved days block shifts from being assigned."
       />
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="space-y-6">
         {/* Pending */}
-        <Panel className="lg:col-span-3">
+        <Panel>
           <PanelHeader title="Pending" meta={pending.length} />
 
           {pending.length === 0 ? (
@@ -173,7 +173,7 @@ function RequestsContent() {
         </Panel>
 
         {/* Recently reviewed */}
-        <Panel className="lg:col-span-2">
+        <Panel>
           <PanelHeader title="Recently reviewed" meta={recent.length || undefined} />
           {recent.length === 0 ? (
             <PanelEmpty>Reviewed requests will show up here.</PanelEmpty>

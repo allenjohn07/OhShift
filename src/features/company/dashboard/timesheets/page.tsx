@@ -167,8 +167,8 @@ function TimesheetsContent() {
         description="Review clocked hours. You can adjust times before approving. You cannot approve your own entries."
       />
 
-      <div className="grid gap-6 lg:grid-cols-5">
-      <Panel className="lg:col-span-3">
+      <div className="space-y-6">
+      <Panel>
         <PanelHeader title="Pending" meta={pending.length} />
 
         {pending.length === 0 ? (
@@ -330,7 +330,7 @@ function TimesheetsContent() {
         )}
       </Panel>
 
-      <Panel className="lg:col-span-2">
+      <Panel>
         <PanelHeader title="Recently reviewed" meta={recent.length || undefined} />
 
         {recent.length === 0 ? (

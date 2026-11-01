@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SimpleSelect } from "@/components/ui/select";
 
 interface Employee {
   id: string;
@@ -172,22 +173,24 @@ export function ManageTeamModal({
 
                   <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
                     {isOwner && (
-                      <select
+                      <SimpleSelect
+                        size="sm"
                         value={emp.role ?? "employee"}
                         disabled={roleSavingId === emp.id}
-                        onChange={(e) =>
+                        onValueChange={(v) =>
                           handleRoleChange(
                             emp.id,
-                            e.target.value as "employee" | "manager",
+                            v as "employee" | "manager",
                             emp.full_name,
                           )
                         }
-                        className={cn(fieldClass, "h-8 w-auto")}
+                        options={[
+                          { value: "employee", label: "Employee" },
+                          { value: "manager", label: "Manager" },
+                        ]}
+                        className="w-32"
                         aria-label={`Role for ${emp.full_name}`}
-                      >
-                        <option value="employee">Employee</option>
-                        <option value="manager">Manager</option>
-                      </select>
+                      />
                     )}
 
                     {editingId === emp.id ? (
