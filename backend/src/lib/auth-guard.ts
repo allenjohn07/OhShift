@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
+import { validator } from "hono/validator";
 import { db } from "../db";
 import { users, type UserRole } from "../db/schema";
 import { getAuthFromBearer, getDbUser } from "./session";
@@ -79,12 +80,22 @@ export async function verifyEmployeeInCompany(
   return employee;
 }
 
-/** Parse a JSON body, treating a missing/invalid body as `{}`. */
-export async function readJson<T>(c: Context): Promise<Partial<T>> {
-  try {
-    const body = await c.req.json();
-    return body && typeof body === "object" ? body : {};
-  } catch {
-    return {};
-  }
+/**
+ * Route middleware for a JSON body: `.post("/", jsonBody<Body>(), (c) => c.req.valid("json"))`.
+ * Fields stay optional (handlers check what they need), and the body type flows
+ * into the typed RPC client (`backend/src/client.ts`) as the request's `json`.
+ */
+export function jsonBody<T extends object>() {
+  return validator("json", (value: Partial<T>) =>
+    value && typeof value === "object" ? value : ({} as Partial<T>),
+  );
+}
+
+/**
+ * Declares the query-string keys a route reads (all optional strings), so the
+ * typed RPC client accepts `{ query: { … } }`. Handlers keep using `c.req.query()`.
+ */
+export function queryParams<K extends string>() {
+  // The client's `query` type is inferred from this return type.
+  return validator("query", (value) => value as Partial<Record<K, string>>);
 }

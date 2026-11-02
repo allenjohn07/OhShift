@@ -14,7 +14,11 @@ function fromB64(value: string) {
   return Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
 }
 
-async function derive(password: string, salt: Uint8Array, iterations: number) {
+async function derive(
+  password: string,
+  salt: Uint8Array<ArrayBuffer>,
+  iterations: number,
+) {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),

@@ -114,7 +114,7 @@ export function validateShiftAssignment(
   if (sameStart) {
     return {
       ok: false,
-      error: formatSameStartMessage(sameStart),
+      error: formatSameStartMessage(sameStart, timezone),
       reason: "same_start",
       status: 409,
     };
@@ -130,7 +130,7 @@ export function validateShiftAssignment(
   if (conflicts.length > 0) {
     return {
       ok: false,
-      error: formatConflictMessage(conflicts),
+      error: formatConflictMessage(conflicts, timezone),
       reason: "conflict",
       status: 409,
     };

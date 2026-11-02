@@ -4,10 +4,9 @@ import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import { ProfileForm } from "./profile-form";
 import type { AppRole } from "@/lib/nav";
+import { rpc } from "@/lib/rpc";
 
 type ProfileData = {
   full_name?: string | null;
@@ -28,22 +27,22 @@ function PageSpinner() {
 }
 
 function ProfilePageContent() {
-  const api = useApi();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    api("/dashboard/profile")
+    rpc.dashboard.profile
+      .$get()
       .then(async (res) => {
-        const data = await parseApiJson<{ profile: ProfileData }>(res);
         if (cancelled) return;
         if (res.status === 401) {
           navigate({ to: "/login", replace: true });
           return;
         }
-        if (!res.ok || !data.profile) return;
+        const data = await res.json();
+        if (cancelled || !res.ok) return;
         setProfile(data.profile);
       })
       .catch(() => {
@@ -53,7 +52,7 @@ function ProfilePageContent() {
     return () => {
       cancelled = true;
     };
-  }, [api, navigate]);
+  }, [navigate]);
 
   if (!profile) {
     return <PageSpinner />;

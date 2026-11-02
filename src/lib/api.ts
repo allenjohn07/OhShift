@@ -3,13 +3,32 @@ import { getAccessToken } from "@/lib/auth-storage";
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-async function fetchWithNetworkErrorHint(
-  input: string,
-  init: RequestInit,
+/**
+ * fetch for API calls (used by the typed client in `@/lib/rpc`): adds the
+ * stored bearer token unless the call set its own Authorization header, and
+ * turns network failures / timeouts into readable errors.
+ */
+export async function authedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
 ): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const token = getAccessToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   try {
-    return await fetch(input, init);
+    return await fetch(input, { ...init, headers });
   } catch (err) {
+    if (
+      err instanceof DOMException &&
+      (err.name === "AbortError" || err.name === "TimeoutError")
+    ) {
+      throw new Error(
+        "Request timed out. The server may be waking up — wait a moment and try again.",
+      );
+    }
     if (err instanceof TypeError) {
       throw new Error(
         `Cannot reach API at ${API_URL}. Verify VITE_API_URL and backend CORS/availability in production.`,
@@ -17,52 +36,4 @@ async function fetchWithNetworkErrorHint(
     }
     throw err;
   }
-}
-
-export async function apiFetch(
-  path: string,
-  init: RequestInit & { token?: string | null; timeoutMs?: number } = {},
-) {
-  const headers = new Headers(init.headers);
-  if (!headers.has("Content-Type") && init.body) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const token =
-    init.token !== undefined ? init.token : getAccessToken();
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const timeoutMs = init.timeoutMs;
-  const rest: RequestInit = { ...init };
-  delete (rest as { token?: unknown }).token;
-  delete (rest as { timeoutMs?: unknown }).timeoutMs;
-
-  if (timeoutMs) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      return await fetchWithNetworkErrorHint(`${API_URL}${path}`, {
-        ...rest,
-        headers,
-        signal: controller.signal,
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        throw new Error(
-          "Request timed out. The server may be waking up — wait a moment and try again.",
-        );
-      }
-      throw err;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  return fetchWithNetworkErrorHint(`${API_URL}${path}`, { ...rest, headers });
-}
-
-export async function parseApiJson<T>(res: Response): Promise<T> {
-  return res.json() as Promise<T>;
 }

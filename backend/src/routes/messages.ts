@@ -7,12 +7,7 @@ import {
   directMessages,
   users,
 } from "../db/schema";
-import {
-  ApiError,
-  readJson,
-  requireCompanyMember,
-  requireUser,
-} from "../lib/auth-guard";
+import { ApiError, jsonBody, requireCompanyMember, requireUser } from "../lib/auth-guard";
 
 const BODY_MAX = 2000;
 const MESSAGE_LIMIT = 100;
@@ -176,6 +171,10 @@ function markReadStatement(conversationId: string, userId: string, at: Date) {
     );
 }
 
+type StartConversationBody = { recipient_id: string };
+
+type SendMessageBody = { body: string };
+
 export const messagesRoutes = new Hono()
   .get("/directory", async (c) => {
     const user = await requireUser(c);
@@ -221,10 +220,10 @@ export const messagesRoutes = new Hono()
       conversations: rows.map((row) => serializeConversation(row, user.id, unread)),
     });
   })
-  .post("/conversations", async (c) => {
+  .post("/conversations", jsonBody<StartConversationBody>(), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
-    const payload = await readJson<{ recipient_id: string }>(c);
+    const payload = c.req.valid("json");
     const recipientId = String(payload.recipient_id ?? "").trim();
 
     if (!recipientId) {
@@ -286,13 +285,13 @@ export const messagesRoutes = new Hono()
 
     return c.json({ messages: messages.map(serializeMessage) });
   })
-  .post("/conversations/:id", async (c) => {
+  .post("/conversations/:id", jsonBody<SendMessageBody>(), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
     const conversationId = c.req.param("id");
     await assertParticipant(conversationId, user.id, companyId);
 
-    const payload = await readJson<{ body: string }>(c);
+    const payload = c.req.valid("json");
     const text = String(payload.body ?? "").trim();
     if (!text) {
       return c.json({ error: "Message body is required" }, 400);

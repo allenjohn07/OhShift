@@ -4,7 +4,7 @@ import { db } from "../db";
 import { announcementReads, announcements } from "../db/schema";
 import {
   isManagerRole,
-  readJson,
+  jsonBody,
   requireCompanyMember,
   requireManager,
   requireUser,
@@ -111,6 +111,8 @@ async function findCompanyAnnouncement(id: string, companyId: string) {
   });
 }
 
+type AnnouncementBody = { title: string; body: string };
+
 export const announcementsRoutes = new Hono()
   .get("/", async (c) => {
     const user = await requireUser(c);
@@ -134,9 +136,9 @@ export const announcementsRoutes = new Hono()
     const count = await countUnreadAnnouncements(companyId, user.id);
     return c.json({ count });
   })
-  .post("/", async (c) => {
+  .post("/", jsonBody<AnnouncementBody>(), async (c) => {
     const user = await requireManager(c);
-    const payload = await readJson<{ title: string; body: string }>(c);
+    const payload = c.req.valid("json");
 
     const title = String(payload.title ?? "").trim();
     const text = String(payload.body ?? "").trim();
@@ -206,10 +208,10 @@ export const announcementsRoutes = new Hono()
 
     return c.json({ ok: true });
   })
-  .patch("/:id", async (c) => {
+  .patch("/:id", jsonBody<AnnouncementBody>(), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
-    const payload = await readJson<{ title: string; body: string }>(c);
+    const payload = c.req.valid("json");
 
     const existing = await findCompanyAnnouncement(c.req.param("id"), companyId);
     if (!existing) {

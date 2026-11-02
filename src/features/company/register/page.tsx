@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { apiError, rpc } from "@/lib/rpc";
 
 export default function CompanyRegisterPage() {
   const navigate = useNavigate();
@@ -41,16 +41,14 @@ export default function CompanyRegisterPage() {
     const name = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 
     try {
-      const res = await apiFetch("/auth/register-company", {
-        method: "POST",
-        body: JSON.stringify({ companyName, name, email, password }),
+      const res = await rpc.auth["register-company"].$post({
+        json: { companyName, name, email, password },
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json();
         toast.error("Registration failed", {
-          description: data.error || "Something went wrong.",
+          description: apiError(data, "Something went wrong."),
         });
         return;
       }

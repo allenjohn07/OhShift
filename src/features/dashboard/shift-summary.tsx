@@ -4,10 +4,9 @@ import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import { formatTime } from "@/lib/dates";
+import { rpc, unwrap } from "@/lib/rpc";
 
 interface Shift {
   id: string;
@@ -62,7 +61,6 @@ export function ShiftSummary({
   /** @deprecated kept for call-site compat; unused */
   employeeId?: string;
 }) {
-  const api = useApi();
   const shifts = initialShifts ?? [];
   const [active, setActive] = useState<TimeEntry | null>(null);
   const [todayEntry, setTodayEntry] = useState<TimeEntry | null>(null);
@@ -105,23 +103,18 @@ export function ShiftSummary({
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
-    const [activeRes, mineRes] = await Promise.all([
-      api("/time-entries/active"),
-      api(
-        `/time-entries/mine?from=${encodeURIComponent(dayStart.toISOString())}&to=${encodeURIComponent(dayEnd.toISOString())}`,
-      ),
+    const [activeData, mineData] = await Promise.all([
+      unwrap(rpc["time-entries"].active.$get()).catch(() => null),
+      unwrap(
+        rpc["time-entries"].mine.$get({
+          query: { from: dayStart.toISOString(), to: dayEnd.toISOString() },
+        }),
+      ).catch(() => null),
     ]);
 
-    const activeData = await parseApiJson<{ entry?: TimeEntry | null }>(
-      activeRes,
-    );
-    const mineData = await parseApiJson<{ entries?: TimeEntry[] }>(mineRes);
-
-    const nextActive = activeRes.ok ? (activeData.entry ?? null) : null;
-    const match = mineRes.ok
-      ? ((mineData.entries ?? []).find((e) => e.shift_id === todayShift.id) ??
-        null)
-      : null;
+    const nextActive = activeData?.entry ?? null;
+    const match =
+      mineData?.entries.find((e) => e.shift_id === todayShift.id) ?? null;
     const resolved =
       match ??
       (nextActive?.shift_id === todayShift.id ? nextActive : null);
@@ -130,7 +123,7 @@ export function ShiftSummary({
     setTodayEntry(resolved);
     writeCachedEntry(todayShift.id, resolved);
     setStatusReady(true);
-  }, [api, todayShift]);
+  }, [todayShift]);
 
   useVisiblePoll(Boolean(todayShift), refreshClock);
 
@@ -161,14 +154,10 @@ export function ShiftSummary({
     if (!todayShift) return;
     setActing(true);
     try {
-      const res = await api("/time-entries/clock-in", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: todayShift.id }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-in"].$post({ json: { shift_id: todayShift.id } }),
+        "Failed to clock in",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock in");
       toast.success("Clocked in");
       if (data.entry) {
         setTodayEntry(data.entry);
@@ -188,14 +177,10 @@ export function ShiftSummary({
     if (!todayShift) return;
     setActing(true);
     try {
-      const res = await api("/time-entries/clock-out", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: todayShift.id }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-out"].$post({ json: { shift_id: todayShift.id } }),
+        "Failed to clock out",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock out");
       toast.success("Clocked out — pending manager approval");
       if (data.entry) {
         setTodayEntry(data.entry);

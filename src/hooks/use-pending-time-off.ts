@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import {
   getPendingTimeOffServerSnapshot,
   getPendingTimeOffSnapshot,
   resetPendingTimeOffStore,
   setPendingTimeOffData,
   subscribePendingTimeOff,
-  type PendingTimeOffRequest,
   type PendingTimeOffSnapshot,
 } from "@/lib/pending-time-off-store";
 
@@ -22,22 +20,18 @@ export function usePendingTimeOffSnapshot(): PendingTimeOffSnapshot {
 }
 
 export function useRefreshPendingTimeOff() {
-  const api = useApi();
   const { accessToken } = useAuth();
 
   return useCallback(async () => {
     if (!accessToken) return;
-    const res = await api("/time-off/company");
-    const data = await parseApiJson<{
-      pending?: PendingTimeOffRequest[];
-      recent?: PendingTimeOffRequest[];
-    }>(res);
-    if (!res.ok) return;
+    // Background poll: stay quiet on errors.
+    const data = await unwrap(rpc["time-off"].company.$get()).catch(() => null);
+    if (!data) return;
     setPendingTimeOffData({
       pending: data.pending ?? [],
       recent: data.recent ?? [],
     });
-  }, [api, accessToken]);
+  }, [accessToken]);
 }
 
 /** Polls company time-off for managers; keep mounted in AppShell. */

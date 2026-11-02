@@ -12,8 +12,6 @@ import {
   usePendingTimeOffSnapshot,
   useRefreshPendingTimeOff,
 } from "@/hooks/use-pending-time-off";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import type { PendingTimeOffType } from "@/lib/pending-time-off-store";
 
@@ -25,6 +23,7 @@ import {
   formatDateRange,
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
+import { rpc, unwrap } from "@/lib/rpc";
 
 function timeAgo(iso?: string | null) {
   if (!iso) return null;
@@ -50,7 +49,6 @@ function TypeTag({ type }: { type: PendingTimeOffType }) {
 }
 
 function RequestsContent() {
-  const api = useApi();
   const { user } = useAuth();
   const myId = user?.profile.id ?? user?.id;
   const { pending, recent, loaded } = usePendingTimeOffSnapshot();
@@ -60,12 +58,10 @@ function RequestsContent() {
   const review = async (id: string, decision: "approved" | "denied") => {
     setActingId(id);
     try {
-      const res = await api(`/time-off/${id}/review`, {
-        method: "POST",
-        body: JSON.stringify({ decision }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to update request");
+      await unwrap(
+        rpc["time-off"][":id"].review.$post({ param: { id }, json: { decision } }),
+        "Failed to update request",
+      );
       toast.success(decision === "approved" ? "Request approved" : "Request denied");
       await refresh();
     } catch (error: unknown) {

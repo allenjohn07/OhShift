@@ -17,9 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import {
   TIME_OFF_STATUS_STYLES,
@@ -33,6 +31,7 @@ import {
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
+import { apiError, rpc, unwrap } from "@/lib/rpc";
 
 
 type TimeOffRequest = {
@@ -46,7 +45,6 @@ type TimeOffRequest = {
 };
 
 function TimeOffPageContent() {
-  const api = useApi();
   const { user } = useAuth();
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,19 +58,16 @@ function TimeOffPageContent() {
   const [note, setNote] = useState("");
 
   const load = useCallback(async (opts?: { quiet?: boolean }) => {
-    const res = await api("/time-off");
-    const data = await parseApiJson<{
-      requests?: TimeOffRequest[];
-      error?: string;
-    }>(res);
-    if (!res.ok) {
+    const res = await rpc["time-off"].$get();
+    const data = await res.json();
+    if (!res.ok || "error" in data) {
       if (!opts?.quiet && res.status !== 401) {
-        toast.error(data.error || "Failed to load time-off requests");
+        toast.error(apiError(data, "Failed to load time-off requests"));
       }
       return;
     }
-    setRequests(data.requests ?? []);
-  }, [api]);
+    setRequests(data.requests);
+  }, []);
 
   const initialLoadRef = useRef(true);
   const poll = useCallback(async () => {
@@ -109,17 +104,17 @@ function TimeOffPageContent() {
 
     setSubmitting(true);
     try {
-      const res = await api("/time-off", {
-        method: "POST",
-        body: JSON.stringify({
-          type,
-          start_date: startDate,
-          end_date: endDate,
-          note: note.trim() || null,
+      await unwrap(
+        rpc["time-off"].$post({
+          json: {
+            type,
+            start_date: startDate,
+            end_date: endDate,
+            note: note.trim() || null,
+          },
         }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to submit request");
+        "Failed to submit request",
+      );
       toast.success("Time-off request submitted");
       setModalOpen(false);
       await load();
@@ -135,9 +130,10 @@ function TimeOffPageContent() {
   const handleCancel = async (id: string) => {
     setCancellingId(id);
     try {
-      const res = await api(`/time-off/${id}/cancel`, { method: "POST" });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to cancel request");
+      await unwrap(
+        rpc["time-off"][":id"].cancel.$post({ param: { id } }),
+        "Failed to cancel request",
+      );
       toast.success("Request cancelled");
       await load();
     } catch (error: unknown) {

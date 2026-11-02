@@ -3,45 +3,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import { DashboardContent } from "./dashboard-content";
 import type { CompanySettings } from "./company-settings";
 import type { AppRole } from "@/lib/nav";
+import { rpc, type ApiData } from "@/lib/rpc";
 
-type CompanyDashboardData = {
-  profile: {
-    id: string;
-    full_name: string;
-    role: string;
-    company_id: string;
-    avatar_url?: string | null;
-    companies: CompanySettings | null;
-  };
-  employees: Array<{
-    id: string;
-    full_name: string;
-    email: string;
-    designation: string | null;
-    role?: "employee" | "manager";
-  }>;
-  shifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-    employee_id: string;
-    status?: "draft" | "published";
-    users?: { full_name: string };
-  }>;
-  myShifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-  }>;
-};
+type CompanyDashboardData = ApiData<typeof rpc.dashboard.company.$get>;
 
 function PageSpinner() {
   return (
@@ -52,28 +20,24 @@ function PageSpinner() {
 }
 
 function CompanyDashboard() {
-  const api = useApi();
   const navigate = useNavigate();
   const [data, setData] = useState<CompanyDashboardData | null>(null);
 
   const load = useCallback(async () => {
-    const res = await api("/dashboard/company");
-    const json = await parseApiJson<CompanyDashboardData & { error?: string }>(
-      res,
-    );
-
+    const res = await rpc.dashboard.company.$get();
     if (res.status === 401) {
       navigate({ to: "/company/login", replace: true });
       return;
     }
-    if (!res.ok || !json.profile) return;
+    const json = await res.json();
+    if (!res.ok || "error" in json) return;
 
     if (json.profile.role === "employee") {
       navigate({ to: "/login", replace: true });
       return;
     }
     setData(json);
-  }, [api, navigate]);
+  }, [navigate]);
 
   const poll = useCallback(async () => {
     try {

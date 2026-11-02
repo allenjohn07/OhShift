@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { companies, shiftLogs, shifts } from "../db/schema";
-import { readJson, requireManager } from "../lib/auth-guard";
+import { jsonBody, requireManager } from "../lib/auth-guard";
 import { serializeCompany } from "../lib/serialize";
 import { logShiftAction } from "../lib/shift-log";
 import { weekRangeFromStart } from "../lib/week-range";
@@ -46,15 +46,23 @@ function serializeLog(
   };
 }
 
+type PresetsBody = {
+  morning_start: string;
+  morning_end: string;
+  evening_start: string;
+  evening_end: string;
+};
+
+type PublishBody = {
+  weekStart: string;
+  from: string;
+  to: string;
+};
+
 export const companyRoutes = new Hono()
-  .put("/", async (c) => {
+  .put("/", jsonBody<PresetsBody>(), async (c) => {
     const user = await requireManager(c);
-    const updates = await readJson<{
-      morning_start: string;
-      morning_end: string;
-      evening_start: string;
-      evening_end: string;
-    }>(c);
+    const updates = c.req.valid("json");
 
     const [company] = await db
       .update(companies)
@@ -69,13 +77,9 @@ export const companyRoutes = new Hono()
 
     return c.json({ company: serializeCompany(company!) });
   })
-  .post("/schedule/publish", async (c) => {
+  .post("/schedule/publish", jsonBody<PublishBody>(), async (c) => {
     const user = await requireManager(c);
-    const { weekStart, from, to } = await readJson<{
-      weekStart: string;
-      from: string;
-      to: string;
-    }>(c);
+    const { weekStart, from, to } = c.req.valid("json");
 
     if (!weekStart) {
       return c.json({ error: "weekStart is required (YYYY-MM-DD)" }, 400);

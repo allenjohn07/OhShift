@@ -13,8 +13,7 @@ import {
 } from "@/components/settings-ui";
 import { Button } from "@/components/ui/button";
 import { TimePicker } from "@/components/ui/time-picker";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import type { AppRole } from "@/lib/nav";
 import type { CompanySettings } from "../company-settings";
 
@@ -73,28 +72,24 @@ function PresetRange({
 }
 
 function ShiftPresetsSection() {
-  const api = useApi();
   const [saved, setSaved] = useState<Presets | null>(null);
   const [draft, setDraft] = useState<Presets | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await api("/dashboard/profile");
-      const data = await parseApiJson<{
-        profile?: { companies?: Presets | null };
-        error?: string;
-      }>(res);
-      if (!res.ok || !data.profile?.companies) {
-        throw new Error(data.error || "Could not load shift presets");
-      }
+      const data = await unwrap(
+        rpc.dashboard.profile.$get(),
+        "Could not load shift presets",
+      );
+      if (!data.profile.companies) throw new Error("Could not load shift presets");
       const presets = pickPresets(data.profile.companies);
       setSaved(presets);
       setDraft(presets);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load shift presets");
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -119,14 +114,10 @@ function ShiftPresetsSection() {
     }
     setSaving(true);
     try {
-      const res = await api("/company", {
-        method: "PUT",
-        body: JSON.stringify(draft),
-      });
-      const data = await parseApiJson<{ company?: Presets; error?: string }>(res);
-      if (!res.ok || !data.company) {
-        throw new Error(data.error || "Could not save shift presets");
-      }
+      const data = await unwrap(
+        rpc.company.$put({ json: draft }),
+        "Could not save shift presets",
+      );
       const presets = pickPresets(data.company);
       setSaved(presets);
       setDraft(presets);

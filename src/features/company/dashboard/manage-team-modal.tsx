@@ -2,7 +2,6 @@ import { useState } from "react";
 import { X, Loader2, Save, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Input, fieldClass } from "@/components/ui/input";
-import { useApi } from "@/hooks/use-api";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SimpleSelect } from "@/components/ui/select";
+import { rpc, unwrap } from "@/lib/rpc";
 
 interface Employee {
   id: string;
@@ -39,7 +39,6 @@ export function ManageTeamModal({
   employees: Employee[] | null;
   currentUserRole: string;
 }) {
-  const api = useApi();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [isSaving, setIsSaving] = useState<string | null>(null);
@@ -51,18 +50,18 @@ export function ManageTeamModal({
   const handleSaveDesignation = async (employeeId: string) => {
     setIsSaving(employeeId);
     try {
-      const res = await api("/employees", {
-        method: "PUT",
-        body: JSON.stringify({ employeeId, designation: editValue.trim() }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update designation");
+      await unwrap(
+        rpc.employees.$put({ json: { employeeId, designation: editValue.trim() } }),
+        "Could not update designation",
+      );
 
       toast.success("Designation updated!");
       setEditingId(null);
       await onChanged?.();
-    } catch {
-      toast.error("Could not update designation");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not update designation",
+      );
     } finally {
       setIsSaving(null);
     }
@@ -75,15 +74,10 @@ export function ManageTeamModal({
   ) => {
     setRoleSavingId(employeeId);
     try {
-      const res = await api("/employees", {
-        method: "PUT",
-        body: JSON.stringify({ employeeId, role }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update role");
-      }
+      await unwrap(
+        rpc.employees.$put({ json: { employeeId, role } }),
+        "Failed to update role",
+      );
 
       toast.success(
         role === "manager"
@@ -110,14 +104,10 @@ export function ManageTeamModal({
 
     setIsDeleting(employeeId);
     try {
-      const res = await api(`/employees?id=${employeeId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to remove employee");
-      }
+      await unwrap(
+        rpc.employees.$delete({ query: { id: employeeId } }),
+        "Failed to remove employee",
+      );
 
       toast.success(`${name} was removed from the team`);
       await onChanged?.();

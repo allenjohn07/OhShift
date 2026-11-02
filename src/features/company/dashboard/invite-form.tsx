@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Send, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { useApi } from "@/hooks/use-api";
 import { IconTooltip } from "@/components/icon-tooltip";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { apiError, rpc } from "@/lib/rpc";
 
 interface Invitee {
   fullName: string;
@@ -26,7 +26,6 @@ function isValidEmail(email: string) {
 
 /** Invite form body — rendered inside the Invite dialog on the Overview. */
 export function InviteEmployeeForm() {
-  const api = useApi();
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,18 +65,14 @@ export function InviteEmployeeForm() {
   const sendInvites = async (list: Invitee[], clearList: boolean) => {
     setIsLoading(true);
     try {
-      const res = await api("/employees/invite", {
-        method: "POST",
-        body: JSON.stringify({ invites: list }),
-      });
-
+      const res = await rpc.employees.invite.$post({ json: { invites: list } });
       const data = await res.json();
 
-      if (!res.ok) {
+      if ("error" in data) {
         const detail =
-          Array.isArray(data.details) && data.details.length > 0
+          "details" in data && Array.isArray(data.details) && data.details.length > 0
             ? data.details.join(" · ")
-            : data.error || "An unknown error occurred.";
+            : apiError(data, "An unknown error occurred.");
         toast.error("Failed to invite employee", {
           description: detail,
           duration: 12_000,
@@ -85,11 +80,7 @@ export function InviteEmployeeForm() {
         return;
       }
 
-      const created = (data.invites ?? []) as Array<{
-        email: string;
-        fullName: string;
-        inviteCode: string;
-      }>;
+      const created = data.invites;
 
       if (created.length > 0) {
         const summary = created
@@ -102,10 +93,6 @@ export function InviteEmployeeForm() {
             duration: 30_000,
           },
         );
-      } else if (data.details?.length) {
-        toast.warning(data.message || "Some invitations failed", {
-          description: data.details[0],
-        });
       } else {
         toast.success(data.message || "Invitations created");
       }

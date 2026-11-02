@@ -11,8 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -58,7 +57,6 @@ export function AssignShiftModal({
   const [endTime, setEndTime] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiOpen, setAiOpen] = useState(false);
-  const api = useApi();
 
   function open() {
     setIsOpen(true);
@@ -79,27 +77,16 @@ export function AssignShiftModal({
     setError(null);
 
     try {
-      const res = await api("/ai/parse-shift", {
-        method: "POST",
-        body: JSON.stringify({
-          prompt: trimmed,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          employeeId: employee.id,
+      const data = await unwrap(
+        rpc.ai["parse-shift"].$post({
+          json: {
+            prompt: trimmed,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            employeeId: employee.id,
+          },
         }),
-      });
-      const data = await parseApiJson<{
-        error?: string;
-        proposal?: {
-          title: string;
-          start_time: string;
-          end_time: string;
-          interpretation?: string;
-        };
-      }>(res);
-
-      if (!res.ok || !data.proposal) {
-        throw new Error(data.error || "Could not understand that");
-      }
+        "Could not understand that",
+      );
 
       setTitle(data.proposal.title);
       setDate(toLocalDateInput(data.proposal.start_time));
@@ -126,21 +113,18 @@ export function AssignShiftModal({
     const end = new Date(`${date}T${endTime}`).toISOString();
 
     try {
-      const res = await api("/shifts", {
-        method: "POST",
-        body: JSON.stringify({
-          employeeId: employee.id,
-          title,
-          startTime: start,
-          endTime: end,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      await unwrap(
+        rpc.shifts.$post({
+          json: {
+            employeeId: employee.id,
+            title,
+            startTime: start,
+            endTime: end,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to assign shift");
-      }
+        "Failed to assign shift",
+      );
 
       toast.success("Shift saved as draft — publish the week when ready");
       setIsOpen(false);

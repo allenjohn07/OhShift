@@ -4,36 +4,14 @@ import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { DayAgenda } from "./day-agenda";
 import { greeting, todayLabel } from "@/lib/greeting";
+import { rpc, type ApiData } from "@/lib/rpc";
 
-type DashboardData = {
-  profile: {
-    full_name: string;
-    role: string;
-    company_id: string;
-    companies?: { name: string } | null;
-  };
-  shifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-  }>;
-  companyShifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-    employee_id: string;
-    users?: { full_name: string };
-  }>;
-};
+type DashboardData = ApiData<typeof rpc.dashboard.employee.$get>;
 
 function PageSpinner() {
   return (
@@ -45,26 +23,24 @@ function PageSpinner() {
 
 function EmployeeDashboard() {
   const { user } = useAuth();
-  const api = useApi();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
 
   const load = useCallback(async () => {
-    const res = await api("/dashboard/employee");
-    const json = await parseApiJson<DashboardData & { error?: string }>(res);
-
+    const res = await rpc.dashboard.employee.$get();
     if (res.status === 401) {
       navigate({ to: "/login", replace: true });
       return;
     }
-    if (!res.ok || !json.profile) return;
+    const json = await res.json();
+    if (!res.ok || "error" in json) return;
 
     if (json.profile.role === "owner" || json.profile.role === "manager") {
       navigate({ to: "/company/dashboard", replace: true });
       return;
     }
     setData(json);
-  }, [api, navigate]);
+  }, [navigate]);
 
   useVisiblePoll(true, load);
 

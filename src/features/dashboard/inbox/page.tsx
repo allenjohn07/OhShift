@@ -26,10 +26,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
 import { useRefreshInboxUnread } from "@/hooks/use-inbox-unread";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
+import { apiError, rpc, unwrap } from "@/lib/rpc";
 import type { AppRole } from "@/lib/nav";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -111,7 +110,6 @@ function formatMessageTime(iso: string) {
 }
 
 function InboxPageContent() {
-  const api = useApi();
   const { user } = useAuth();
   const refreshUnread = useRefreshInboxUnread();
   const userId = user?.id ?? "";
@@ -143,73 +141,65 @@ function InboxPageContent() {
 
   const loadAnnouncements = useCallback(
     async (opts?: { quiet?: boolean }) => {
-      const res = await api("/announcements");
-      const data = await parseApiJson<{
-        announcements?: Announcement[];
-        error?: string;
-      }>(res);
-      if (!res.ok) {
+      const res = await rpc.announcements.$get();
+      const data = await res.json();
+      if (!res.ok || "error" in data) {
         if (!opts?.quiet && res.status !== 401) {
-          toast.error(data.error || "Failed to load announcements");
+          toast.error(apiError(data, "Failed to load announcements"));
         }
         return;
       }
-      setAnnouncements(data.announcements ?? []);
+      setAnnouncements(data.announcements);
     },
-    [api],
+    [],
   );
 
   const loadConversations = useCallback(
     async (opts?: { quiet?: boolean }) => {
-      const res = await api("/messages/conversations");
-      const data = await parseApiJson<{
-        conversations?: Conversation[];
-        error?: string;
-      }>(res);
-      if (!res.ok) {
+      const res = await rpc.messages.conversations.$get();
+      const data = await res.json();
+      if (!res.ok || "error" in data) {
         if (!opts?.quiet && res.status !== 401) {
-          toast.error(data.error || "Failed to load conversations");
+          toast.error(apiError(data, "Failed to load conversations"));
         }
         return;
       }
-      setConversations(data.conversations ?? []);
+      setConversations(data.conversations);
     },
-    [api],
+    [],
   );
 
   const loadDirectory = useCallback(async () => {
-    const res = await api("/messages/directory");
-    const data = await parseApiJson<{ members?: DirectoryMember[] }>(res);
-    if (res.ok) setDirectory(data.members ?? []);
-  }, [api]);
+    const data = await unwrap(rpc.messages.directory.$get()).catch(() => null);
+    if (data) setDirectory(data.members);
+  }, []);
 
   const loadThread = useCallback(
     async (conversationId: string, opts?: { quiet?: boolean }) => {
-      const res = await api(`/messages/conversations/${conversationId}`);
-      const data = await parseApiJson<{
-        messages?: DirectMessage[];
-        error?: string;
-      }>(res);
-      if (!res.ok) {
+      const res = await rpc.messages.conversations[":id"].$get({
+        param: { id: conversationId },
+      });
+      const data = await res.json();
+      if (!res.ok || "error" in data) {
         if (!opts?.quiet && res.status !== 401) {
-          toast.error(data.error || "Failed to load messages");
+          toast.error(apiError(data, "Failed to load messages"));
         }
         return;
       }
-      setMessages(data.messages ?? []);
+      setMessages(data.messages);
     },
-    [api],
+    [],
   );
 
   const markConversationRead = useCallback(
     async (conversationId: string) => {
-      await api(`/messages/conversations/${conversationId}/read`, {
-        method: "POST",
+      await rpc.messages.conversations[":id"].read.$post({
+        param: { id: conversationId },
       });
       await refreshUnread();
       await loadConversations({ quiet: true });
     },
-    [api, refreshUnread, loadConversations],
+    [refreshUnread, loadConversations],
   );
 
   const initialLoadRef = useRef(true);
@@ -263,15 +253,13 @@ function InboxPageContent() {
     }
     setSavingAnnouncement(true);
     try {
-      const res = await api(
-        editing ? `/announcements/${editing.id}` : "/announcements",
-        {
-          method: editing ? "PATCH" : "POST",
-          body: JSON.stringify({ title: t, body: b }),
-        },
+      const json = { title: t, body: b };
+      await unwrap(
+        editing
+          ? rpc.announcements[":id"].$patch({ param: { id: editing.id }, json })
+          : rpc.announcements.$post({ json }),
+        "Failed to save",
       );
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to save");
       toast.success(editing ? "Announcement updated" : "Announcement posted");
       setComposeOpen(false);
       await loadAnnouncements();
@@ -288,9 +276,10 @@ function InboxPageContent() {
   const handleDeleteAnnouncement = async (id: string) => {
     setDeletingId(id);
     try {
-      const res = await api(`/announcements/${id}`, { method: "DELETE" });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to delete");
+      await unwrap(
+        rpc.announcements[":id"].$delete({ param: { id } }),
+        "Failed to delete",
+      );
       toast.success("Announcement deleted");
       if (expandedId === id) setExpandedId(null);
       await loadAnnouncements();
@@ -308,7 +297,7 @@ function InboxPageContent() {
     const next = expandedId === ann.id ? null : ann.id;
     setExpandedId(next);
     if (next && !ann.is_read && ann.author_id !== userId) {
-      await api(`/announcements/${ann.id}/read`, { method: "POST" });
+      await rpc.announcements[":id"].read.$post({ param: { id: ann.id } });
       setAnnouncements((prev) =>
         prev.map((a) => (a.id === ann.id ? { ...a, is_read: true } : a)),
       );
@@ -317,7 +306,7 @@ function InboxPageContent() {
   };
 
   const handleMarkAllRead = async () => {
-    const res = await api("/announcements/read-all", { method: "POST" });
+    const res = await rpc.announcements["read-all"].$post();
     if (!res.ok) {
       toast.error("Failed to mark all read");
       return;
@@ -336,20 +325,13 @@ function InboxPageContent() {
   const handleStartDm = async (recipientId: string) => {
     setStartingDm(true);
     try {
-      const res = await api("/messages/conversations", {
-        method: "POST",
-        body: JSON.stringify({ recipient_id: recipientId }),
-      });
-      const data = await parseApiJson<{
-        conversation?: Conversation;
-        error?: string;
-      }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to start conversation");
+      const data = await unwrap(
+        rpc.messages.conversations.$post({ json: { recipient_id: recipientId } }),
+        "Failed to start conversation",
+      );
       setNewDmOpen(false);
       await loadConversations();
-      if (data.conversation) {
-        await openConversation(data.conversation.id);
-      }
+      await openConversation(data.conversation.id);
       setTab("messages");
     } catch (error: unknown) {
       toast.error(
@@ -367,21 +349,15 @@ function InboxPageContent() {
     if (!text) return;
     setSending(true);
     try {
-      const res = await api(`/messages/conversations/${activeId}`, {
-        method: "POST",
-        body: JSON.stringify({ body: text }),
-      });
-      const data = await parseApiJson<{
-        message?: DirectMessage;
-        error?: string;
-      }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to send");
+      const data = await unwrap(
+        rpc.messages.conversations[":id"].$post({
+          param: { id: activeId },
+          json: { body: text },
+        }),
+        "Failed to send",
+      );
       setDraft("");
-      if (data.message) {
-        setMessages((prev) => [...prev, data.message!]);
-      } else {
-        await loadThread(activeId);
-      }
+      setMessages((prev) => [...prev, data.message]);
       await loadConversations({ quiet: true });
       await refreshUnread();
     } catch (error: unknown) {

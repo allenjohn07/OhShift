@@ -2,8 +2,7 @@ import { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import { AskOhShiftModal } from "./ask-ohshift-modal";
 import type { CompanySettings } from "./company-settings";
 import { getEmployeeColor } from "@/lib/tag-colors";
@@ -42,7 +41,6 @@ export function TeamScheduleGrid({
   company?: CompanySettings | null;
   onScheduleChanged?: () => void | Promise<void>;
 }) {
-  const api = useApi();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -145,17 +143,16 @@ export function TeamScheduleGrid({
     if (!selectedShift) return;
     setIsDeleting(true);
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const res = await api(`/shifts?id=${selectedShift.id}&timezone=${encodeURIComponent(timezone)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete shift');
+      await unwrap(
+        rpc.shifts.$delete({ query: { id: selectedShift.id } }),
+        "Could not delete shift",
+      );
       
       toast.success("Shift deleted successfully");
       setSelectedShift(null);
       await onScheduleChanged?.();
-    } catch {
-      toast.error("Could not delete shift");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Could not delete shift");
     } finally {
       setIsDeleting(false);
     }
@@ -176,21 +173,18 @@ export function TeamScheduleGrid({
     const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
 
     try {
-      const res = await api("/shifts", {
-        method: "PUT",
-        body: JSON.stringify({
-          shiftId: selectedShift.id,
-          title,
-          startTime,
-          endTime,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      await unwrap(
+        rpc.shifts.$put({
+          json: {
+            shiftId: selectedShift.id,
+            title,
+            startTime,
+            endTime,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to edit shift");
-      }
+        "Failed to edit shift",
+      );
 
       toast.success("Shift updated successfully");
       setIsEditing(false);
@@ -245,22 +239,16 @@ export function TeamScheduleGrid({
       const weekEndExclusive = new Date(startOfWeek);
       weekEndExclusive.setDate(startOfWeek.getDate() + 7);
 
-      const res = await api("/company/schedule/publish", {
-        method: "POST",
-        body: JSON.stringify({
-          weekStart: weekStartIso,
-          from: startOfWeek.toISOString(),
-          to: weekEndExclusive.toISOString(),
+      const data = await unwrap(
+        rpc.company.schedule.publish.$post({
+          json: {
+            weekStart: weekStartIso,
+            from: startOfWeek.toISOString(),
+            to: weekEndExclusive.toISOString(),
+          },
         }),
-      });
-      const data = await parseApiJson<{
-        message?: string;
-        publishedCount?: number;
-        error?: string;
-      }>(res);
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to publish schedule");
-      }
+        "Failed to publish schedule",
+      );
       toast.success(data.message || "Schedule published");
       await onScheduleChanged?.();
     } catch (err: unknown) {

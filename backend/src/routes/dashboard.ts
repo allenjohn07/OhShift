@@ -89,7 +89,8 @@ export const dashboardRoutes = new Hono()
         full_name: e.fullName,
         email: e.email,
         designation: e.designation,
-        role: e.role,
+        // The query only selects these two roles.
+        role: e.role as "employee" | "manager",
       })),
       shifts: companyShifts.map((s) =>
         serializeShift({ ...s, users: { fullName: s.employee.fullName } }),

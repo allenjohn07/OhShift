@@ -7,7 +7,7 @@ import {
   type TimeOffStatus,
   type TimeOffType,
 } from "../db/schema";
-import { readJson, requireManager, requireUser } from "../lib/auth-guard";
+import { jsonBody, requireManager, requireUser } from "../lib/auth-guard";
 
 const TYPES: readonly TimeOffType[] = TIME_OFF_TYPES;
 
@@ -74,6 +74,15 @@ const withNames = {
   reviewedBy: { columns: { fullName: true } },
 } as const;
 
+type TimeOffBody = {
+  type: string;
+  start_date: string;
+  end_date: string;
+  note: string | null;
+};
+
+type ReviewBody = { decision: string };
+
 export const timeOffRoutes = new Hono()
   .get("/", async (c) => {
     const user = await requireUser(c);
@@ -85,18 +94,13 @@ export const timeOffRoutes = new Hono()
 
     return c.json({ requests: requests.map((r) => serializeTimeOff(r)) });
   })
-  .post("/", async (c) => {
+  .post("/", jsonBody<TimeOffBody>(), async (c) => {
     const user = await requireUser(c);
     if (!user.companyId) {
       return c.json({ error: "No company associated" }, 400);
     }
 
-    const payload = await readJson<{
-      type: string;
-      start_date: string;
-      end_date: string;
-      note: string | null;
-    }>(c);
+    const payload = c.req.valid("json");
 
     const type = payload.type as TimeOffType;
     if (!TYPES.includes(type)) {
@@ -206,9 +210,9 @@ export const timeOffRoutes = new Hono()
       recent: recent.map((r) => serializeTimeOff(r)),
     });
   })
-  .post("/:id/review", async (c) => {
+  .post("/:id/review", jsonBody<ReviewBody>(), async (c) => {
     const user = await requireManager(c);
-    const { decision } = await readJson<{ decision: string }>(c);
+    const { decision } = c.req.valid("json");
     if (decision !== "approved" && decision !== "denied") {
       return c.json({ error: 'decision must be "approved" or "denied"' }, 400);
     }

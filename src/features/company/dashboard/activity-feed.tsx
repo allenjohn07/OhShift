@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Send } from "lucide-react";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 
@@ -9,24 +8,9 @@ import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, Dia
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/dates";
+import { rpc, unwrap, type ApiData } from "@/lib/rpc";
 
-type PublishedShift = {
-  id: string;
-  title: string;
-  employee_name: string;
-  start_time: string;
-  end_time: string;
-};
-
-type LogEntry = {
-  id: string;
-  action: "published";
-  detail: string;
-  week_start: string | null;
-  created_at: string;
-  actor: { full_name: string; role: string };
-  shifts: PublishedShift[];
-};
+type LogEntry = ApiData<typeof rpc.company.activity.$get>["activity"][number];
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -190,7 +174,6 @@ export function ActivityFeed({
   refreshKey?: number;
   className?: string;
 }) {
-  const api = useApi();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -198,16 +181,14 @@ export function ActivityFeed({
 
   const fetchLogs = useCallback(async () => {
     try {
-      const res = await api("/company/activity");
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.activity) setLogs(data.activity);
+      const data = await unwrap(rpc.company.activity.$get());
+      setLogs(data.activity);
     } catch {
       // Network/CORS/5xx — keep existing list (background refresh stays quiet).
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   // Live: other managers publishing show up without a reload.
   useVisiblePoll(true, fetchLogs);

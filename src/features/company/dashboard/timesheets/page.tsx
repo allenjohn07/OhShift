@@ -13,8 +13,6 @@ import {
   usePendingTimesheetsSnapshot,
   useRefreshPendingTimesheets,
 } from "@/hooks/use-pending-timesheets";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import type {
   PendingTimeEntry,
@@ -24,6 +22,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/ui/time-picker";
 import { formatTime, timeFormatOptions } from "@/lib/dates";
+import { rpc, unwrap } from "@/lib/rpc";
 
 const STATUS_STYLES: Record<TimeEntryStatus, string> = {
   open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -75,7 +74,6 @@ type EditState = {
 };
 
 function TimesheetsContent() {
-  const api = useApi();
   const { user } = useAuth();
   const myId = user?.profile.id ?? user?.id;
   const { pending, recent, loaded } = usePendingTimesheetsSnapshot();
@@ -119,17 +117,18 @@ function TimesheetsContent() {
 
     setActingId(entry.id);
     try {
-      const res = await api(`/time-entries/${entry.id}/review`, {
-        method: "POST",
-        body: JSON.stringify({
-          decision,
-          clock_in_at: clockInAt,
-          clock_out_at: clockOutAt,
-          note: edit.note.trim() || null,
+      await unwrap(
+        rpc["time-entries"][":id"].review.$post({
+          param: { id: entry.id },
+          json: {
+            decision,
+            clock_in_at: clockInAt,
+            clock_out_at: clockOutAt,
+            note: edit.note.trim() || null,
+          },
         }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to update timesheet");
+        "Failed to update timesheet",
+      );
       toast.success(
         decision === "approved" ? "Timesheet approved" : "Timesheet denied",
       );

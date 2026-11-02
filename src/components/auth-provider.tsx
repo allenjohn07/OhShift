@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { apiFetch, parseApiJson } from "@/lib/api";
+import { rpc, unwrap, withToken } from "@/lib/rpc";
 import {
   clearAccessToken,
   getAccessToken,
@@ -66,8 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const res = await apiFetch("/auth/me", { token });
-      const data = await parseApiJson<{ user: AuthUser | null }>(res);
+      const data = await unwrap(rpc.auth.me.$get(undefined, withToken(token)));
 
       if (!data.user) {
         applySession(null, null);
@@ -93,8 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const res = await apiFetch("/auth/me", { token });
-        const data = await parseApiJson<{ user: AuthUser | null }>(res);
+        const data = await unwrap(rpc.auth.me.$get(undefined, withToken(token)));
         if (cancelled) return;
 
         if (!data.user) {
@@ -117,21 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [applySession]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-      token: null,
-    });
-
-    const data = await parseApiJson<{
-      accessToken?: string;
-      user?: AuthUser;
-      error?: string;
-    }>(res);
-
-    if (!res.ok || !data.accessToken || !data.user) {
-      throw new Error(data.error || "Invalid credentials");
-    }
+    const data = await unwrap(
+      rpc.auth.login.$post({ json: { email, password } }),
+      "Invalid credentials",
+    );
 
     applySession(data.user, data.accessToken);
     return data.user;

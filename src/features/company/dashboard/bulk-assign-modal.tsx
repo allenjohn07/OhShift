@@ -4,13 +4,13 @@ import { toast } from "sonner";
 import type { CompanySettings } from "./company-settings";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fieldClass } from "@/components/ui/input";
-import { useApi } from "@/hooks/use-api";
 
 import { ScrollFade } from "@/components/scroll-fade";
 import { cn } from "@/lib/utils";
 import { SimpleSelect } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { apiError, rpc, unwrap } from "@/lib/rpc";
 
 type EligibilityReason =
   | "unavailable"
@@ -91,7 +91,6 @@ export function BulkAssignModal({
     () => new Map(),
   );
 
-  const api = useApi();
   const fetchGen = useRef(0);
 
   const eligiblePeople = people.filter((p) => p.eligible);
@@ -117,32 +116,30 @@ export function BulkAssignModal({
       try {
         const start = toIso(date, startTime);
         const end = toIso(date, endTime);
-        const params = new URLSearchParams({
-          start,
-          end,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        const res = await rpc.shifts.eligible.$get({
+          query: {
+            start,
+            end,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            ...(designation ? { designation } : {}),
+          },
         });
-        if (designation) params.set("designation", designation);
-
-        const res = await api(`/shifts/eligible?${params}`);
         const data = await res.json();
         if (gen !== fetchGen.current) return;
 
-        if (!res.ok) {
-          setError(data.error || "Failed to load eligible team members");
+        if (!res.ok || "error" in data) {
+          setError(apiError(data, "Failed to load eligible team members"));
           setPeople([]);
           return;
         }
 
         setError(null);
-        setPeople(data.people ?? []);
-        setDesignations(data.designations ?? []);
+        setPeople(data.people);
+        setDesignations(data.designations);
         setSelected((prev) => {
           const next = new Set<string>();
           for (const id of prev) {
-            const person = (data.people as EligiblePerson[] | undefined)?.find(
-              (p) => p.id === id,
-            );
+            const person = data.people.find((p) => p.id === id);
             if (person?.eligible) next.add(id);
           }
           return next;
@@ -157,7 +154,7 @@ export function BulkAssignModal({
     }, 200);
 
     return () => window.clearTimeout(timer);
-  }, [isOpen, date, startTime, endTime, designation, api]);
+  }, [isOpen, date, startTime, endTime, designation]);
 
   function open() {
     setIsOpen(true);
@@ -247,17 +244,12 @@ export function BulkAssignModal({
       });
 
     try {
-      const res = await api("/shifts/bulk", {
-        method: "POST",
-        body: JSON.stringify({ timezone, shifts }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create shifts");
-      }
+      const data = await unwrap(
+        rpc.shifts.bulk.$post({ json: { timezone, shifts } }),
+        "Failed to create shifts",
+      );
 
-      const created = data.created ?? 0;
-      const failed = data.failed ?? 0;
+      const { created, failed } = data;
       if (created > 0 && failed === 0) {
         toast.success(
           `${created} draft shift${created === 1 ? "" : "s"} created — publish when ready`,
@@ -268,9 +260,7 @@ export function BulkAssignModal({
         );
       } else {
         toast.error("No shifts were created");
-        const firstErr = (data.results as Array<{ error?: string }> | undefined)?.find(
-          (r) => r.error,
-        )?.error;
+        const firstErr = data.results.flatMap((r) => ("error" in r ? [r.error] : []))[0];
         if (firstErr) setError(firstErr);
         return;
       }

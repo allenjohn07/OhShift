@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { db } from "./db";
 import { ApiError } from "./lib/auth-guard";
 import { aiRoutes } from "./routes/ai";
@@ -105,6 +106,9 @@ const app = new Hono()
   .onError((err, c) => {
     if (err instanceof ApiError) {
       return c.json({ error: err.message }, err.status as 400);
+    }
+    if (err instanceof HTTPException) {
+      return c.json({ error: err.message }, err.status);
     }
     console.error(err);
     return c.json({ error: "Internal Server Error" }, 500);

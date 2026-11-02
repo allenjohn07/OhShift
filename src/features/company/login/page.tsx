@@ -5,11 +5,11 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { rpc, unwrap } from "@/lib/rpc";
 
 export default function CompanyLoginPage() {
   const navigate = useNavigate();
@@ -50,13 +50,14 @@ export default function CompanyLoginPage() {
     }
     try {
       setIsLoading(true);
-      const res = await apiFetch("/auth/reset-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-        timeoutMs: 90_000,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      const data = await unwrap(
+        rpc.auth["reset-password"].$post(
+          { json: { email } },
+          // The API can be cold-starting; give it time.
+          { init: { signal: AbortSignal.timeout(90_000) } },
+        ),
+        "Failed to reset password",
+      );
       toast.success("Temporary password ready", {
         description: data.tempPassword
           ? `Copy this password and log in: ${data.tempPassword}`

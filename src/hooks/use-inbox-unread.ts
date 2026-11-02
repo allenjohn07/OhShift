@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import {
   getInboxUnreadServerSnapshot,
   getInboxUnreadSnapshot,
@@ -21,24 +20,19 @@ export function useInboxUnreadSnapshot(): InboxUnreadSnapshot {
 }
 
 export function useRefreshInboxUnread() {
-  const api = useApi();
   const { accessToken } = useAuth();
 
   return useCallback(async () => {
     if (!accessToken) return;
-    const res = await api("/inbox/unread");
-    const data = await parseApiJson<{
-      announcements?: number;
-      messages?: number;
-      total?: number;
-    }>(res);
-    if (!res.ok) return;
+    // Background poll: stay quiet on errors.
+    const data = await unwrap(rpc.inbox.unread.$get()).catch(() => null);
+    if (!data) return;
     setInboxUnreadData({
       announcements: data.announcements ?? 0,
       messages: data.messages ?? 0,
       total: data.total ?? 0,
     });
-  }, [api, accessToken]);
+  }, [accessToken]);
 }
 
 /** Polls inbox unread for any company member; keep mounted in AppShell. */

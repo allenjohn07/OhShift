@@ -14,12 +14,11 @@ import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/dates";
+import { ApiRequestError, rpc, unwrap } from "@/lib/rpc";
 
 type TimeEntryStatus = "open" | "pending" | "approved" | "denied";
 
@@ -110,7 +109,6 @@ function readPeriodMode(): PeriodMode {
 }
 
 function HoursPageContent() {
-  const api = useApi();
   const { user } = useAuth();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -154,65 +152,39 @@ function HoursPageContent() {
 
   const load = useCallback(
     async (opts?: { quiet?: boolean }) => {
-      const [shiftsRes, entriesRes, todayRes, activeRes] = await Promise.all([
-        api("/shifts/mine"),
-        api(
-          `/time-entries/mine?from=${encodeURIComponent(periodFromIso)}&to=${encodeURIComponent(periodToIso)}`,
-        ),
-        api(
-          `/time-entries/mine?from=${encodeURIComponent(todayRange.from)}&to=${encodeURIComponent(todayRange.to)}`,
-        ),
-        api("/time-entries/active"),
-      ]);
+      let results;
+      try {
+        results = await Promise.all([
+          unwrap(rpc.shifts.mine.$get(), "Failed to load shifts"),
+          unwrap(
+            rpc["time-entries"].mine.$get({
+              query: { from: periodFromIso, to: periodToIso },
+            }),
+            "Failed to load hours",
+          ),
+          unwrap(
+            rpc["time-entries"].mine.$get({
+              query: { from: todayRange.from, to: todayRange.to },
+            }),
+            "Failed to load today's hours",
+          ),
+          unwrap(rpc["time-entries"].active.$get(), "Failed to load clock status"),
+        ]);
+      } catch (err) {
+        const unauthorized = err instanceof ApiRequestError && err.status === 401;
+        if (!opts?.quiet && !unauthorized) {
+          toast.error(err instanceof Error ? err.message : "Failed to load hours");
+        }
+        return;
+      }
+      const [shiftsData, entriesData, todayData, activeData] = results;
 
-      const shiftsData = await parseApiJson<{
-        shifts?: Shift[];
-        error?: string;
-      }>(shiftsRes);
-      const entriesData = await parseApiJson<{
-        entries?: TimeEntry[];
-        error?: string;
-      }>(entriesRes);
-      const todayData = await parseApiJson<{
-        entries?: TimeEntry[];
-        error?: string;
-      }>(todayRes);
-      const activeData = await parseApiJson<{
-        entry?: TimeEntry | null;
-        error?: string;
-      }>(activeRes);
-
-      if (!shiftsRes.ok) {
-        if (!opts?.quiet && shiftsRes.status !== 401) {
-          toast.error(shiftsData.error || "Failed to load shifts");
-        }
-        return;
-      }
-      if (!entriesRes.ok) {
-        if (!opts?.quiet && entriesRes.status !== 401) {
-          toast.error(entriesData.error || "Failed to load hours");
-        }
-        return;
-      }
-      if (!todayRes.ok) {
-        if (!opts?.quiet && todayRes.status !== 401) {
-          toast.error(todayData.error || "Failed to load today's hours");
-        }
-        return;
-      }
-      if (!activeRes.ok) {
-        if (!opts?.quiet && activeRes.status !== 401) {
-          toast.error(activeData.error || "Failed to load clock status");
-        }
-        return;
-      }
-
-      setShifts(shiftsData.shifts ?? []);
-      setEntries(entriesData.entries ?? []);
-      setTodayEntries(todayData.entries ?? []);
+      setShifts(shiftsData.shifts);
+      setEntries(entriesData.entries);
+      setTodayEntries(todayData.entries);
       setActive(activeData.entry ?? null);
       for (const entry of [
-        ...(todayData.entries ?? []),
+        ...todayData.entries,
         ...(activeData.entry ? [activeData.entry] : []),
       ]) {
         try {
@@ -225,7 +197,7 @@ function HoursPageContent() {
         }
       }
     },
-    [api, periodFromIso, periodToIso, todayRange.from, todayRange.to],
+    [periodFromIso, periodToIso, todayRange.from, todayRange.to],
   );
 
   const initialLoadRef = useRef(true);
@@ -269,14 +241,10 @@ function HoursPageContent() {
   const clockIn = async (shiftId: string) => {
     setActingShiftId(shiftId);
     try {
-      const res = await api("/time-entries/clock-in", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: shiftId }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-in"].$post({ json: { shift_id: shiftId } }),
+        "Failed to clock in",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock in");
       toast.success("Clocked in");
       if (data.entry) {
         try {
@@ -299,14 +267,10 @@ function HoursPageContent() {
   const clockOut = async (shiftId: string) => {
     setActingShiftId(shiftId);
     try {
-      const res = await api("/time-entries/clock-out", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: shiftId }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-out"].$post({ json: { shift_id: shiftId } }),
+        "Failed to clock out",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock out");
       toast.success("Clocked out — pending manager approval");
       if (data.entry) {
         try {

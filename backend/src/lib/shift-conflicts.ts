@@ -38,29 +38,33 @@ export function findShiftWithSameStart(
   );
 }
 
-function formatLocalRange(start: Date, end: Date): string {
-  const dateFmt = new Intl.DateTimeFormat(undefined, {
+/** "Thu, Oct 29 · 8:30 PM – 11:00 PM" in the client's timezone (Workers run in UTC). */
+function formatLocalRange(start: Date, end: Date, timeZone?: string): string {
+  const tz = timeZone || undefined;
+  const dateFmt = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
+    timeZone: tz,
   });
-  const timeFmt = new Intl.DateTimeFormat(undefined, {
+  const timeFmt = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: tz,
   });
   return `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
 }
 
-export function formatSameStartMessage(shift: {
-  title: string;
-  startTime: Date;
-  endTime: Date;
-}): string {
-  return `This person already has a shift starting at that time (“${shift.title}”, ${formatLocalRange(shift.startTime, shift.endTime)}). Pick a different start time.`;
+export function formatSameStartMessage(
+  shift: { title: string; startTime: Date; endTime: Date },
+  timeZone?: string,
+): string {
+  return `This person already has a shift starting at that time (“${shift.title}”, ${formatLocalRange(shift.startTime, shift.endTime, timeZone)}). Pick a different start time.`;
 }
 
 export function formatConflictMessage(
   conflicts: Array<{ title: string; startTime: Date; endTime: Date }>,
+  timeZone?: string,
 ): string {
   if (conflicts.length === 0) {
     return "Shift conflicts with an existing assignment";
@@ -68,5 +72,5 @@ export function formatConflictMessage(
   const first = conflicts[0];
   const extra =
     conflicts.length > 1 ? ` (+${conflicts.length - 1} more)` : "";
-  return `Shift overlaps with “${first.title}” (${formatLocalRange(first.startTime, first.endTime)})${extra}`;
+  return `Shift overlaps with “${first.title}” (${formatLocalRange(first.startTime, first.endTime, timeZone)})${extra}`;
 }

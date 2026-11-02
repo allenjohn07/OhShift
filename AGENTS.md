@@ -25,7 +25,7 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 
 - Frontend routes: `src/routes/**` (thin) → page components in `src/features/**`
 - Navigation: TanStack Router directly (`Link to`, `useNavigate`, `useLocation`); route paths typed as `RoutePath` in `src/lib/nav.ts`
-- API client: `src/lib/api.ts`
+- API client: `src/lib/rpc.ts` — typed Hono RPC (`rpc.shifts.$post({ json })`, `unwrap(call, fallback)`, `ApiData<typeof rpc.x.$get>` for response types). Backend routes declare inputs with `jsonBody<T>()` / `queryParams<K>()` (`backend/src/lib/auth-guard.ts`) so request types reach the client; the client is built in `backend/src/client.ts`
 - Backend routes: `backend/src/routes/**`
 - Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)
 - UI skill: `.cursor/skills/ohshift-ui/SKILL.md` — follow for frontend styling

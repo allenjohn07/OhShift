@@ -8,11 +8,10 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { TimePicker } from "@/components/ui/time-picker";
+import { apiError, rpc, unwrap } from "@/lib/rpc";
 
 type DayAvailability = {
   day_of_week: number;
@@ -62,7 +61,6 @@ function toMinutes(value: string) {
 }
 
 function AvailabilityEditor() {
-  const api = useApi();
   const [days, setDays] = useState<DayAvailability[]>(defaultDays);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,13 +70,14 @@ function AvailabilityEditor() {
   useEffect(() => {
     let cancelled = false;
 
-    api("/availability")
+    rpc.availability
+      .$get()
       .then(async (res) => {
-        const data = await parseApiJson<{ days?: DayAvailability[]; error?: string }>(res);
+        const data = await res.json();
         if (cancelled) return;
-        if (!res.ok || !data.days) {
+        if (!res.ok || "error" in data) {
           if (res.status !== 401) {
-            toast.error(data.error || "Failed to load availability");
+            toast.error(apiError(data, "Failed to load availability"));
           }
           return;
         }
@@ -96,7 +95,7 @@ function AvailabilityEditor() {
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, []);
 
   const updateDay = (index: number, patch: Partial<DayAvailability>) => {
     setDays((prev) =>
@@ -117,19 +116,13 @@ function AvailabilityEditor() {
 
     setSaving(true);
     try {
-      const res = await api("/availability", {
-        method: "PUT",
-        body: JSON.stringify({ days }),
-      });
-      const data = await parseApiJson<{ days?: DayAvailability[]; error?: string }>(res);
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to save availability");
-      }
-      if (data.days) {
-        const saved = normalizeDays(data.days);
-        setDays(saved);
-        setSavedSnapshot(JSON.stringify(saved));
-      }
+      const data = await unwrap(
+        rpc.availability.$put({ json: { days } }),
+        "Failed to save availability",
+      );
+      const saved = normalizeDays(data.days);
+      setDays(saved);
+      setSavedSnapshot(JSON.stringify(saved));
       toast.success("Availability saved");
     } catch (error: unknown) {
       toast.error(

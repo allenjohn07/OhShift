@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
-import { apiFetch } from "@/lib/api";
 import { Panel, PanelHeader } from "@/components/panel";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getEmployeeColor } from "@/lib/tag-colors";
+import { rpc, unwrap } from "@/lib/rpc";
 
 type ProfileUser = {
   full_name?: string | null;
@@ -23,7 +22,6 @@ type ProfileUser = {
 };
 
 export function ProfileForm({ user }: { user: ProfileUser }) {
-  const api = useApi();
   const { refreshUser } = useAuth();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -43,14 +41,10 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
     const avatarUrl = formData.get("avatarUrl") as string;
     
     try {
-      const res = await api("/auth/update-avatar", {
-        method: "POST",
-        body: JSON.stringify({ avatarUrl }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || "Failed to update profile picture");
+      await unwrap(
+        rpc.auth["update-avatar"].$post({ json: { avatarUrl } }),
+        "Failed to update profile picture",
+      );
       
       toast.success("Profile picture updated");
       await refreshUser();
@@ -74,12 +68,10 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
     const newPassword = formData.get("newPassword") as string;
     
     try {
-      const res = await api("/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update password");
+      await unwrap(
+        rpc.auth["change-password"].$post({ json: { currentPassword, newPassword } }),
+        "Failed to update password",
+      );
 
       toast.success("Password updated successfully");
       (e.target as HTMLFormElement).reset();
@@ -95,13 +87,14 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
   const handleResetPassword = async () => {
     try {
       setIsSendingReset(true);
-      const res = await apiFetch("/auth/reset-password", {
-        method: "POST",
-        body: JSON.stringify({ email: user.email }),
-        timeoutMs: 90_000,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      const data = await unwrap(
+        rpc.auth["reset-password"].$post(
+          { json: { email: user.email } },
+          // The API can be cold-starting; give it time.
+          { init: { signal: AbortSignal.timeout(90_000) } },
+        ),
+        "Failed to reset password",
+      );
       toast.success("Temporary password ready", {
         description: data.tempPassword
           ? `Copy this password and log in: ${data.tempPassword}`
