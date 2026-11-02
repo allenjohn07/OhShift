@@ -159,7 +159,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="animate-fade-in delay-300 mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              OhShift is the modern shift scheduling platform that your team
+              OhShifts is the modern shift scheduling platform that your team
               will actually enjoy using. Create, assign, and track shifts — all
               in one beautiful interface.
             </p>

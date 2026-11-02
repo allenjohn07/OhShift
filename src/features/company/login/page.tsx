@@ -98,7 +98,7 @@ export default function CompanyLoginPage() {
               <Link to="/" className="inline-flex items-center gap-1.5 mb-4">
                 <BrandMark size={22} />
                 <span className="text-xl font-semibold tracking-tight">
-                  OhShift
+                  OhShifts
                 </span>
               </Link>
               <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">

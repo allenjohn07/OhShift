@@ -202,7 +202,7 @@ function buildSystemPrompt(
     ? `Current manager (for "me" / "myself"): id=${self.id}, name=${self.full_name}`
     : `Current manager is not on the assignable roster.`;
 
-  return `You are OhShift's schedule assistant. Extract ONE shift assignment from the manager's message.
+  return `You are the OhShifts schedule assistant. Extract ONE shift assignment from the manager's message.
 
 Rules:
 - Use only employee ids from the roster. Match names case-insensitively (first name, full name, nicknames).

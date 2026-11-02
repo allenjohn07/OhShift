@@ -594,7 +594,7 @@ function InboxPageContent() {
           )}
 
           {tab === "messages" && (
-            <Panel className="h-[calc(100dvh-24.5rem)] min-h-[16rem] md:flex-row md:h-[calc(100dvh-20rem)] lg:min-h-[30rem]">
+            <Panel className="h-[30rem] md:flex-row md:min-h-[16rem] md:h-[calc(100dvh-20rem)] lg:min-h-[30rem]">
               {/* Conversation list */}
               <div
                 className={cn(

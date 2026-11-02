@@ -575,11 +575,11 @@ export function AppShell({
               aria-hidden={collapsed || undefined}
             >
               <span className="truncate text-sm font-semibold">
-                {companyName || "OhShift"}
+                {companyName || "OhShifts"}
               </span>
               {companyName && (
                 <span className="truncate text-[11px] text-muted-foreground">
-                  OhShift workspace
+                  OhShifts workspace
                 </span>
               )}
             </span>
@@ -639,7 +639,7 @@ export function AppShell({
           <Link to={homeHref} className="inline-flex min-w-0 items-center gap-2">
             <BrandMark size={20} />
             <span className="truncate text-sm font-semibold">
-              {companyName || "OhShift"}
+              {companyName || "OhShifts"}
             </span>
           </Link>
         </div>

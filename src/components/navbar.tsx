@@ -99,7 +99,7 @@ export function Navbar() {
             <Link to="/" className="flex items-center gap-2">
               <BrandMark size={22} />
               <span className="text-[15px] font-semibold tracking-tight">
-                OhShift
+                OhShifts
               </span>
             </Link>
             <div className="hidden md:flex items-center gap-0.5">

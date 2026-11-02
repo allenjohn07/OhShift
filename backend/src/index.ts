@@ -85,7 +85,7 @@ const app = new Hono()
   })
   .get("/", (c) =>
     c.json({
-      name: "OhShift API",
+      name: "OhShifts API",
       docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off, /time-entries, /announcements, /messages, /inbox, /ai",
     }),
   )

@@ -51,7 +51,7 @@ export function Footer({ className }: { className?: string }) {
             <div className="mb-3 flex items-center gap-2">
               <BrandMark size={22} />
               <span className="text-[15px] font-semibold tracking-tight">
-                OhShift
+                OhShifts
               </span>
             </div>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -99,7 +99,7 @@ export function Footer({ className }: { className?: string }) {
 
         <div className="flex items-center justify-between gap-6 border-t border-border py-6">
           <p className="text-[13px] text-muted-foreground">
-            © {new Date().getFullYear()} OhShift
+            © {new Date().getFullYear()} OhShifts
           </p>
           <p className="text-[13px] text-muted-foreground">Now in public beta</p>
         </div>

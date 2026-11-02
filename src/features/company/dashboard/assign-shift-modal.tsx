@@ -106,11 +106,11 @@ export function AssignShiftModal({
       setStartTime(toLocalTimeInput(data.proposal.start_time));
       setEndTime(toLocalTimeInput(data.proposal.end_time));
       toast.success(
-        data.proposal.interpretation || "Filled from OhShift AI — review and assign",
+        data.proposal.interpretation || "Filled from OhShifts AI — review and assign",
       );
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Could not fill from OhShift AI",
+        err instanceof Error ? err.message : "Could not fill from OhShifts AI",
       );
     } finally {
       setIsAiLoading(false);
@@ -195,7 +195,7 @@ export function AssignShiftModal({
             >
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand" />
-                OhShift AI
+                OhShifts AI
               </span>
               <span className="text-xs text-muted-foreground">
                 {aiOpen ? "Hide" : "Describe in plain language"}
