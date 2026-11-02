@@ -1,8 +1,3 @@
----
-description: Protect env files and secrets from AI modification
-alwaysApply: true
----
-
 # Environment & secrets guardrails
 
 ## Forbidden actions

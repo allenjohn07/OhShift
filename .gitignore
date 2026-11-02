@@ -43,5 +43,5 @@ backend/.dev.vars
 *.tsbuildinfo
 next-env.d.ts
 
-# cursor plans
-.cursor/plans/
+# local plans
+.claude/plans/

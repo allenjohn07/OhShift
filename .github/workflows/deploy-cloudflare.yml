@@ -10,7 +10,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: bun install --frozen-lockfile
+      - run: bun install --cwd backend --frozen-lockfile
+      - run: bun run verify
+
   deploy-pages:
+    needs: verify
     runs-on: ubuntu-latest
     name: Deploy Pages (frontend)
     steps:
@@ -58,6 +71,7 @@ jobs:
           command: pages deploy out --project-name=ohshift
 
   deploy-worker:
+    needs: verify
     runs-on: ubuntu-latest
     name: Deploy Worker (API)
     defaults:

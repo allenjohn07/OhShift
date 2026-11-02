@@ -1,8 +1,3 @@
----
-description: Never auto-commit — suggest a message; user commits
-alwaysApply: true
----
-
 # Commits — user owns git
 
 ## Do not commit or push

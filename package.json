@@ -6,10 +6,11 @@
     "dev": "vite",
     "build": "bun install --cwd backend && tsc --noEmit && vite build",
     "lint": "eslint .",
-    "verify": "bun run lint && bun run build",
+    "verify": "bun run lint && bun run --cwd backend typecheck && tsc --noEmit -p tests/tsconfig.json && bun run test && bun run build",
     "pages:deploy": "bun run build && bunx wrangler pages deploy out --project-name=ohshift",
     "prepare": "husky",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "bun run --cwd backend test && bun test ./tests"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

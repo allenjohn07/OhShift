@@ -16,7 +16,7 @@ await migrate(testDb, { migrationsFolder: new URL("../../drizzle", import.meta.u
 
 // `env.AI` is undefined → embeddings/chat fail → the assistant must still work
 // (lexical routing, deterministic answers).
-mock.module("cloudflare:workers", () => ({ env: {} }));
+mock.module("cloudflare:workers", () => ({ env: { AUTH_SECRET: "ohshift-test-only-secret-never-for-production" } }));
 mock.module("../../src/db", () => ({ db: testDb, schema }));
 
 // Workers AI stand-in. Embeddings are a deterministic bag-of-words (shared words →

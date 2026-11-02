@@ -2,7 +2,7 @@
 
 ## Product focus
 
-OhShift is an employee shift-scheduling platform. Build features incrementally per the roadmap phases in `.cursor/plans/`.
+OhShift is an employee shift-scheduling platform. Build features incrementally per the roadmap phases in `.claude/plans/`.
 
 **Current phase (Phase 0 — no email yet):**
 - Manager role assignment (owner promotes/demotes employees ↔ managers)
@@ -28,7 +28,7 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 - API client: `src/lib/rpc.ts` — typed Hono RPC (`rpc.shifts.$post({ json })`, `unwrap(call, fallback)`, `ApiData<typeof rpc.x.$get>` for response types). Backend routes declare inputs with `jsonBody<T>()` / `queryParams<K>()` (`backend/src/lib/auth-guard.ts`) so request types reach the client; the client is built in `backend/src/client.ts`
 - Backend routes: `backend/src/routes/**`
 - Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)
-- UI skill: `.cursor/skills/ohshift-ui/SKILL.md` — follow for frontend styling
+- UI skill: `.claude/skills/ohshift-ui/SKILL.md` — follow for frontend styling
 - Data fetching / live updates: TanStack Query — `src/lib/queries.ts` (query catalogue, `LIVE_MS`), `src/hooks/use-live-badges.ts`
 
 ## Conventions
@@ -93,4 +93,23 @@ If runtime config is needed, ask the user to confirm values in their local env f
 
 ## Commits
 
-The user commits. Agents **must not** run `git commit` / `git push` unless the user explicitly asks in that message. When a change is ready, give a suggested commit message and leave committing to them. See `.cursor/rules/commits.mdc`.
+The user commits. Agents **must not** run `git commit` / `git push` unless the user explicitly asks in that message. When a change is ready, give a suggested commit message and leave committing to them. See `.claude/rules/commits.md`.
+
+
+## Branches and integration
+
+- Before editing any tracked files, require a clean working tree, run `git fetch origin main`, switch to `main`, fast-forward with `git merge --ff-only origin/main`, then create a new descriptive branch. Never implement changes on `main` or reuse a branch from an earlier task. Preserve existing user work; stop if it prevents a safe sync.
+- PRs are optional. When the user explicitly requests integration/publishing, fetch the latest `origin/main`, merge it into the feature branch, resolve conflicts, and run `bun run verify` on the final result. Then fast-forward local `main` to the tested branch and push `main` to `origin`. Never force-push; if origin advances, synchronize and verify again.
+- A request to edit code alone does not authorize committing or pushing. Leave changes on the feature branch and suggest a commit message unless explicitly asked to commit/integrate.
+
+## Required tests and verification
+
+- Every new feature must include meaningful automated tests in the same change. Cover successful behavior, invalid input, permissions and tenant isolation where applicable. Bug fixes require a regression test.
+- Test observable behavior, including UI interactions and both sides of cross-role updates when affected; do not substitute implementation-mirroring assertions for behavioral tests.
+- Run `bun run verify` before every commit and before integrating or pushing. It runs lint, backend type checks, all automated tests and the frontend build. Fix failures before proceeding; never bypass hooks with `--no-verify`, `HUSKY=0`, or equivalent. If checks cannot run, report the blocker and do not commit.
+- Install dependencies with `bun install` in the root and backend after cloning; root installation activates Husky. Local hooks are a guardrail, not a security boundary; CI must also pass. Required status checks on main need GitHub branch protection configured by the repository owner.
+
+## Finish cleanly
+
+- Remove unused imports, dead code, obsolete helpers, debug logging, temporary files and stale documentation introduced or made obsolete by the current change. Update references when moving files.
+- Review the final diff and `git diff --check`; keep cleanup scoped to the task. Mention unrelated cleanup opportunities without silently refactoring them.
