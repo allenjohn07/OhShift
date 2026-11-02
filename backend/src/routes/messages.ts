@@ -181,7 +181,7 @@ export const messagesRoutes = new Hono()
     const companyId = requireCompanyMember(user);
 
     const members = await db.query.users.findMany({
-      where: and(eq(users.companyId, companyId), ne(users.id, user.id)),
+      where: and(eq(users.companyId, companyId), eq(users.isActive, true), ne(users.id, user.id)),
       columns: memberColumns,
       orderBy: asc(users.fullName),
     });
@@ -234,7 +234,7 @@ export const messagesRoutes = new Hono()
     }
 
     const recipient = await db.query.users.findFirst({
-      where: and(eq(users.id, recipientId), eq(users.companyId, companyId)),
+      where: and(eq(users.id, recipientId), eq(users.companyId, companyId), eq(users.isActive, true)),
       columns: { id: true },
     });
     if (!recipient) {

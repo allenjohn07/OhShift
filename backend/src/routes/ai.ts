@@ -30,6 +30,7 @@ async function loadRosterAndPresets(user: {
       .where(
         and(
           eq(users.companyId, user.companyId),
+          eq(users.isActive, true),
           or(inArray(users.role, ["employee", "manager"]), eq(users.id, user.id)),
         ),
       )

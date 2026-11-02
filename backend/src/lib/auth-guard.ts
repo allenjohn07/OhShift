@@ -72,7 +72,7 @@ export async function verifyEmployeeInCompany(
   companyId: string,
 ) {
   const employee = await db.query.users.findFirst({
-    where: and(eq(users.id, employeeId), eq(users.companyId, companyId)),
+    where: and(eq(users.id, employeeId), eq(users.companyId, companyId), eq(users.isActive, true)),
   });
   if (!employee) {
     throw new ApiError("Invalid employee", 400);

@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
-import { users, type UserRole } from "../db/schema";
+import { timeEntries, users, type UserRole } from "../db/schema";
 import {
   assertOwner,
   jsonBody,
@@ -89,9 +89,10 @@ export const employeesRoutes = new Hono()
       assertOwner(user);
     }
 
-    await db.delete(users).where(eq(users.id, employeeId));
-
-    return c.json({ message: "Employee removed successfully" });
+    const open = await db.query.timeEntries.findFirst({ where: and(eq(timeEntries.employeeId, employeeId), eq(timeEntries.status, "open")), columns: { id: true } });
+    if (open) return c.json({ error: "This employee must clock out before being deactivated." }, 409);
+    await db.update(users).set({ isActive: false }).where(and(eq(users.id, employeeId), eq(users.companyId, user.companyId)));
+    return c.json({ message: "Employee deactivated. Historical shifts and timesheets are preserved." });
   })
   .post("/invite", jsonBody<InviteBody>(), async (c) => {
     const sender = await requireManager(c);

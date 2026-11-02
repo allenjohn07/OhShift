@@ -107,6 +107,10 @@ const app = new Hono()
   .onError((err, c) => {
     const conflict = databaseConflict(err);
     if (conflict) return c.json({ error: conflict }, 409);
+    let cause: unknown = err;
+    for (let depth = 0; depth < 8 && cause instanceof Error; depth++, cause = cause.cause) {
+      if (cause.message.includes("OHSHIFT_HISTORY_PROTECTED")) return c.json({ error: "This change would remove historical time records and is not allowed." }, 409);
+    }
     if (err instanceof ApiError) {
       return c.json({ error: err.message }, err.status as 400);
     }
