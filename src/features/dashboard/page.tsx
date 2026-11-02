@@ -1,17 +1,16 @@
-import { useCallback, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { DayAgenda } from "./day-agenda";
 import { greeting, todayLabel } from "@/lib/greeting";
-import { rpc, type ApiData } from "@/lib/rpc";
-
-type DashboardData = ApiData<typeof rpc.dashboard.employee.$get>;
+import { queries } from "@/lib/queries";
+import { ApiRequestError } from "@/lib/rpc";
 
 function PageSpinner() {
   return (
@@ -24,27 +23,17 @@ function PageSpinner() {
 function EmployeeDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const { data, error } = useQuery(queries.employeeDashboard());
+  const unauthorized = error instanceof ApiRequestError && error.status === 401;
+  const role = data?.profile.role;
+  const isManager = role === "owner" || role === "manager";
 
-  const load = useCallback(async () => {
-    const res = await rpc.dashboard.employee.$get();
-    if (res.status === 401) {
-      navigate({ to: "/login", replace: true });
-      return;
-    }
-    const json = await res.json();
-    if (!res.ok || "error" in json) return;
+  useEffect(() => {
+    if (unauthorized) navigate({ to: "/login", replace: true });
+    else if (isManager) navigate({ to: "/company/dashboard", replace: true });
+  }, [unauthorized, isManager, navigate]);
 
-    if (json.profile.role === "owner" || json.profile.role === "manager") {
-      navigate({ to: "/company/dashboard", replace: true });
-      return;
-    }
-    setData(json);
-  }, [navigate]);
-
-  useVisiblePoll(true, load);
-
-  if (!data || !user) {
+  if (!data || !user || isManager) {
     return <PageSpinner />;
   }
 

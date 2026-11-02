@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { User, Building2, Calendar, Loader2, Eye, EyeOff } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ type ProfileUser = {
 
 export function ProfileForm({ user }: { user: ProfileUser }) {
   const { refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
@@ -47,7 +49,10 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
       );
       
       toast.success("Profile picture updated");
-      await refreshUser();
+      await Promise.all([
+        refreshUser(),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
       (e.target as HTMLFormElement).reset();
     } catch (error: unknown) {
       console.error("Avatar Update Error:", error);

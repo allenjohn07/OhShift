@@ -29,7 +29,7 @@ OhShift is an employee shift-scheduling platform. Build features incrementally p
 - Backend routes: `backend/src/routes/**`
 - Schema: `backend/src/db/schema.ts` (Drizzle; migrations in `backend/drizzle/`)
 - UI skill: `.cursor/skills/ohshift-ui/SKILL.md` — follow for frontend styling
-- Live updates: `src/hooks/use-visible-poll.ts`
+- Data fetching / live updates: TanStack Query — `src/lib/queries.ts` (query catalogue, `LIVE_MS`), `src/hooks/use-live-badges.ts`
 
 ## Conventions
 
@@ -46,15 +46,16 @@ Any feature where **one role writes and another role must see it without a manua
 
 ### Pattern to follow
 
-1. **Poll with `useVisiblePoll`** (`src/hooks/use-visible-poll.ts`) — ~8s while the tab is visible, plus refresh on window focus / visibility restore. Do not invent a new interval/focus loop per page.
-2. **Quiet background refreshes** — toast errors on the initial load only; background polls stay silent.
-3. **Optimistic local refresh after mutations** — after create / cancel / approve / deny (same tab), call the same refresh function immediately so the actor does not wait for the next poll.
-4. **Shell-level sync for badges / queues** — if managers need a nav badge or shared queue (like pending Requests), mount the poller in `AppShell` and share state via a small store (`useSyncExternalStore`), same as `use-pending-time-off.ts` + `pending-time-off-store.ts`. Pages consume the store instead of one-shot fetches.
-5. **Page-level sync for the other role** — employees (or whoever is not on the shell badge) use `useVisiblePoll` on the page that shows the data (e.g. Time off list).
+1. **Query it with TanStack Query** — add the endpoint to `queries` in `src/lib/queries.ts` with `refetchInterval: LIVE_MS` (~8s). Intervals pause in hidden tabs and refetch on window focus, so there is no per-page interval/focus loop.
+2. **Quiet background refreshes** — set `meta: { errorMessage }`; the shared `QueryCache` toasts only when the *first* load fails. Background refetch errors stay silent.
+3. **Refresh after mutations** — after create / cancel / approve / deny (same tab), `queryClient.invalidateQueries({ queryKey: [area] })` (or `setQueryData` for an instant local update) so the actor doesn't wait for the next poll. Keys are grouped by area (`["time-off", …]`, `["time-entries", …]`, `["dashboard", …]`) so one prefix refreshes every view of that data.
+4. **Shell-level badges / queues** — hooks in `src/hooks/use-live-badges.ts` (`usePendingTimeOff`, `usePendingTimesheets`, `useInboxUnread`). `AppShell` mounts them for the nav badges; pages call the same hooks, so both read one cached query.
+5. **Page-level for the other role** — employees (or whoever has no shell badge) `useQuery(queries.x())` on the page that shows the data (e.g. Time off list).
 6. **Both sides every time** — shipping only manager live updates or only employee live updates is incomplete. Wire employee + manager (or owner) in the same vertical slice.
+7. **Editable forms** seed local state from a query once (see Availability, Settings → Shift presets) so refetches never overwrite unsaved edits.
 
 Reference implementations:
-- Manager: `src/hooks/use-pending-time-off.ts` + badge in `src/components/app-shell.tsx` + `src/features/company/dashboard/requests/page.tsx`
+- Manager: `usePendingTimeOff` in `src/hooks/use-live-badges.ts` + badge in `src/components/app-shell.tsx` + `src/features/company/dashboard/requests/page.tsx`
 - Employee: `src/features/dashboard/time-off/page.tsx`
 
 Do **not** add WebSockets/SSE unless product explicitly asks — Workers-friendly polling is the default.

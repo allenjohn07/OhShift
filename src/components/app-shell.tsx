@@ -35,17 +35,10 @@ import {
   type RoutePath,
 } from "@/lib/nav";
 import {
-  usePendingTimeOffSnapshot,
-  usePendingTimeOffSync,
-} from "@/hooks/use-pending-time-off";
-import {
-  usePendingTimesheetsSnapshot,
-  usePendingTimesheetsSync,
-} from "@/hooks/use-pending-timesheets";
-import {
-  useInboxUnreadSnapshot,
-  useInboxUnreadSync,
-} from "@/hooks/use-inbox-unread";
+  useInboxUnread,
+  usePendingTimeOff,
+  usePendingTimesheets,
+} from "@/hooks/use-live-badges";
 
 const SIDEBAR_COLLAPSED_KEY = "ohshift-sidebar-collapsed";
 /** Expanded / collapsed widths — icons sit on a fixed left gutter in both states */
@@ -452,13 +445,12 @@ export function AppShell({
   const resolvedRole = shellRoleFromProfile(user?.profile.role) ?? role;
   const isManagerShell =
     resolvedRole === "manager" || resolvedRole === "owner";
-  usePendingTimeOffSync(isManagerShell && !loading);
-  usePendingTimesheetsSync(isManagerShell && !loading);
-  useInboxUnreadSync(Boolean(user?.profile.company_id) && !loading);
-  const { pendingCount } = usePendingTimeOffSnapshot();
-  const { pendingCount: timesheetsPendingCount } =
-    usePendingTimesheetsSnapshot();
-  const { total: inboxUnread } = useInboxUnreadSnapshot();
+  const pendingCount =
+    usePendingTimeOff(isManagerShell && !loading).data?.pending.length ?? 0;
+  const timesheetsPendingCount =
+    usePendingTimesheets(isManagerShell && !loading).data?.pending.length ?? 0;
+  const inboxUnread =
+    useInboxUnread(Boolean(user?.profile.company_id) && !loading).data?.total ?? 0;
 
   const items = navItemsForRole(resolvedRole);
   const mobileTabs = mobileTabsForRole(resolvedRole);

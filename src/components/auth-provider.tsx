@@ -4,8 +4,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { rpc, unwrap, withToken } from "@/lib/rpc";
 import {
   clearAccessToken,
@@ -46,7 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const queryClient = useQueryClient();
+  const sessionTokenRef = useRef<string | null>(null);
+
   const applySession = useCallback((nextUser: AuthUser | null, token: string | null) => {
+    const nextToken = nextUser && token ? token : null;
+    // New user (or logged out): drop cached data so nothing leaks across sessions.
+    if (nextToken !== sessionTokenRef.current) {
+      sessionTokenRef.current = nextToken;
+      queryClient.clear();
+    }
     if (nextUser && token) {
       setAccessToken(token);
       setTokenState(token);
@@ -56,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAccessToken();
     setUser(null);
     setTokenState(null);
-  }, []);
+  }, [queryClient]);
 
   const refreshUser = useCallback(async () => {
     const token = getAccessToken();

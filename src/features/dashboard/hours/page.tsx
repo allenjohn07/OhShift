@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -14,11 +15,11 @@ import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/dates";
-import { ApiRequestError, rpc, unwrap } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 type TimeEntryStatus = "open" | "pending" | "approved" | "denied";
 
@@ -108,13 +109,13 @@ function readPeriodMode(): PeriodMode {
   return stored === "biweek" ? "biweek" : "week";
 }
 
+/** Stable fallbacks so memoized maps don't rebuild every render. */
+const NO_SHIFTS: Shift[] = [];
+const NO_ENTRIES: TimeEntry[] = [];
+
 function HoursPageContent() {
   const { user } = useAuth();
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [todayEntries, setTodayEntries] = useState<TimeEntry[]>([]);
-  const [active, setActive] = useState<TimeEntry | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [actingShiftId, setActingShiftId] = useState<string | null>(null);
   const [periodMode, setPeriodMode] = useState<PeriodMode>(readPeriodMode);
   const [periodOffset, setPeriodOffset] = useState(0);
@@ -150,70 +151,46 @@ function HoursPageContent() {
 
   const headerRange = `${formatDateLabel(periodStart)} – ${formatDateLabel(periodEnd)}, ${periodEnd.getFullYear()}`;
 
-  const load = useCallback(
-    async (opts?: { quiet?: boolean }) => {
-      let results;
-      try {
-        results = await Promise.all([
-          unwrap(rpc.shifts.mine.$get(), "Failed to load shifts"),
-          unwrap(
-            rpc["time-entries"].mine.$get({
-              query: { from: periodFromIso, to: periodToIso },
-            }),
-            "Failed to load hours",
-          ),
-          unwrap(
-            rpc["time-entries"].mine.$get({
-              query: { from: todayRange.from, to: todayRange.to },
-            }),
-            "Failed to load today's hours",
-          ),
-          unwrap(rpc["time-entries"].active.$get(), "Failed to load clock status"),
-        ]);
-      } catch (err) {
-        const unauthorized = err instanceof ApiRequestError && err.status === 401;
-        if (!opts?.quiet && !unauthorized) {
-          toast.error(err instanceof Error ? err.message : "Failed to load hours");
-        }
-        return;
-      }
-      const [shiftsData, entriesData, todayData, activeData] = results;
+  // Live: manager approvals and schedule changes show up without a reload.
+  const shiftsQuery = useQuery(queries.myShifts());
+  const entriesQuery = useQuery({
+    ...queries.myEntries(periodFromIso, periodToIso),
+    // Keep the old period on screen while paging to the next one.
+    placeholderData: keepPreviousData,
+  });
+  const todayQuery = useQuery(queries.myEntries(todayRange.from, todayRange.to));
+  const activeQuery = useQuery(queries.activeEntry());
 
-      setShifts(shiftsData.shifts);
-      setEntries(entriesData.entries);
-      setTodayEntries(todayData.entries);
-      setActive(activeData.entry ?? null);
-      for (const entry of [
-        ...todayData.entries,
-        ...(activeData.entry ? [activeData.entry] : []),
-      ]) {
-        try {
-          sessionStorage.setItem(
-            `ohshift-time-entry:${entry.shift_id}`,
-            JSON.stringify(entry),
-          );
-        } catch {
-          /* ignore */
-        }
-      }
-    },
-    [periodFromIso, periodToIso, todayRange.from, todayRange.to],
+  const shifts: Shift[] = shiftsQuery.data?.shifts ?? NO_SHIFTS;
+  const entries: TimeEntry[] = entriesQuery.data?.entries ?? NO_ENTRIES;
+  const todayEntries: TimeEntry[] = todayQuery.data?.entries ?? NO_ENTRIES;
+  const active: TimeEntry | null = activeQuery.data?.entry ?? null;
+  const loading = [shiftsQuery, entriesQuery, todayQuery, activeQuery].some(
+    (q) => q.isPending,
   );
 
-  const initialLoadRef = useRef(true);
-  const poll = useCallback(async () => {
-    const quiet = !initialLoadRef.current;
-    try {
-      await load({ quiet });
-    } catch {
-      if (!quiet) toast.error("Failed to load hours");
-    } finally {
-      initialLoadRef.current = false;
-      setLoading(false);
+  // Cache today's entries so the dashboard clock card shows status instantly.
+  useEffect(() => {
+    const cached = [
+      ...(todayQuery.data?.entries ?? []),
+      ...(activeQuery.data?.entry ? [activeQuery.data.entry] : []),
+    ];
+    for (const entry of cached) {
+      try {
+        sessionStorage.setItem(
+          `ohshift-time-entry:${entry.shift_id}`,
+          JSON.stringify(entry),
+        );
+      } catch {
+        /* ignore */
+      }
     }
-  }, [load]);
+  }, [todayQuery.data, activeQuery.data]);
 
-  useVisiblePoll(true, poll);
+  /** Same-tab refresh after clock in/out. */
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+
 
   const todayKey = toLocalDateKey(new Date());
   const todayShifts = shifts.filter(
@@ -256,7 +233,7 @@ function HoursPageContent() {
           /* ignore */
         }
       }
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to clock in");
     } finally {
@@ -282,7 +259,7 @@ function HoursPageContent() {
           /* ignore */
         }
       }
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to clock out",

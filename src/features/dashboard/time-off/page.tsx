@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
@@ -17,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import type { AppRole } from "@/lib/nav";
 import {
   TIME_OFF_STATUS_STYLES,
@@ -31,7 +31,8 @@ import {
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
-import { apiError, rpc, unwrap } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 
 type TimeOffRequest = {
@@ -46,8 +47,10 @@ type TimeOffRequest = {
 
 function TimeOffPageContent() {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<TimeOffRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // Live: a manager's approve/deny shows up without a reload.
+  const { data, isPending: loading } = useQuery(queries.myTimeOff());
+  const requests: TimeOffRequest[] = data?.requests ?? [];
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -57,32 +60,9 @@ function TimeOffPageContent() {
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
 
-  const load = useCallback(async (opts?: { quiet?: boolean }) => {
-    const res = await rpc["time-off"].$get();
-    const data = await res.json();
-    if (!res.ok || "error" in data) {
-      if (!opts?.quiet && res.status !== 401) {
-        toast.error(apiError(data, "Failed to load time-off requests"));
-      }
-      return;
-    }
-    setRequests(data.requests);
-  }, []);
+  /** Same-tab refresh after submit/cancel (also updates the manager queue cache). */
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["time-off"] });
 
-  const initialLoadRef = useRef(true);
-  const poll = useCallback(async () => {
-    const quiet = !initialLoadRef.current;
-    try {
-      await load({ quiet });
-    } catch {
-      if (!quiet) toast.error("Failed to load time-off requests");
-    } finally {
-      initialLoadRef.current = false;
-      setLoading(false);
-    }
-  }, [load]);
-
-  useVisiblePoll(true, poll);
   const openModal = () => {
     setType("vacation");
     setStartDate("");
@@ -117,7 +97,7 @@ function TimeOffPageContent() {
       );
       toast.success("Time-off request submitted");
       setModalOpen(false);
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to submit request",
@@ -135,7 +115,7 @@ function TimeOffPageContent() {
         "Failed to cancel request",
       );
       toast.success("Request cancelled");
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to cancel request",

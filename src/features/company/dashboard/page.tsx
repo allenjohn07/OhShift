@@ -1,15 +1,14 @@
-import { useCallback, useState } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { DashboardContent } from "./dashboard-content";
 import type { CompanySettings } from "./company-settings";
 import type { AppRole } from "@/lib/nav";
-import { rpc, type ApiData } from "@/lib/rpc";
-
-type CompanyDashboardData = ApiData<typeof rpc.dashboard.company.$get>;
+import { queries } from "@/lib/queries";
+import { ApiRequestError } from "@/lib/rpc";
 
 function PageSpinner() {
   return (
@@ -21,35 +20,26 @@ function PageSpinner() {
 
 function CompanyDashboard() {
   const navigate = useNavigate();
-  const [data, setData] = useState<CompanyDashboardData | null>(null);
+  const queryClient = useQueryClient();
+  const { data, error } = useQuery(queries.companyDashboard());
+  const unauthorized = error instanceof ApiRequestError && error.status === 401;
+  const isEmployee = data?.profile.role === "employee";
 
-  const load = useCallback(async () => {
-    const res = await rpc.dashboard.company.$get();
-    if (res.status === 401) {
-      navigate({ to: "/company/login", replace: true });
-      return;
-    }
-    const json = await res.json();
-    if (!res.ok || "error" in json) return;
+  useEffect(() => {
+    if (unauthorized) navigate({ to: "/company/login", replace: true });
+    else if (isEmployee) navigate({ to: "/login", replace: true });
+  }, [unauthorized, isEmployee, navigate]);
 
-    if (json.profile.role === "employee") {
-      navigate({ to: "/login", replace: true });
-      return;
-    }
-    setData(json);
-  }, [navigate]);
+  /** After a same-tab change: refetch everything a schedule edit can affect. */
+  const onScheduleChanged = async () => {
+    await Promise.all(
+      [["dashboard"], ["company", "activity"], ["shifts"]].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
+  };
 
-  const poll = useCallback(async () => {
-    try {
-      await load();
-    } catch {
-      // Quiet on background polls; initial failure keeps spinner until success.
-    }
-  }, [load]);
-
-  useVisiblePoll(true, poll);
-
-  if (!data) {
+  if (!data || isEmployee) {
     return <PageSpinner />;
   }
 
@@ -61,7 +51,7 @@ function CompanyDashboard() {
       shifts={data.shifts}
       myShifts={data.myShifts ?? []}
       currentUser={data.profile}
-      onScheduleChanged={load}
+      onScheduleChanged={onScheduleChanged}
     />
   );
 }

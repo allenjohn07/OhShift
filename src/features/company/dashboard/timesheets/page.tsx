@@ -9,22 +9,22 @@ import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  usePendingTimesheetsSnapshot,
-  useRefreshPendingTimesheets,
-} from "@/hooks/use-pending-timesheets";
+  usePendingTimesheets,
+  type CompanyTimeEntry,
+} from "@/hooks/use-live-badges";
 import type { AppRole } from "@/lib/nav";
-import type {
-  PendingTimeEntry,
-  TimeEntryStatus,
-} from "@/lib/pending-timesheets-store";
 
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/ui/time-picker";
 import { formatTime, timeFormatOptions } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
 
-const STATUS_STYLES: Record<TimeEntryStatus, string> = {
+/** Stable fallback so effects keyed on `pending` don't rerun every render. */
+const NO_ENTRIES: CompanyTimeEntry[] = [];
+
+const STATUS_STYLES: Record<CompanyTimeEntry["status"], string> = {
   open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -76,8 +76,11 @@ type EditState = {
 function TimesheetsContent() {
   const { user } = useAuth();
   const myId = user?.profile.id ?? user?.id;
-  const { pending, recent, loaded } = usePendingTimesheetsSnapshot();
-  const refresh = useRefreshPendingTimesheets();
+  const queryClient = useQueryClient();
+  const { data } = usePendingTimesheets();
+  const loaded = data !== undefined;
+  const pending = data?.pending ?? NO_ENTRIES;
+  const recent = data?.recent ?? NO_ENTRIES;
   const [actingId, setActingId] = useState<string | null>(null);
   const [edits, setEdits] = useState<Record<string, EditState>>({});
 
@@ -98,7 +101,7 @@ function TimesheetsContent() {
   }, [pending]);
 
   const review = async (
-    entry: PendingTimeEntry,
+    entry: CompanyTimeEntry,
     decision: "approved" | "denied",
   ) => {
     const edit = edits[entry.id];
@@ -132,7 +135,7 @@ function TimesheetsContent() {
       toast.success(
         decision === "approved" ? "Timesheet approved" : "Timesheet denied",
       );
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["time-entries"] });
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to update timesheet",

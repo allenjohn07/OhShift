@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { formatTime } from "@/lib/dates";
+import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 
 interface Shift {
@@ -62,9 +63,7 @@ export function ShiftSummary({
   employeeId?: string;
 }) {
   const shifts = initialShifts ?? [];
-  const [active, setActive] = useState<TimeEntry | null>(null);
-  const [todayEntry, setTodayEntry] = useState<TimeEntry | null>(null);
-  const [statusReady, setStatusReady] = useState(false);
+  const queryClient = useQueryClient();
   const [acting, setActing] = useState(false);
 
   const now = new Date();
@@ -74,58 +73,46 @@ export function ShiftSummary({
     shifts.find((s) => toLocalDate(s.start_time) === localToday) ?? null;
   const todayShiftId = todayShift?.id ?? null;
 
+  // Today's bounds — built like the Hours page so both share one cached query.
+  const dayRange = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }, []);
+
+  // Live clock status (only needed when there's a shift today).
+  const enabled = Boolean(todayShiftId);
+  const activeQuery = useQuery({ ...queries.activeEntry(), enabled });
+  const todayQuery = useQuery({
+    ...queries.myEntries(dayRange.from, dayRange.to),
+    enabled,
+  });
+
+  // Last known status for this shift — shown instantly before the API answers.
+  const cached = useMemo(
+    () => (todayShiftId ? readCachedEntry(todayShiftId) : null),
+    [todayShiftId],
+  );
+  const fetched = activeQuery.isFetched && todayQuery.isFetched;
+  const active = activeQuery.data?.entry ?? null;
+  const todayEntry = useMemo(() => {
+    if (!fetched) return cached;
+    return (
+      todayQuery.data?.entries.find((e) => e.shift_id === todayShiftId) ??
+      (active?.shift_id === todayShiftId ? active : null)
+    );
+  }, [fetched, cached, todayQuery.data, active, todayShiftId]);
+  const statusReady = !todayShiftId || fetched || cached !== null;
+
   useEffect(() => {
-    if (!todayShiftId) {
-      setTodayEntry(null);
-      setActive(null);
-      setStatusReady(true);
-      return;
-    }
-    const cached = readCachedEntry(todayShiftId);
-    if (cached) {
-      setTodayEntry(cached);
-      setStatusReady(true);
-    } else {
-      setStatusReady(false);
-    }
-  }, [todayShiftId]);
+    if (todayShiftId && fetched) writeCachedEntry(todayShiftId, todayEntry);
+  }, [todayShiftId, fetched, todayEntry]);
 
-  const refreshClock = useCallback(async () => {
-    if (!todayShift) {
-      setActive(null);
-      setTodayEntry(null);
-      setStatusReady(true);
-      return;
-    }
-
-    const dayStart = new Date();
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
-    const [activeData, mineData] = await Promise.all([
-      unwrap(rpc["time-entries"].active.$get()).catch(() => null),
-      unwrap(
-        rpc["time-entries"].mine.$get({
-          query: { from: dayStart.toISOString(), to: dayEnd.toISOString() },
-        }),
-      ).catch(() => null),
-    ]);
-
-    const nextActive = activeData?.entry ?? null;
-    const match =
-      mineData?.entries.find((e) => e.shift_id === todayShift.id) ?? null;
-    const resolved =
-      match ??
-      (nextActive?.shift_id === todayShift.id ? nextActive : null);
-
-    setActive(nextActive);
-    setTodayEntry(resolved);
-    writeCachedEntry(todayShift.id, resolved);
-    setStatusReady(true);
-  }, [todayShift]);
-
-  useVisiblePoll(Boolean(todayShift), refreshClock);
+  /** Same-tab refresh after clock in/out (also updates the Hours page cache). */
+  const refreshClock = () =>
+    queryClient.invalidateQueries({ queryKey: ["time-entries"] });
 
   const entry =
     (todayShift &&
@@ -159,12 +146,7 @@ export function ShiftSummary({
         "Failed to clock in",
       );
       toast.success("Clocked in");
-      if (data.entry) {
-        setTodayEntry(data.entry);
-        setActive(data.entry);
-        writeCachedEntry(todayShift.id, data.entry);
-        setStatusReady(true);
-      }
+      writeCachedEntry(todayShift.id, data.entry);
       await refreshClock();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to clock in");
@@ -182,12 +164,7 @@ export function ShiftSummary({
         "Failed to clock out",
       );
       toast.success("Clocked out — pending manager approval");
-      if (data.entry) {
-        setTodayEntry(data.entry);
-        setActive(null);
-        writeCachedEntry(todayShift.id, data.entry);
-        setStatusReady(true);
-      }
+      writeCachedEntry(todayShift.id, data.entry);
       await refreshClock();
     } catch (error: unknown) {
       toast.error(

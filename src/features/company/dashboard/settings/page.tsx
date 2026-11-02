@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
@@ -13,6 +14,7 @@ import {
 } from "@/components/settings-ui";
 import { Button } from "@/components/ui/button";
 import { TimePicker } from "@/components/ui/time-picker";
+import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import type { AppRole } from "@/lib/nav";
 import type { CompanySettings } from "../company-settings";
@@ -76,24 +78,16 @@ function ShiftPresetsSection() {
   const [draft, setDraft] = useState<Presets | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const data = await unwrap(
-        rpc.dashboard.profile.$get(),
-        "Could not load shift presets",
-      );
-      if (!data.profile.companies) throw new Error("Could not load shift presets");
-      const presets = pickPresets(data.profile.companies);
-      setSaved(presets);
-      setDraft(presets);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not load shift presets");
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const { data } = useQuery(queries.profile());
+  const company = data?.profile.companies;
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Seed from the server once; refetches never clobber unsaved edits.
+  if (company && saved === null) {
+    const presets = pickPresets(company);
+    setSaved(presets);
+    setDraft(presets);
+  }
 
   const dirty =
     !!draft && !!saved && PRESET_KEYS.some((k) => draft[k] !== saved[k]);
@@ -121,6 +115,8 @@ function ShiftPresetsSection() {
       const presets = pickPresets(data.company);
       setSaved(presets);
       setDraft(presets);
+      // Assign dialogs read presets from the dashboard/profile queries.
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Shift presets saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save shift presets");

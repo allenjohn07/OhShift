@@ -123,12 +123,6 @@ export function DashboardContent({
 }) {
   const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
-
-  const handleScheduleChanged = async () => {
-    await onScheduleChanged?.();
-    setActivityRefreshKey((k) => k + 1);
-  };
 
   const stats = weekStats(shifts ?? []);
 
@@ -144,7 +138,7 @@ export function DashboardContent({
                 <UserPlus className="h-4 w-4" />
                 Invite
               </Button>
-              <BulkAssignModal company={company} onAssigned={handleScheduleChanged} />
+              <BulkAssignModal company={company} onAssigned={onScheduleChanged} />
             </>
           }
         />
@@ -178,7 +172,7 @@ export function DashboardContent({
         <TeamScheduleGrid
           shifts={shifts}
           company={company}
-          onScheduleChanged={handleScheduleChanged}
+          onScheduleChanged={onScheduleChanged}
         />
 
         {/* One section per row — each sizes to its own content */}
@@ -186,10 +180,10 @@ export function DashboardContent({
         <TeamMembersList
           employees={employees}
           company={company}
-          onShiftAssigned={handleScheduleChanged}
+          onShiftAssigned={onScheduleChanged}
           onManage={() => setIsManageTeamOpen(true)}
         />
-        <ActivityFeed refreshKey={activityRefreshKey} />
+        <ActivityFeed />
       </PageMain>
 
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>

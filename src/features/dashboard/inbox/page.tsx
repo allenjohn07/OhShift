@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -26,9 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRefreshInboxUnread } from "@/hooks/use-inbox-unread";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { apiError, rpc, unwrap } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap, type ApiData } from "@/lib/rpc";
 import type { AppRole } from "@/lib/nav";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -36,44 +36,15 @@ import { formatTime } from "@/lib/dates";
 
 type TabId = "announcements" | "messages";
 
-type Announcement = {
-  id: string;
-  author_id: string;
-  title: string;
-  body: string;
-  created_at: string;
-  updated_at: string;
-  is_read: boolean;
-  author?: { full_name: string; avatar_url: string | null };
-};
+type Announcement = ApiData<typeof rpc.announcements.$get>["announcements"][number];
+type Conversation = ApiData<typeof rpc.messages.conversations.$get>["conversations"][number];
+type DirectMessage = ApiData<
+  (typeof rpc.messages.conversations)[":id"]["$get"]
+>["messages"][number];
 
-type DirectoryMember = {
-  id: string;
-  full_name: string;
-  role: string;
-  avatar_url: string | null;
-};
-
-type Conversation = {
-  id: string;
-  updated_at: string;
-  other: DirectoryMember;
-  last_message: {
-    id: string;
-    body: string;
-    sender_id: string;
-    created_at: string;
-  } | null;
-  unread_count: number;
-};
-
-type DirectMessage = {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  body: string;
-  created_at: string;
-};
+const NO_ANNOUNCEMENTS: Announcement[] = [];
+const NO_CONVERSATIONS: Conversation[] = [];
+const NO_MESSAGES: DirectMessage[] = [];
 
 const TITLE_MAX = 120;
 const BODY_MAX = 4000;
@@ -111,16 +82,14 @@ function formatMessageTime(iso: string) {
 
 function InboxPageContent() {
   const { user } = useAuth();
-  const refreshUnread = useRefreshInboxUnread();
+  const queryClient = useQueryClient();
   const userId = user?.id ?? "";
   const role = user?.profile.role;
   const canManage = role === "manager" || role === "owner";
 
   const [tab, setTab] = useState<TabId>("announcements");
-  const [loading, setLoading] = useState(true);
 
   // Announcements
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
@@ -130,105 +99,37 @@ function InboxPageContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Messages
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [directory, setDirectory] = useState<DirectoryMember[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [newDmOpen, setNewDmOpen] = useState(false);
   const [startingDm, setStartingDm] = useState(false);
 
-  const loadAnnouncements = useCallback(
-    async (opts?: { quiet?: boolean }) => {
-      const res = await rpc.announcements.$get();
-      const data = await res.json();
-      if (!res.ok || "error" in data) {
-        if (!opts?.quiet && res.status !== 401) {
-          toast.error(apiError(data, "Failed to load announcements"));
-        }
-        return;
-      }
-      setAnnouncements(data.announcements);
-    },
-    [],
-  );
+  // Live data (polled while visible; the unread badge query lives in AppShell)
+  const announcementsQuery = useQuery(queries.announcements());
+  const conversationsQuery = useQuery(queries.conversations());
+  const threadQuery = useQuery({
+    ...queries.thread(activeId ?? ""),
+    enabled: Boolean(activeId),
+  });
+  const directoryQuery = useQuery({ ...queries.directory(), enabled: newDmOpen });
 
-  const loadConversations = useCallback(
-    async (opts?: { quiet?: boolean }) => {
-      const res = await rpc.messages.conversations.$get();
-      const data = await res.json();
-      if (!res.ok || "error" in data) {
-        if (!opts?.quiet && res.status !== 401) {
-          toast.error(apiError(data, "Failed to load conversations"));
-        }
-        return;
-      }
-      setConversations(data.conversations);
-    },
-    [],
-  );
+  const announcements = announcementsQuery.data?.announcements ?? NO_ANNOUNCEMENTS;
+  const conversations = conversationsQuery.data?.conversations ?? NO_CONVERSATIONS;
+  const messages = threadQuery.data?.messages ?? NO_MESSAGES;
+  const directory = directoryQuery.data?.members ?? [];
+  const loading = announcementsQuery.isPending || conversationsQuery.isPending;
 
-  const loadDirectory = useCallback(async () => {
-    const data = await unwrap(rpc.messages.directory.$get()).catch(() => null);
-    if (data) setDirectory(data.members);
-  }, []);
+  /** Refetch now (same tab) instead of waiting for the next poll. */
+  const refresh = (...keys: string[][]) =>
+    Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
 
-  const loadThread = useCallback(
-    async (conversationId: string, opts?: { quiet?: boolean }) => {
-      const res = await rpc.messages.conversations[":id"].$get({
-        param: { id: conversationId },
-      });
-      const data = await res.json();
-      if (!res.ok || "error" in data) {
-        if (!opts?.quiet && res.status !== 401) {
-          toast.error(apiError(data, "Failed to load messages"));
-        }
-        return;
-      }
-      setMessages(data.messages);
-    },
-    [],
-  );
-
-  const markConversationRead = useCallback(
-    async (conversationId: string) => {
-      await rpc.messages.conversations[":id"].read.$post({
-        param: { id: conversationId },
-      });
-      await refreshUnread();
-      await loadConversations({ quiet: true });
-    },
-    [refreshUnread, loadConversations],
-  );
-
-  const initialLoadRef = useRef(true);
-  const poll = useCallback(async () => {
-    const quiet = !initialLoadRef.current;
-    try {
-      await Promise.all([
-        loadAnnouncements({ quiet }),
-        loadConversations({ quiet }),
-        refreshUnread(),
-      ]);
-      if (activeId) {
-        await loadThread(activeId, { quiet: true });
-      }
-    } catch {
-      if (!quiet) toast.error("Failed to load inbox");
-    } finally {
-      initialLoadRef.current = false;
-      setLoading(false);
-    }
-  }, [
-    loadAnnouncements,
-    loadConversations,
-    loadThread,
-    refreshUnread,
-    activeId,
-  ]);
-
-  useVisiblePoll(true, poll);
+  const markConversationRead = async (conversationId: string) => {
+    await rpc.messages.conversations[":id"].read.$post({
+      param: { id: conversationId },
+    });
+    await refresh(["inbox"], queries.conversations().queryKey);
+  };
 
   const openCompose = (ann?: Announcement) => {
     if (ann) {
@@ -262,8 +163,7 @@ function InboxPageContent() {
       );
       toast.success(editing ? "Announcement updated" : "Announcement posted");
       setComposeOpen(false);
-      await loadAnnouncements();
-      await refreshUnread();
+      await refresh(["announcements"], ["inbox"]);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save announcement",
@@ -282,8 +182,7 @@ function InboxPageContent() {
       );
       toast.success("Announcement deleted");
       if (expandedId === id) setExpandedId(null);
-      await loadAnnouncements();
-      await refreshUnread();
+      await refresh(["announcements"], ["inbox"]);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete",
@@ -298,10 +197,15 @@ function InboxPageContent() {
     setExpandedId(next);
     if (next && !ann.is_read && ann.author_id !== userId) {
       await rpc.announcements[":id"].read.$post({ param: { id: ann.id } });
-      setAnnouncements((prev) =>
-        prev.map((a) => (a.id === ann.id ? { ...a, is_read: true } : a)),
+      queryClient.setQueryData(queries.announcements().queryKey, (prev) =>
+        prev && {
+          ...prev,
+          announcements: prev.announcements.map((a) =>
+            a.id === ann.id ? { ...a, is_read: true } : a,
+          ),
+        },
       );
-      await refreshUnread();
+      await refresh(["inbox"]);
     }
   };
 
@@ -311,14 +215,12 @@ function InboxPageContent() {
       toast.error("Failed to mark all read");
       return;
     }
-    await loadAnnouncements();
-    await refreshUnread();
+    await refresh(["announcements"], ["inbox"]);
     toast.success("Marked all as read");
   };
 
   const openConversation = async (id: string) => {
     setActiveId(id);
-    await loadThread(id);
     await markConversationRead(id);
   };
 
@@ -330,7 +232,6 @@ function InboxPageContent() {
         "Failed to start conversation",
       );
       setNewDmOpen(false);
-      await loadConversations();
       await openConversation(data.conversation.id);
       setTab("messages");
     } catch (error: unknown) {
@@ -357,9 +258,10 @@ function InboxPageContent() {
         "Failed to send",
       );
       setDraft("");
-      setMessages((prev) => [...prev, data.message]);
-      await loadConversations({ quiet: true });
-      await refreshUnread();
+      queryClient.setQueryData(queries.thread(activeId).queryKey, (prev) =>
+        prev && { ...prev, messages: [...prev.messages, data.message] },
+      );
+      await refresh(queries.conversations().queryKey, ["inbox"]);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to send message",
@@ -370,7 +272,7 @@ function InboxPageContent() {
   };
 
   const openNewDm = async () => {
-    await loadDirectory();
+    await queryClient.prefetchQuery(queries.directory());
     setNewDmOpen(true);
   };
 

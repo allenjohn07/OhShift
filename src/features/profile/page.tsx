@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
@@ -6,7 +7,8 @@ import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
 import { ProfileForm } from "./profile-form";
 import type { AppRole } from "@/lib/nav";
-import { rpc } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import { ApiRequestError } from "@/lib/rpc";
 
 type ProfileData = {
   full_name?: string | null;
@@ -28,31 +30,13 @@ function PageSpinner() {
 
 function ProfilePageContent() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const { data, error } = useQuery(queries.profile());
+  const profile: ProfileData | null = data?.profile ?? null;
+  const unauthorized = error instanceof ApiRequestError && error.status === 401;
 
   useEffect(() => {
-    let cancelled = false;
-
-    rpc.dashboard.profile
-      .$get()
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 401) {
-          navigate({ to: "/login", replace: true });
-          return;
-        }
-        const data = await res.json();
-        if (cancelled || !res.ok) return;
-        setProfile(data.profile);
-      })
-      .catch(() => {
-        // Transient API failures should not force login.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
+    if (unauthorized) navigate({ to: "/login", replace: true });
+  }, [unauthorized, navigate]);
 
   if (!profile) {
     return <PageSpinner />;

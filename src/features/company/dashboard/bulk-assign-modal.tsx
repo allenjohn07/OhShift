@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CheckSquare, ChevronDown, ChevronRight, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CompanySettings } from "./company-settings";
@@ -10,7 +11,9 @@ import { cn } from "@/lib/utils";
 import { SimpleSelect } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
-import { apiError, rpc, unwrap } from "@/lib/rpc";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 type EligibilityReason =
   | "unavailable"
@@ -76,7 +79,6 @@ export function BulkAssignModal({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [date, setDate] = useState(todayLocalDate);
@@ -84,14 +86,34 @@ export function BulkAssignModal({
   const [endTime, setEndTime] = useState(company.morning_end || "12:00");
   const [designation, setDesignation] = useState("");
   const [sharedTitle, setSharedTitle] = useState("");
-  const [designations, setDesignations] = useState<string[]>([]);
-  const [people, setPeople] = useState<EligiblePerson[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Map<string, PersonOverride>>(
     () => new Map(),
   );
 
-  const fetchGen = useRef(0);
+  // Eligibility for the chosen window — debounced so picking times doesn't
+  // fire a request per change. Serialized so the debounce compares by value.
+  const eligibleParams = useDebouncedValue(
+    date && startTime && endTime
+      ? JSON.stringify({
+          start: toIso(date, startTime),
+          end: toIso(date, endTime),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(designation ? { designation } : {}),
+        })
+      : "",
+    200,
+  );
+  const eligibleQuery = useQuery({
+    ...queries.eligible(eligibleParams ? JSON.parse(eligibleParams) : {}),
+    enabled: isOpen && Boolean(eligibleParams),
+    placeholderData: keepPreviousData,
+  });
+  const people: EligiblePerson[] = eligibleQuery.data?.people ?? [];
+  const designations = eligibleQuery.data?.designations ?? [];
+  const isFetching = eligibleQuery.isFetching;
+  const shownError =
+    error ?? (eligibleQuery.isError ? eligibleQuery.error.message : null);
 
   const eligiblePeople = people.filter((p) => p.eligible);
   const selectedCount = [...selected].filter((id) =>
@@ -105,57 +127,6 @@ export function BulkAssignModal({
     }
   }, [designation, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const gen = ++fetchGen.current;
-    const timer = window.setTimeout(async () => {
-      if (!date || !startTime || !endTime) return;
-
-      setIsFetching(true);
-      try {
-        const start = toIso(date, startTime);
-        const end = toIso(date, endTime);
-        const res = await rpc.shifts.eligible.$get({
-          query: {
-            start,
-            end,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            ...(designation ? { designation } : {}),
-          },
-        });
-        const data = await res.json();
-        if (gen !== fetchGen.current) return;
-
-        if (!res.ok || "error" in data) {
-          setError(apiError(data, "Failed to load eligible team members"));
-          setPeople([]);
-          return;
-        }
-
-        setError(null);
-        setPeople(data.people);
-        setDesignations(data.designations);
-        setSelected((prev) => {
-          const next = new Set<string>();
-          for (const id of prev) {
-            const person = data.people.find((p) => p.id === id);
-            if (person?.eligible) next.add(id);
-          }
-          return next;
-        });
-      } catch {
-        if (gen !== fetchGen.current) return;
-        setError("Failed to load eligible team members");
-        setPeople([]);
-      } finally {
-        if (gen === fetchGen.current) setIsFetching(false);
-      }
-    }, 200);
-
-    return () => window.clearTimeout(timer);
-  }, [isOpen, date, startTime, endTime, designation]);
-
   function open() {
     setIsOpen(true);
     setError(null);
@@ -166,7 +137,6 @@ export function BulkAssignModal({
     setSharedTitle("");
     setSelected(new Set());
     setOverrides(new Map());
-    setPeople([]);
   }
 
   function close() {
@@ -300,9 +270,9 @@ export function BulkAssignModal({
           </DialogHeader>
 
           <DialogBody className="space-y-5">
-            {error && (
+            {shownError && (
               <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
+                {shownError}
               </div>
             )}
 

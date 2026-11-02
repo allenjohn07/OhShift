@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
@@ -11,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { TimePicker } from "@/components/ui/time-picker";
-import { apiError, rpc, unwrap } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 type DayAvailability = {
   day_of_week: number;
@@ -62,40 +64,21 @@ function toMinutes(value: string) {
 
 function AvailabilityEditor() {
   const [days, setDays] = useState<DayAvailability[]>(defaultDays);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const { user } = useAuth();
 
-  useEffect(() => {
-    let cancelled = false;
+  const queryClient = useQueryClient();
+  const { data, isPending: loading } = useQuery(queries.availability());
 
-    rpc.availability
-      .$get()
-      .then(async (res) => {
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok || "error" in data) {
-          if (res.status !== 401) {
-            toast.error(apiError(data, "Failed to load availability"));
-          }
-          return;
-        }
-        const loaded = normalizeDays(data.days);
-        setDays(loaded);
-        setSavedSnapshot(JSON.stringify(loaded));
-      })
-      .catch(() => {
-        if (!cancelled) toast.error("Failed to load availability");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Seed the editor from the server once; later refetches never clobber edits.
+  const [seeded, setSeeded] = useState(false);
+  if (data && !seeded) {
+    const loaded = normalizeDays(data.days);
+    setSeeded(true);
+    setDays(loaded);
+    setSavedSnapshot(JSON.stringify(loaded));
+  }
 
   const updateDay = (index: number, patch: Partial<DayAvailability>) => {
     setDays((prev) =>
@@ -120,6 +103,7 @@ function AvailabilityEditor() {
         rpc.availability.$put({ json: { days } }),
         "Failed to save availability",
       );
+      queryClient.setQueryData(queries.availability().queryKey, data);
       const saved = normalizeDays(data.days);
       setDays(saved);
       setSavedSnapshot(JSON.stringify(saved));

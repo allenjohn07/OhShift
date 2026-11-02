@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDown, ChevronRight, Send } from "lucide-react";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,9 @@ import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, Dia
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/dates";
-import { rpc, unwrap, type ApiData } from "@/lib/rpc";
+import { queries } from "@/lib/queries";
+import type { ApiData, rpc } from "@/lib/rpc";
+import { useQuery } from "@tanstack/react-query";
 
 type LogEntry = ApiData<typeof rpc.company.activity.$get>["activity"][number];
 
@@ -168,38 +169,15 @@ function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
 
 /** Always-visible list of published weeks (fixed-height panel, scrolls inside). */
 export function ActivityFeed({
-  refreshKey,
   className,
 }: {
-  refreshKey?: number;
   className?: string;
 }) {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Live: other managers publishing show up without a reload.
+  const { data, isPending: loading } = useQuery(queries.activity());
+  const logs = data?.activity ?? [];
   const [open, setOpen] = useState(false);
   const panelId = useId();
-
-  const fetchLogs = useCallback(async () => {
-    try {
-      const data = await unwrap(rpc.company.activity.$get());
-      setLogs(data.activity);
-    } catch {
-      // Network/CORS/5xx — keep existing list (background refresh stays quiet).
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Live: other managers publishing show up without a reload.
-  useVisiblePoll(true, fetchLogs);
-
-  const prevKeyRef = useRef(refreshKey);
-  useEffect(() => {
-    if (refreshKey !== undefined && refreshKey !== prevKeyRef.current) {
-      prevKeyRef.current = refreshKey;
-      fetchLogs();
-    }
-  }, [refreshKey, fetchLogs]);
 
   const toggle = () => setOpen((o) => !o);
 
