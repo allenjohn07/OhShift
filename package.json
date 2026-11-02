@@ -7,7 +7,7 @@
     "build": "bun install --cwd backend && tsc --noEmit && vite build",
     "lint": "eslint .",
     "verify": "bun run lint && bun run build",
-    "pages:deploy": "bun run build && bunx wrangler pages deploy dist --project-name=ohshift",
+    "pages:deploy": "bun run build && bunx wrangler pages deploy out --project-name=ohshift",
     "prepare": "husky",
     "preview": "vite preview"
   },

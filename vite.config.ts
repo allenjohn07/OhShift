@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
     },
+    // "out" is the folder the Cloudflare Pages project is configured to publish
+    // (a holdover from the Next.js export), so keep it instead of Vite's "dist".
+    build: { outDir: "out" },
     server: { port: 3000 },
     preview: { port: 3000 },
   };

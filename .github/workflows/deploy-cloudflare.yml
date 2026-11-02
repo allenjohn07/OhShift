@@ -55,7 +55,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
-          command: pages deploy dist --project-name=ohshift
+          command: pages deploy out --project-name=ohshift
 
   deploy-worker:
     runs-on: ubuntu-latest
