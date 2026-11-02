@@ -7,7 +7,7 @@ import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelEmpty, PanelFooter, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input, fieldClass } from "@/components/ui/input";
+import { fieldClass } from "@/components/ui/input";
 import {
   Dialog,
   DialogBody,
@@ -32,6 +32,7 @@ import {
   type TimeOffType,
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 
 
 type TimeOffRequest = {
@@ -318,32 +319,26 @@ function TimeOffPageContent() {
                 <label htmlFor="start" className="text-[13px] font-medium text-muted-foreground">
                   Start
                 </label>
-                <Input
+                <DatePicker
                   id="start"
-                  type="date"
                   required
                   value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (endDate && e.target.value > endDate) {
-                      setEndDate(e.target.value);
-                    }
+                  onChange={(v) => {
+                    setStartDate(v);
+                    if (endDate && v > endDate) setEndDate(v);
                   }}
-                  className="h-9"
                 />
               </div>
               <div className="space-y-2">
                 <label htmlFor="end" className="text-[13px] font-medium text-muted-foreground">
                   End
                 </label>
-                <Input
+                <DatePicker
                   id="end"
-                  type="date"
                   required
                   value={endDate}
                   min={startDate || undefined}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-9"
+                  onChange={setEndDate}
                 />
               </div>
             </div>

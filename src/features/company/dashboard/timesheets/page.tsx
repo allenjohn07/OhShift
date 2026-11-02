@@ -22,6 +22,7 @@ import type {
 } from "@/lib/pending-timesheets-store";
 
 import { cn } from "@/lib/utils";
+import { DateTimePicker } from "@/components/ui/time-picker";
 
 const STATUS_STYLES: Record<TimeEntryStatus, string> = {
   open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -236,38 +237,30 @@ function TimesheetsContent() {
                           <label className="text-[13px] font-medium text-muted-foreground">
                             Clock in
                           </label>
-                          <Input
-                            type="datetime-local"
+                          <DateTimePicker
                             value={edit.clockIn}
-                            onChange={(e) =>
+                            onChange={(clockIn) =>
                               setEdits((prev) => ({
                                 ...prev,
-                                [entry.id]: {
-                                  ...edit,
-                                  clockIn: e.target.value,
-                                },
+                                [entry.id]: { ...edit, clockIn },
                               }))
                             }
-                            className="h-9"
+                            aria-label="Clock in"
                           />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[13px] font-medium text-muted-foreground">
                             Clock out
                           </label>
-                          <Input
-                            type="datetime-local"
+                          <DateTimePicker
                             value={edit.clockOut}
-                            onChange={(e) =>
+                            onChange={(clockOut) =>
                               setEdits((prev) => ({
                                 ...prev,
-                                [entry.id]: {
-                                  ...edit,
-                                  clockOut: e.target.value,
-                                },
+                                [entry.id]: { ...edit, clockOut },
                               }))
                             }
-                            className="h-9"
+                            aria-label="Clock out"
                           />
                         </div>
                       </div>

@@ -15,6 +15,8 @@ import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface Employee {
   id: string;
@@ -257,14 +259,12 @@ export function AssignShiftModal({
             >
               Date
             </label>
-            <input
-              type="date"
+            <DatePicker
               id="date"
               name="date"
               required
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={cn(fieldClass, "h-9")}
+              onChange={setDate}
             />
           </div>
 
@@ -305,14 +305,12 @@ export function AssignShiftModal({
                 >
                   Start
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   id="startTime"
                   name="startTime"
                   required
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className={cn(fieldClass, "h-9")}
+                  onChange={setStartTime}
                 />
               </div>
               <div className="space-y-2">
@@ -322,14 +320,12 @@ export function AssignShiftModal({
                 >
                   End
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   id="endTime"
                   name="endTime"
                   required
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className={cn(fieldClass, "h-9")}
+                  onChange={setEndTime}
                 />
               </div>
             </div>

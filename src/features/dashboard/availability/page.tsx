@@ -7,12 +7,12 @@ import { Panel, PanelFooter, PanelHeader } from "@/components/panel";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useApi } from "@/hooks/use-api";
 import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { TimePicker } from "@/components/ui/time-picker";
 
 type DayAvailability = {
   day_of_week: number;
@@ -210,18 +210,16 @@ function AvailabilityEditor() {
 
                 {day.is_available ? (
                   <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={day.start_time}
-                      onChange={(e) => updateDay(index, { start_time: e.target.value })}
+                      onChange={(v) => updateDay(index, { start_time: v })}
                       className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                       aria-label={`${DAY_LABELS[index]} start`}
                     />
                     <span className="text-sm text-muted-foreground">–</span>
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={day.end_time}
-                      onChange={(e) => updateDay(index, { end_time: e.target.value })}
+                      onChange={(v) => updateDay(index, { end_time: v })}
                       className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                       aria-label={`${DAY_LABELS[index]} end`}
                     />

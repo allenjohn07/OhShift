@@ -9,6 +9,8 @@ import { useApi } from "@/hooks/use-api";
 import { ScrollFade } from "@/components/scroll-fade";
 import { cn } from "@/lib/utils";
 import { SimpleSelect } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 
 type EligibilityReason =
   | "unavailable"
@@ -323,13 +325,11 @@ export function BulkAssignModal({
                 >
                   Date
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   id="bulk-date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   required
-                  className={cn(fieldClass, "h-9")}
                 />
               </div>
 
@@ -370,12 +370,10 @@ export function BulkAssignModal({
                     >
                       Start
                     </label>
-                    <input
-                      type="time"
+                    <TimePicker
                       id="bulk-start"
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className={cn(fieldClass, "h-9")}
+                      onChange={setStartTime}
                     />
                   </div>
                   <div className="space-y-2">
@@ -385,12 +383,10 @@ export function BulkAssignModal({
                     >
                       End
                     </label>
-                    <input
-                      type="time"
+                    <TimePicker
                       id="bulk-end"
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className={cn(fieldClass, "h-9")}
+                      onChange={setEndTime}
                     />
                   </div>
                 </div>
@@ -535,36 +531,31 @@ export function BulkAssignModal({
                                 placeholder="Title"
                                 className={cn(fieldClass, "h-8")}
                               />
-                              <div className="grid grid-cols-3 gap-2">
-                                <input
-                                  type="date"
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                <DatePicker
+                                  size="sm"
+                                  className="col-span-2 sm:col-span-1"
                                   value={o.date || date}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      date: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { date: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} date`}
                                 />
-                                <input
-                                  type="time"
+                                <TimePicker
+                                  size="sm"
                                   value={o.startTime || startTime}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      startTime: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { startTime: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} start`}
                                 />
-                                <input
-                                  type="time"
+                                <TimePicker
+                                  size="sm"
                                   value={o.endTime || endTime}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      endTime: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { endTime: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} end`}
                                 />
                               </div>
                             </div>

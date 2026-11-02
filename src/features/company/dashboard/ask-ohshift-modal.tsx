@@ -17,6 +17,8 @@ import type { CompanySettings } from "./company-settings";
 import { ScrollFade } from "@/components/scroll-fade";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 
 type ShiftProposal = {
   employee_id: string;
@@ -454,15 +456,11 @@ export function AskOhShiftModal({
                     >
                       Date
                     </label>
-                    <input
+                    <DatePicker
                       id="ask-date"
-                      type="date"
                       value={fields.date}
-                      onChange={(e) =>
-                        setFields((f) => ({ ...f, date: e.target.value }))
-                      }
+                      onChange={(date) => setFields((f) => ({ ...f, date }))}
                       required
-                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
 
@@ -511,18 +509,13 @@ export function AskOhShiftModal({
                         >
                           Start
                         </label>
-                        <input
+                        <TimePicker
                           id="ask-start"
-                          type="time"
                           value={fields.startTime}
-                          onChange={(e) =>
-                            setFields((f) => ({
-                              ...f,
-                              startTime: e.target.value,
-                            }))
+                          onChange={(startTime) =>
+                            setFields((f) => ({ ...f, startTime }))
                           }
                           required
-                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                       <div className="space-y-2">
@@ -532,18 +525,13 @@ export function AskOhShiftModal({
                         >
                           End
                         </label>
-                        <input
+                        <TimePicker
                           id="ask-end"
-                          type="time"
                           value={fields.endTime}
-                          onChange={(e) =>
-                            setFields((f) => ({
-                              ...f,
-                              endTime: e.target.value,
-                            }))
+                          onChange={(endTime) =>
+                            setFields((f) => ({ ...f, endTime }))
                           }
                           required
-                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                     </div>

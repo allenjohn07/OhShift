@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShiftProperties } from "@/features/dashboard/shift-properties";
 import { toLocalDateInput, toLocalTimeInput } from "@/lib/dates";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface Shift {
   id: string;
@@ -466,8 +468,7 @@ export function TeamScheduleGrid({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="date">Date</Label>
-                      <Input
-                        type="date"
+                      <DatePicker
                         id="date"
                         name="date"
                         required
@@ -477,8 +478,7 @@ export function TeamScheduleGrid({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label htmlFor="startTime">Start</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           id="startTime"
                           name="startTime"
                           required
@@ -487,8 +487,7 @@ export function TeamScheduleGrid({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="endTime">End</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           id="endTime"
                           name="endTime"
                           required
