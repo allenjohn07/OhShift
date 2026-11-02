@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -29,7 +30,7 @@ type InviteBody = {
 };
 
 export const employeesRoutes = new Hono()
-  .put("/", jsonBody<UpdateEmployeeBody>(), async (c) => {
+  .put("/", jsonBody<UpdateEmployeeBody>({ employeeId: v.text(100, 1), designation: v.nullable(v.text(120)), role: v.oneOf("employee", "manager", "owner") }), async (c) => {
     const user = await requireManager(c);
     const { employeeId, designation, role } = c.req.valid("json");
 
@@ -37,6 +38,7 @@ export const employeesRoutes = new Hono()
       return c.json({ error: "Missing employee ID" }, 400);
     }
 
+    if (designation === undefined && role === undefined) return c.json({ error: "Provide a role or designation to update." }, 400);
     const member = await verifyEmployeeInCompany(employeeId, user.companyId);
 
     if (member.role === "owner") {
@@ -64,7 +66,7 @@ export const employeesRoutes = new Hono()
 
     return c.json({ employee: serializeUser(updated!) });
   })
-  .delete("/", queryParams<"id">(), async (c) => {
+  .delete("/", queryParams<"id">({ id: v.text(100, 1) }), async (c) => {
     const user = await requireManager(c);
     const employeeId = c.req.query("id");
 
@@ -92,7 +94,7 @@ export const employeesRoutes = new Hono()
 
     return c.json({ message: "Employee removed successfully" });
   })
-  .post("/invite", jsonBody<InviteBody>(), async (c) => {
+  .post("/invite", jsonBody<InviteBody>({ invites: v.array(v.object({ email: v.email, fullName: v.text(120, 1), designation: v.text(120) }, ["email", "fullName"]), 1, 20) }), async (c) => {
     const sender = await requireManager(c);
     const { invites } = c.req.valid("json");
 

@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -111,7 +112,7 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: entry ? serializeTimeEntry(entry) : null });
   })
-  .get("/mine", queryParams<"from" | "to">(), async (c) => {
+  .get("/mine", queryParams<"from" | "to">({ from: v.instant, to: v.instant }), async (c) => {
     const user = await requireUser(c);
     const fromRaw = c.req.query("from");
     const toRaw = c.req.query("to");
@@ -165,7 +166,7 @@ export const timeEntriesRoutes = new Hono()
       recent: recent.map(serializeTimeEntry),
     });
   })
-  .post("/clock-in", jsonBody<ClockBody>(), async (c) => {
+  .post("/clock-in", jsonBody<ClockBody>({ shift_id: v.text(100, 1) }), async (c) => {
     const user = await requireUser(c);
     if (!user.companyId) {
       return c.json({ error: "No company associated" }, 400);
@@ -248,7 +249,7 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: await loadEntry(created!.id) });
   })
-  .post("/clock-out", jsonBody<ClockBody>(), async (c) => {
+  .post("/clock-out", jsonBody<ClockBody>({ shift_id: v.text(100, 1) }), async (c) => {
     const user = await requireUser(c);
 
     const payload = c.req.valid("json");
@@ -284,7 +285,7 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: await loadEntry(entry.id) });
   })
-  .post("/:id/review", jsonBody<ReviewEntryBody>(), async (c) => {
+  .post("/:id/review", jsonBody<ReviewEntryBody>({ decision: v.oneOf("approved", "denied"), clock_in_at: v.instant, clock_out_at: v.instant, note: v.nullable(v.text(500)) }), async (c) => {
     const user = await requireManager(c);
     const payload = c.req.valid("json");
 

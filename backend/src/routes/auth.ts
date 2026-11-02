@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -29,7 +30,7 @@ type ChangePasswordBody = {
 };
 
 export const authRoutes = new Hono()
-  .post("/login", jsonBody<LoginBody>(), async (c) => {
+  .post("/login", jsonBody<LoginBody>({ email: v.email, password: v.text(128, 1) }), async (c) => {
     const { email, password } = c.req.valid("json");
 
     if (!email || !password) {
@@ -67,7 +68,7 @@ export const authRoutes = new Hono()
       },
     });
   })
-  .post("/register-company", jsonBody<RegisterCompanyBody>(), async (c) => {
+  .post("/register-company", jsonBody<RegisterCompanyBody>({ companyName: v.text(120, 1), name: v.text(120, 1), email: v.email, password: v.text(128, 12) }), async (c) => {
     const { companyName, name, email, password } = c.req.valid("json");
 
     if (!companyName || !name || !email || !password) {
@@ -111,7 +112,7 @@ export const authRoutes = new Hono()
       201,
     );
   })
-  .post("/reset-password", jsonBody<ResetPasswordBody>(), async (c) => {
+  .post("/reset-password", jsonBody<ResetPasswordBody>({ email: v.email }), async (c) => {
     const { email } = c.req.valid("json");
 
     if (!email) {
@@ -140,7 +141,7 @@ export const authRoutes = new Hono()
       tempPassword,
     });
   })
-  .post("/update-avatar", jsonBody<UpdateAvatarBody>(), async (c) => {
+  .post("/update-avatar", jsonBody<UpdateAvatarBody>({ avatarUrl: v.httpsUrl }), async (c) => {
     const user = await requireUser(c);
     const { avatarUrl } = c.req.valid("json");
 
@@ -152,7 +153,7 @@ export const authRoutes = new Hono()
 
     return c.json({ message: "Profile picture updated successfully" });
   })
-  .post("/change-password", jsonBody<ChangePasswordBody>(), async (c) => {
+  .post("/change-password", jsonBody<ChangePasswordBody>({ currentPassword: v.text(128, 1), newPassword: v.text(128, 12) }), async (c) => {
     const user = await requireUser(c);
     const { currentPassword, newPassword } = c.req.valid("json");
 

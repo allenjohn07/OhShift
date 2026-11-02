@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
+import { object, type Rule } from "./validation";
 import { validator } from "hono/validator";
 import { db } from "../db";
 import { users, type UserRole } from "../db/schema";
@@ -85,17 +86,21 @@ export async function verifyEmployeeInCompany(
  * Fields stay optional (handlers check what they need), and the body type flows
  * into the typed RPC client (`backend/src/client.ts`) as the request's `json`.
  */
-export function jsonBody<T extends object>() {
-  return validator("json", (value: Partial<T>) =>
-    value && typeof value === "object" ? value : ({} as Partial<T>),
-  );
+export function jsonBody<T extends object>(fields: Partial<Record<keyof T, Rule>> = {}) {
+  return validator("json", (value: unknown, c) => {
+    if (!object(fields as Record<string, Rule>)(value)) return c.json({ error: "Invalid request fields" }, 400);
+    return value as Partial<T>;
+  });
 }
 
 /**
  * Declares the query-string keys a route reads (all optional strings), so the
  * typed RPC client accepts `{ query: { … } }`. Handlers keep using `c.req.query()`.
  */
-export function queryParams<K extends string>() {
+export function queryParams<K extends string>(fields: Partial<Record<K, Rule>> = {}) {
   // The client's `query` type is inferred from this return type.
-  return validator("query", (value) => value as Partial<Record<K, string>>);
+  return validator("query", (value, c) => {
+    if (!object(fields as Record<string, Rule>)(value)) return c.json({ error: "Invalid query parameters" }, 400);
+    return value as Partial<Record<K, string>>;
+  });
 }

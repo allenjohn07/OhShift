@@ -242,7 +242,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                   name="newPassword"
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={12} maxLength={128}
                   className={cn(fieldClass, "h-9 pr-10")}
                 />
                 <IconTooltip

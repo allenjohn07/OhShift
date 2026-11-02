@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -56,7 +57,7 @@ export const shiftsRoutes = new Hono()
     });
     return c.json({ shifts: rows.map((s) => serializeShift(s)) });
   })
-  .get("/eligible", queryParams<"start" | "end" | "timezone" | "designation">(), async (c) => {
+  .get("/eligible", queryParams<"start" | "end" | "timezone" | "designation">({ start: v.instant, end: v.instant, timezone: v.timezone, designation: v.text(120) }), async (c) => {
     const user = await requireManager(c);
     const startRaw = c.req.query("start") ?? "";
     const endRaw = c.req.query("end") ?? "";
@@ -72,8 +73,8 @@ export const shiftsRoutes = new Hono()
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       return c.json({ error: "Invalid start or end time" }, 400);
     }
-    if (start >= end) {
-      return c.json({ error: "End time must be after start time" }, 400);
+    if (start >= end || end.getTime() - start.getTime() > 86_400_000) {
+      return c.json({ error: "Provide a positive shift duration of at most 24 hours." }, 400);
     }
 
     const [members, ctx] = await Promise.all([
@@ -126,7 +127,7 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ people, designations });
   })
-  .post("/bulk", jsonBody<BulkShiftsBody>(), async (c) => {
+  .post("/bulk", jsonBody<BulkShiftsBody>({ timezone: v.timezone, shifts: v.array(v.object({ employeeId: v.text(100, 1), title: v.text(120, 1), startTime: v.instant, endTime: v.instant }), 1, 50) }), async (c) => {
     const user = await requireManager(c);
     const { timezone, shifts: items } = c.req.valid("json");
 
@@ -182,7 +183,7 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ created, failed, results });
   })
-  .post("/", jsonBody<CreateShiftBody>(), async (c) => {
+  .post("/", jsonBody<CreateShiftBody>({ employeeId: v.text(100, 1), title: v.text(120, 1), startTime: v.instant, endTime: v.instant, timezone: v.timezone }), async (c) => {
     const user = await requireManager(c);
     const { employeeId, title, startTime, endTime, timezone } = c.req.valid("json");
 
@@ -210,7 +211,7 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ shift: outcome!.shift });
   })
-  .put("/", jsonBody<UpdateShiftBody>(), async (c) => {
+  .put("/", jsonBody<UpdateShiftBody>({ shiftId: v.text(100, 1), title: v.text(120, 1), startTime: v.instant, endTime: v.instant, timezone: v.timezone }), async (c) => {
     const user = await requireManager(c);
     const { shiftId, title, startTime, endTime, timezone } = c.req.valid("json");
 
@@ -259,7 +260,7 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ shift: serializeShift(shift!) });
   })
-  .delete("/", queryParams<"id">(), async (c) => {
+  .delete("/", queryParams<"id">({ id: v.text(100, 1) }), async (c) => {
     const user = await requireManager(c);
     const shiftId = c.req.query("id");
 

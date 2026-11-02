@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -220,7 +221,7 @@ export const messagesRoutes = new Hono()
       conversations: rows.map((row) => serializeConversation(row, user.id, unread)),
     });
   })
-  .post("/conversations", jsonBody<StartConversationBody>(), async (c) => {
+  .post("/conversations", jsonBody<StartConversationBody>({ recipient_id: v.text(100, 1) }), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
     const payload = c.req.valid("json");
@@ -285,7 +286,7 @@ export const messagesRoutes = new Hono()
 
     return c.json({ messages: messages.map(serializeMessage) });
   })
-  .post("/conversations/:id", jsonBody<SendMessageBody>(), async (c) => {
+  .post("/conversations/:id", jsonBody<SendMessageBody>({ body: v.text(2000, 1) }), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
     const conversationId = c.req.param("id");
