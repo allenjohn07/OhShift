@@ -15,6 +15,7 @@ import { greeting, todayLabel } from "@/lib/greeting";
 import { cn } from "@/lib/utils";
 import { TeamMembersList } from "./team-members-list";
 import { InviteEmployeeForm } from "./invite-form";
+import { AskOhShiftModal } from "./ask-ohshift-modal";
 import { BulkAssignModal } from "./bulk-assign-modal";
 import { TeamScheduleGrid } from "@/features/company/dashboard/team-schedule-grid";
 import { DayAgenda } from "@/features/dashboard/day-agenda";
@@ -134,6 +135,7 @@ export function DashboardContent({
           title={greeting(userName)}
           actions={
             <>
+              <AskOhShiftModal company={company} onCreated={onScheduleChanged} />
               <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
                 <UserPlus className="h-4 w-4" />
                 Invite
@@ -171,7 +173,6 @@ export function DashboardContent({
 
         <TeamScheduleGrid
           shifts={shifts}
-          company={company}
           onScheduleChanged={onScheduleChanged}
         />
 

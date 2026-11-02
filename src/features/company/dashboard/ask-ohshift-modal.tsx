@@ -20,6 +20,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { timeFormatOptions, shiftRange } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
 import { OvernightHint } from "@/components/overnight-hint";
+import { Button } from "@/components/ui/button";
 
 type ShiftProposal = {
   employee_id: string;
@@ -247,14 +248,15 @@ export function AskOhShiftModal({
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setIsOpen(true)}
-        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent dark:bg-transparent [&_svg]:text-brand"
+        className="[&_svg]:text-brand"
       >
-        <Sparkles className="w-4 h-4" />
+        <Sparkles className="h-4 w-4" />
         Ask OhShifts
-      </button>
+      </Button>
 
       <Dialog
           open={isOpen}

@@ -3,8 +3,6 @@ import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { rpc, unwrap } from "@/lib/rpc";
-import { AskOhShiftModal } from "./ask-ohshift-modal";
-import type { CompanySettings } from "./company-settings";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,11 +33,9 @@ interface Shift {
 
 export function TeamScheduleGrid({
   shifts,
-  company,
   onScheduleChanged,
 }: {
   shifts: Shift[] | null;
-  company?: CompanySettings | null;
   onScheduleChanged?: () => void | Promise<void>;
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -273,13 +269,7 @@ export function TeamScheduleGrid({
     <>
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="border-b border-border px-4 sm:px-5 py-2 min-h-12 flex flex-col sm:flex-row sm:items-center justify-between bg-card gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="font-semibold">Schedule</h2>
-            <AskOhShiftModal
-              onCreated={onScheduleChanged}
-              company={company}
-            />
-          </div>
+          <h2 className="font-semibold">Schedule</h2>
           
           <div className="flex w-full items-center gap-1 sm:gap-2 self-start sm:self-auto sm:w-auto">
              <IconTooltip label="Previous week" side="bottom">

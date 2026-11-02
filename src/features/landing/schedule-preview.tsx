@@ -112,6 +112,10 @@ export function SchedulePreview() {
             </div>
             <div className="hidden items-center gap-1.5 sm:flex">
               <span className="inline-flex h-6 items-center gap-1 rounded-md border border-input px-2 text-[11px] font-medium">
+                <Sparkles className="h-3 w-3 text-brand" />
+                Ask OhShifts
+              </span>
+              <span className="inline-flex h-6 items-center gap-1 rounded-md border border-input px-2 text-[11px] font-medium">
                 <UserPlus className="h-3 w-3" />
                 Invite
               </span>
@@ -144,10 +148,6 @@ export function SchedulePreview() {
           <div className="overflow-hidden rounded-md border border-border">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <span className="text-[12px] font-semibold">Schedule</span>
-              <span className="hidden items-center gap-1 rounded-md border border-input px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex">
-                <Sparkles className="h-2.5 w-2.5 text-brand" />
-                Ask OhShifts
-              </span>
               <div className="ml-auto flex items-center gap-1.5 text-[10px]">
                 <ChevronLeft className="h-3 w-3 text-muted-foreground" />
                 <span className="font-medium tabular-nums">Oct 26 – Nov 1</span>
