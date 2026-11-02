@@ -2,6 +2,7 @@ import { and, desc, eq, ne, notExists, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { announcementReads, announcements } from "../db/schema";
+import { indexAnnouncement } from "../lib/ai/announcement-index";
 import {
   isManagerRole,
   jsonBody,
@@ -157,6 +158,11 @@ export const announcementsRoutes = new Hono()
       })
       .returning({ id: announcements.id });
 
+    // Keep the assistant's search index current without delaying the response.
+    c.executionCtx.waitUntil(
+      indexAnnouncement({ id: row!.id, companyId: user.companyId, title, body: text }),
+    );
+
     return c.json({ announcement: await loadAnnouncement(row!.id, user.id) });
   })
   .post("/read-all", async (c) => {
@@ -234,6 +240,10 @@ export const announcementsRoutes = new Hono()
       .update(announcements)
       .set({ title, body: text })
       .where(eq(announcements.id, existing.id));
+
+    c.executionCtx.waitUntil(
+      indexAnnouncement({ id: existing.id, companyId, title, body: text }),
+    );
 
     return c.json({ announcement: await loadAnnouncement(existing.id, user.id) });
   })

@@ -50,7 +50,7 @@ API runs at `http://localhost:3001`.
 | `GET /shifts/mine` | Employee's published shifts |
 | `/availability`, `/time-off`, `/time-entries` | Worker availability, time off, timesheets |
 | `/announcements`, `/messages`, `/inbox` | Team comms + unread counts |
-| `POST /ai/parse-shift`, `POST /ai/ask` | Ask OhShift (Workers AI) |
+| `POST /ai/parse-shift` (managers), `POST /ai/ask` (any member) | Ask OhShifts (Workers AI; see AGENTS.md) |
 | `GET /dashboard/employee`, `/dashboard/company`, `/dashboard/profile` | Dashboard data |
 
 ## Cloudflare deployment

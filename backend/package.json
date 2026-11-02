@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --port 3001",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "bun test",
+    "ai:eval": "echo 'run: bunx wrangler dev -c scripts/ai-eval/wrangler.toml --port 3098  then: curl -s localhost:3098 | bun scripts/ai-eval/report.ts'",
     "cf-typegen": "wrangler types",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply ohshift --local",

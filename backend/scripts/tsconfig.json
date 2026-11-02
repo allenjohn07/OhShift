@@ -1,0 +1,6 @@
+{
+  // Nearest tsconfig for editors: gives tests/scripts the Bun types that the
+  // Worker config (src only) deliberately doesn't have.
+  "extends": "../tsconfig.test.json",
+  "include": ["./**/*.ts", "../src/**/*.ts", "../worker-configuration.d.ts"]
+}

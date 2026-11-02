@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { DayAgenda } from "./day-agenda";
+import { AskOhShiftModal } from "@/features/company/dashboard/ask-ohshift-modal";
 import { greeting, todayLabel } from "@/lib/greeting";
 import { queries } from "@/lib/queries";
 import { ApiRequestError } from "@/lib/rpc";
@@ -45,6 +46,7 @@ function EmployeeDashboard() {
       <PageHeader
         eyebrow={`${companyName} · ${todayLabel()}`}
         title={greeting(profile.full_name ?? "")}
+        actions={<AskOhShiftModal canCreate={false} />}
       />
 
       <ShiftSummary initialShifts={data.shifts} employeeId={user.id} />

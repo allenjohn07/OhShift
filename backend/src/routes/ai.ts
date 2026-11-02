@@ -2,8 +2,15 @@ import { and, asc, eq, inArray, or } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { db } from "../db";
 import { companies, users } from "../db/schema";
-import { ApiError, jsonBody, requireManager } from "../lib/auth-guard";
-import { askSchedule } from "../lib/nl-schedule-ask";
+import {
+  ApiError,
+  jsonBody,
+  requireCompanyMember,
+  requireManager,
+  requireUser,
+} from "../lib/auth-guard";
+import { ask } from "../lib/ai/ask";
+import { enforceAiRateLimit } from "../lib/ai/limits";
 import { parseShiftFromPrompt } from "../lib/nl-shift-parse";
 
 async function loadRosterAndPresets(user: {
@@ -134,35 +141,25 @@ export const aiRoutes = new Hono()
     }
   })
   .post("/ask", jsonBody<PromptBody>(), async (c) => {
-    const user = await requireManager(c);
+    // Any company member may ask; what they can learn is decided per role in lib/ai.
+    const user = await requireUser(c);
+    const companyId = requireCompanyMember(user);
     const { prompt, timezone } = readPrompt(c.req.valid("json"));
+    await enforceAiRateLimit(user.id);
 
     try {
-      const { roster, selfRow, presets } = await loadRosterAndPresets(user);
-
-      const result = await askSchedule({
+      const result = await ask({
+        principal: {
+          userId: user.id,
+          companyId,
+          role: user.role,
+          fullName: user.fullName,
+        },
         prompt,
-        companyId: user.companyId,
         timezone,
-        roster,
-        self: selfRow,
-        presets,
       });
-
-      if ("kind" in result) {
-        if (result.kind === "create") {
-          return c.json({ kind: "create" as const, proposal: result.proposal });
-        }
-        return c.json({
-          kind: "query" as const,
-          answer: result.answer,
-          window_label: result.window_label,
-          person: result.person,
-          shifts: result.shifts,
-        });
-      }
-
-      return c.json({ error: result.error }, 422);
+      if ("error" in result) return c.json({ error: result.error }, 422);
+      return c.json(result);
     } catch (err) {
       return aiFailure(c, err, "Failed to process request");
     }

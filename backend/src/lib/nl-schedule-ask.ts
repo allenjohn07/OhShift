@@ -1,38 +1,15 @@
-import { runChatCompletion } from "./workers-ai";
-import { and, asc, eq, gt, inArray, lt } from "drizzle-orm";
-import { db } from "../db";
-import { shifts, users } from "../db/schema";
-import { serializeShift } from "./serialize";
 import {
   extractDateFromPrompt,
   extractWeekdayFromPrompt,
-  parseShiftFromPrompt,
-  type ParsedShiftProposal,
-  type ParseShiftFailure,
-  type RosterMember,
   type ShiftPresets,
   zonedLocalToDate,
 } from "./nl-shift-parse";
 
-export type ScheduleAskCreate = {
-  kind: "create";
-  proposal: ParsedShiftProposal;
-};
-
-export type ScheduleAskQuery = {
-  kind: "query";
-  answer: string;
-  /** Human label for the resolved day/week window */
-  window_label: string;
-  person: string | null;
-  shifts: ReturnType<typeof serializeShift>[];
-};
-
-export type ScheduleAskResult =
-  | ScheduleAskCreate
-  | ScheduleAskQuery
-  | ParseShiftFailure;
-
+/**
+ * Date-window and wording helpers for schedule questions, shared by the
+ * executors in `./ai/executors`. (Question routing and answering live in
+ * `./ai`; this file no longer decides what a question means.)
+ */
 type QueryFilterModel = {
   intent?: string | null;
   employee_id?: string | null;
@@ -42,14 +19,7 @@ type QueryFilterModel = {
   error?: string | null;
 };
 
-function stripJsonFences(text: string): string {
-  const trimmed = text.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) return fenced[1].trim();
-  return trimmed;
-}
-
-function localParts(
+export function localParts(
   date: Date,
   timeZone: string,
 ): { y: number; m: number; d: number; weekday: number } {
@@ -79,17 +49,17 @@ function localParts(
   };
 }
 
-function startOfLocalDay(timeZone: string, offsetDays = 0): Date {
+export function startOfLocalDay(timeZone: string, offsetDays = 0): Date {
   const p = localParts(new Date(), timeZone);
   return zonedLocalToDate(p.y, p.m, p.d + offsetDays, 0, 0, timeZone);
 }
 
-function endOfLocalDay(timeZone: string, offsetDays = 0): Date {
+export function endOfLocalDay(timeZone: string, offsetDays = 0): Date {
   const p = localParts(new Date(), timeZone);
   return zonedLocalToDate(p.y, p.m, p.d + offsetDays + 1, 0, 0, timeZone);
 }
 
-function dayRangeFromYmd(
+export function dayRangeFromYmd(
   y: number,
   m: number,
   d: number,
@@ -102,7 +72,7 @@ function dayRangeFromYmd(
 }
 
 /** Monday 00:00 → next Monday 00:00 in local timezone (no DST ms math). */
-function thisWeekRange(timeZone: string): { start: Date; end: Date } {
+export function thisWeekRange(timeZone: string): { start: Date; end: Date } {
   const today = localParts(new Date(), timeZone);
   const daysFromMonday = (today.weekday + 6) % 7;
   const thisMondayOffset = -daysFromMonday;
@@ -183,37 +153,7 @@ function promptSuggestsPast(prompt: string): boolean {
   );
 }
 
-function upcomingDaysHint(timeZone: string): string {
-  const now = localParts(new Date(), timeZone);
-  const names = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const lines: string[] = [];
-  for (let i = -7; i <= 14; i++) {
-    const localNoon = zonedLocalToDate(now.y, now.m, now.d + i, 12, 0, timeZone);
-    const p = localParts(localNoon, timeZone);
-    const label =
-      i === 0
-        ? "today"
-        : i === 1
-          ? "tomorrow"
-          : i === -1
-            ? "yesterday"
-            : names[p.weekday];
-    lines.push(
-      `- ${names[p.weekday]} ${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")} (${label})`,
-    );
-  }
-  return lines.join("\n");
-}
-
-function looksLikeQuery(prompt: string): boolean {
+export function looksLikeQuery(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
   if (p.includes("?")) return true;
   // Explicit lookups / list requests
@@ -235,61 +175,6 @@ function looksLikeQuery(prompt: string): boolean {
   return /\b(is|are|who|when|does|did|will|was|were|working|scheduled|where)\b/.test(
     p,
   );
-}
-
-function looksLikeCreate(prompt: string): boolean {
-  const p = prompt.trim().toLowerCase();
-  // Don't treat "give me the schedule/shifts" as create
-  if (looksLikeQuery(prompt) && /\b(shifts?|working|who)\b/.test(p)) {
-    return false;
-  }
-  return /\b(add|assign|create|put|book)\b/.test(p) ||
-    /\bschedule\s+(me|myself|[a-z][a-z'-]+)\b/.test(p);
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * Match a roster member from the prompt. Prefer full name, then first/last
- * token with word boundaries (avoids partial false positives).
- * Skips team-wide questions ("who is working…") so we don't latch onto a name.
- */
-export function matchEmployeeFromPrompt(
-  prompt: string,
-  roster: RosterMember[],
-): RosterMember | null {
-  if (isTeamWideQuery(prompt)) return null;
-
-  const lower = prompt.toLowerCase();
-  // Ignore common question words that can false-match short names
-  const scored = roster
-    .map((m) => {
-      const name = m.full_name.toLowerCase().trim();
-      const parts = name.split(/\s+/).filter(Boolean);
-      const first = parts[0] ?? "";
-      const last = parts.length > 1 ? parts[parts.length - 1] : "";
-      let score = 0;
-      if (name.length >= 2 && lower.includes(name)) score = 4;
-      else {
-        if (first.length >= 2) {
-          const re = new RegExp(`\\b${escapeRegExp(first)}\\b`, "i");
-          if (re.test(lower)) score = Math.max(score, first.length >= 4 ? 3 : 2);
-        }
-        if (last.length >= 3) {
-          const re = new RegExp(`\\b${escapeRegExp(last)}\\b`, "i");
-          if (re.test(lower)) score = Math.max(score, 2);
-        }
-      }
-      return { m, score };
-    })
-    .filter((x) => x.score > 0)
-    .sort(
-      (a, b) =>
-        b.score - a.score || b.m.full_name.length - a.m.full_name.length,
-    );
-  return scored[0]?.m ?? null;
 }
 
 /**
@@ -329,110 +214,11 @@ export function isOrgRoleQuery(
   return null;
 }
 
-function joinNames(names: string[]): string {
-  if (names.length === 0) return "";
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
-}
-
-async function runOrgRoleQuery(options: {
-  companyId: string;
-  focus: "managers" | "owner" | "both";
-}): Promise<ScheduleAskQuery> {
-  const members = await db
-    .select({ fullName: users.fullName, role: users.role })
-    .from(users)
-    .where(
-      and(
-        eq(users.companyId, options.companyId),
-        inArray(users.role, ["owner", "manager"]),
-      ),
-    )
-    .orderBy(asc(users.fullName));
-
-  const owners = members
-    .filter((m) => m.role === "owner")
-    .map((m) => m.fullName);
-  const managers = members
-    .filter((m) => m.role === "manager")
-    .map((m) => m.fullName);
-
-  const parts: string[] = [];
-
-  if (options.focus === "owner" || options.focus === "both") {
-    if (owners.length === 0) {
-      parts.push("No owner is set for this company.");
-    } else if (owners.length === 1) {
-      parts.push(`The owner is ${owners[0]}.`);
-    } else {
-      parts.push(`The owners are ${joinNames(owners)}.`);
-    }
-  }
-
-  if (options.focus === "managers" || options.focus === "both") {
-    if (managers.length === 0) {
-      if (options.focus === "both") {
-        parts.push("There are no managers assigned.");
-      } else if (owners.length === 1) {
-        parts.push(
-          `There are no managers assigned; ${owners[0]} (owner) manages the team.`,
-        );
-      } else if (owners.length > 1) {
-        parts.push(
-          `There are no managers assigned; the owners (${joinNames(owners)}) manage the team.`,
-        );
-      } else {
-        parts.push("There are no managers assigned.");
-      }
-    } else if (managers.length === 1) {
-      parts.push(`The manager is ${managers[0]}.`);
-      if (options.focus === "managers" && owners.length === 1) {
-        parts.push(`The owner is ${owners[0]}.`);
-      } else if (options.focus === "managers" && owners.length > 1) {
-        parts.push(`The owners are ${joinNames(owners)}.`);
-      }
-    } else {
-      parts.push(`The managers are ${joinNames(managers)}.`);
-      if (options.focus === "managers" && owners.length === 1) {
-        parts.push(`The owner is ${owners[0]}.`);
-      } else if (options.focus === "managers" && owners.length > 1) {
-        parts.push(`The owners are ${joinNames(owners)}.`);
-      }
-    }
-  }
-
-  return {
-    kind: "query",
-    answer: parts.join(" ").trim(),
-    window_label: "Team roles",
-    person: null,
-    shifts: [],
-  };
-}
-
-/** "Who is working Tuesday?" → whole team, not one guessed person. */
-function isTeamWideQuery(prompt: string): boolean {
-  if (isOrgRoleQuery(prompt)) return false;
-  const p = prompt.trim().toLowerCase();
-  return (
-    /\bwho\b/.test(p) ||
-    /\bwho'?s\b/.test(p) ||
-    /\bwho\s+all\b/.test(p) ||
-    /\banyone\b/.test(p) ||
-    /\banybody\b/.test(p) ||
-    /\beveryone\b/.test(p) ||
-    /\beverybody\b/.test(p) ||
-    /\bthe\s+team\b/.test(p) ||
-    /\bwhich\s+(staff|people|employees|workers)\b/.test(p)
-  );
-}
-
 /**
  * Resolve the lookup window from the prompt first; only fall back to the
  * model when the prompt has no usable date signal.
  */
-function resolveQueryRange(
+export function resolveQueryRange(
   prompt: string,
   model: QueryFilterModel,
   timeZone: string,
@@ -569,7 +355,7 @@ function resolveQueryRange(
   };
 }
 
-function formatSingleDayLabel(
+export function formatSingleDayLabel(
   y: number,
   m: number,
   d: number,
@@ -585,7 +371,7 @@ function formatSingleDayLabel(
   }).format(noon);
 }
 
-function formatWindowLabel(
+export function formatWindowLabel(
   start: Date,
   endExclusive: Date,
   timeZone: string,
@@ -602,17 +388,8 @@ function formatWindowLabel(
   return `${prefix} (${fmt.format(start)} – ${fmt.format(last)})`;
 }
 
-function resolveEmployeeId(
-  prompt: string,
-  roster: RosterMember[],
-): string | null {
-  // Only trust names that appear in the prompt — never LLM-guessed IDs
-  if (isTeamWideQuery(prompt)) return null;
-  return matchEmployeeFromPrompt(prompt, roster)?.id ?? null;
-}
-
 /** Only filter morning/evening when the user said so — never invent it. */
-function resolvePartOfDay(prompt: string): "morning" | "evening" | "any" {
+export function resolvePartOfDay(prompt: string): "morning" | "evening" | "any" {
   const lower = prompt.toLowerCase();
   if (/\bevening\b/.test(lower) || /\bnight\b/.test(lower)) return "evening";
   if (/\bmorning\b/.test(lower)) return "morning";
@@ -634,7 +411,7 @@ function parsePresetHour(value: string, fallback: number): number {
   return m ? Number(m[1]) : fallback;
 }
 
-function matchesPartOfDay(
+export function matchesPartOfDay(
   start: Date,
   timeZone: string,
   part: "morning" | "evening" | "any",
@@ -650,7 +427,7 @@ function matchesPartOfDay(
   return hour >= eveningStart;
 }
 
-type CuratedShiftFact = {
+export type CuratedShiftFact = {
   employee: string;
   weekday: string;
   date: string;
@@ -660,7 +437,7 @@ type CuratedShiftFact = {
   status: string;
 };
 
-function curateShiftFact(
+export function curateShiftFact(
   shift: {
     title: string;
     startTime: Date;
@@ -697,7 +474,7 @@ function curateShiftFact(
 }
 
 /** Deterministic answer built only from DB-curated facts (source of truth). */
-function answerFromCuratedFacts(options: {
+export function answerFromCuratedFacts(options: {
   windowLabel: string;
   employeeName: string | null;
   partOfDay: "morning" | "evening" | "any";
@@ -750,56 +527,8 @@ function answerFromCuratedFacts(options: {
   return `${who} has ${facts.length} shifts for ${windowLabel}${part}: ${lines.join("; ")}.`;
 }
 
-/**
- * Optional polish — AI may only rephrase curated facts. On any failure we
- * keep the deterministic answer so the UI never invents schedule data.
- */
-async function polishAnswerWithAi(options: {
-  prompt: string;
-  timeZone: string;
-  windowLabel: string;
-  curatedAnswer: string;
-  facts: CuratedShiftFact[];
-}): Promise<string> {
-  const { prompt, timeZone, windowLabel, curatedAnswer, facts } = options;
-  if (facts.length === 0) return curatedAnswer;
-
-  try {
-    const text = await runChatCompletion([
-      {
-        role: "system",
-        content: `You rephrase schedule facts for a manager. Rules:
-- Use ONLY the curated_shifts JSON and curated_answer below.
-- Do not add, remove, or change any person, day, date, or time.
-- If multiple people are in curated_shifts, you MUST name each of them.
-- 1–3 short sentences. No markdown. No invented shifts.
-- Timezone context: ${timeZone}. Window: ${windowLabel}.`,
-      },
-      {
-        role: "user",
-        content: `Question: ${prompt}
-
-Window: ${windowLabel}
-
-curated_shifts:
-${JSON.stringify(facts, null, 2)}
-
-curated_answer (must stay factually identical):
-${curatedAnswer}
-
-Rewrite curated_answer in natural conversational English without changing facts.`,
-      },
-    ]);
-    const polished = text.trim();
-    if (!polished) return curatedAnswer;
-    return polished;
-  } catch {
-    return curatedAnswer;
-  }
-}
-
 /** YYYY-MM-DD in the manager's timezone — same bucketing idea as Team Schedule. */
-function localYmd(date: Date, timeZone: string): string {
+export function localYmd(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -808,206 +537,3 @@ function localYmd(date: Date, timeZone: string): string {
   }).format(date);
 }
 
-function ymdsInRange(
-  rangeStart: Date,
-  rangeEndExclusive: Date,
-  timeZone: string,
-): Set<string> {
-  const days = new Set<string>();
-  let cursor = localParts(rangeStart, timeZone);
-  const last = localParts(new Date(rangeEndExclusive.getTime() - 1), timeZone);
-  const lastKey = last.y * 10_000 + last.m * 100 + last.d;
-  for (let i = 0; i < 40; i++) {
-    const key = cursor.y * 10_000 + cursor.m * 100 + cursor.d;
-    days.add(
-      `${cursor.y}-${String(cursor.m).padStart(2, "0")}-${String(cursor.d).padStart(2, "0")}`,
-    );
-    if (key >= lastKey) break;
-    const next = zonedLocalToDate(cursor.y, cursor.m, cursor.d + 1, 12, 0, timeZone);
-    cursor = localParts(next, timeZone);
-  }
-  return days;
-}
-
-async function runQuery(options: {
-  prompt: string;
-  companyId: string;
-  timezone: string;
-  roster: RosterMember[];
-  presets: ShiftPresets;
-}): Promise<ScheduleAskQuery | ParseShiftFailure> {
-  const { prompt, companyId, timezone, roster, presets } = options;
-
-  const teamWide = isTeamWideQuery(prompt);
-  // Team-wide "who" questions must never filter to one person (LLM used to guess Albin).
-  const resolvedEmployeeId = teamWide
-    ? null
-    : resolveEmployeeId(prompt, roster);
-
-  const promptHasDateCue =
-    Boolean(extractWeekdayFromPrompt(prompt)) ||
-    /\b(today|tonight|tomorrow|this week|next week|last week|yesterday)\b/i.test(
-      prompt,
-    );
-
-  let model: QueryFilterModel = {};
-  if (!promptHasDateCue) {
-    try {
-      const text = await runChatCompletion([
-        {
-          role: "system",
-          content: `Extract a date range for a schedule lookup. Return ONLY JSON:
-{"range_start":"<ISO or null>","range_end":"<ISO exclusive or null>","part_of_day":"any","error":null}
-
-Do NOT pick an employee. Calendar:
-${upcomingDaysHint(timezone)}
-Timezone: ${timezone}`,
-        },
-        { role: "user", content: prompt },
-      ]);
-      model = JSON.parse(stripJsonFences(text)) as QueryFilterModel;
-    } catch {
-      model = {};
-    }
-  }
-
-  const range = promptHasDateCue
-    ? resolveQueryRange(prompt, {}, timezone)
-    : resolveQueryRange(prompt, model, timezone);
-  const partOfDay = resolvePartOfDay(prompt);
-  const targetDays = ymdsInRange(range.start, range.end, timezone);
-
-  if (
-    !teamWide &&
-    !resolvedEmployeeId &&
-    /\b(is|does|will|was|were|where|give|show|shifts?\s+of)\b/i.test(prompt) &&
-    !matchEmployeeFromPrompt(prompt, roster)
-  ) {
-    const maybeName = prompt.match(
-      /\b(?:is|does|will|was|were|where|of)\s+([A-Za-z][A-Za-z'-]+)/i,
-    );
-    if (
-      maybeName &&
-      !/^(all|anyone|anybody|everybody|everyone|the)$/i.test(maybeName[1])
-    ) {
-      return {
-        error: `Could not find “${maybeName[1]}” on your team.`,
-      };
-    }
-  }
-
-  // Loose DB window (±12h) then bucket by local calendar day like Team Schedule
-  const fetchStart = new Date(range.start.getTime() - 12 * 60 * 60 * 1000);
-  const fetchEnd = new Date(range.end.getTime() + 12 * 60 * 60 * 1000);
-
-  const rows = await db.query.shifts.findMany({
-    where: and(
-      eq(shifts.companyId, companyId),
-      resolvedEmployeeId ? eq(shifts.employeeId, resolvedEmployeeId) : undefined,
-      lt(shifts.startTime, fetchEnd),
-      gt(shifts.endTime, fetchStart),
-    ),
-    with: { employee: { columns: { fullName: true } } },
-    orderBy: asc(shifts.startTime),
-    limit: 100,
-  });
-
-  const filtered = rows.filter((s) => {
-    if (!matchesPartOfDay(s.startTime, timezone, partOfDay, presets)) {
-      return false;
-    }
-    // Same rule as Team Schedule grid: shift belongs to the local day it starts on
-    return targetDays.has(localYmd(s.startTime, timezone));
-  });
-
-  const facts = filtered.map((s) =>
-    curateShiftFact(
-      {
-        title: s.title,
-        startTime: s.startTime,
-        endTime: s.endTime,
-        status: s.status,
-        employee: s.employee,
-      },
-      timezone,
-    ),
-  );
-
-  const employeeName = resolvedEmployeeId
-    ? roster.find((m) => m.id === resolvedEmployeeId)?.full_name ?? null
-    : null;
-
-  const curatedAnswer = answerFromCuratedFacts({
-    windowLabel: range.label,
-    employeeName,
-    partOfDay,
-    facts,
-    teamWide: teamWide || !employeeName,
-  });
-
-  // Skip AI polish for team-wide / multi-person — it was collapsing people into one
-  const answer =
-    teamWide || facts.length > 1
-      ? curatedAnswer
-      : await polishAnswerWithAi({
-          prompt,
-          timeZone: timezone,
-          windowLabel: range.label,
-          curatedAnswer,
-          facts,
-        });
-
-  return {
-    kind: "query",
-    answer,
-    window_label: range.label,
-    person: employeeName,
-    shifts: filtered.map((s) =>
-      serializeShift({
-        ...s,
-        users: { fullName: s.employee.fullName },
-      }),
-    ),
-  };
-}
-
-export async function askSchedule(options: {
-  prompt: string;
-  companyId: string;
-  timezone: string;
-  roster: RosterMember[];
-  self: RosterMember;
-  presets: ShiftPresets;
-}): Promise<ScheduleAskResult> {
-  const { prompt, companyId, timezone, roster, self, presets } = options;
-
-  const roleFocus = isOrgRoleQuery(prompt);
-  if (roleFocus) {
-    return runOrgRoleQuery({ companyId, focus: roleFocus });
-  }
-
-  const preferQuery = looksLikeQuery(prompt) && !looksLikeCreate(prompt);
-  const preferCreate = looksLikeCreate(prompt) && !looksLikeQuery(prompt);
-
-  if (preferQuery || (looksLikeQuery(prompt) && !preferCreate)) {
-    return runQuery({ prompt, companyId, timezone, roster, presets });
-  }
-
-  const created = await parseShiftFromPrompt({
-    prompt,
-    timezone,
-    roster,
-    presets,
-    self,
-  });
-
-  if ("employee_id" in created) {
-    return { kind: "create", proposal: created };
-  }
-
-  if (looksLikeQuery(prompt)) {
-    return runQuery({ prompt, companyId, timezone, roster, presets });
-  }
-
-  return created;
-}

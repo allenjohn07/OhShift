@@ -60,6 +60,25 @@ Reference implementations:
 
 Do **not** add WebSockets/SSE unless product explicitly asks — Workers-friendly polling is the default.
 
+## Ask OhShifts assistant (`backend/src/lib/ai/`)
+
+Read-only Q&A for every company member. **Code decides, the model assists**: it is not "ask an LLM and hope".
+
+Flow (`ask.ts`): load team + company → **route** (`router.ts`) → role check → **executor** (`executors/*`, scoped by the JWT principal) → output guard (`redact.ts`).
+- **Routing:** unsupported-action guard (`guards.ts`: "delete my shift" → where to do it) → fast paths → embedding similarity against `intents.ts` examples (bge-base) + question-shape priors (person / "my" / "who…") + topic cues → 3B model only to break ties among the top 3 → otherwise announcements knowledge fallback → otherwise a `help` result with suggestions. **Never blank.** If Workers AI is down, a lexical scorer keeps the common questions working.
+- **Teach it a phrasing:** add an example to the intent in `intents.ts` (no regex edits). **Add a capability:** new intent + executor; set `roles` and `focus`.
+- **Answers are built from DB facts by code.** The 3B model may only rephrase single facts / summarise announcements, and a grounding check discards anything not supported by the sources.
+- **Announcements (RAG):** embeddings in `announcement_embeddings` (written on create/edit via `waitUntil`, back-filled lazily); cosine over the caller's company only. Thresholds live in `KNOWLEDGE` (`executors/announcements.ts`).
+- Changes happen only through the existing UI: the assistant never writes. Managers can ask it to *draft* a shift, which they confirm in the dialog.
+
+**Never expose to the model or in any answer** (select explicit columns; never `select()` users): password hashes, emails, invite codes, tokens, avatar URLs, direct messages, time-off notes, timesheet review notes. Employees see only published shifts and their own availability / time off / hours; manager-only intents are refused with a clear message. Every query is scoped by `principal.companyId` (from the session, never from the prompt). Announcement and name text is untrusted: it only enters prompts as quoted data.
+
+Tests and tuning:
+- `cd backend && bun test`: permissions, tenant isolation, sensitive-data canaries, injection, never-blank, router (offline). Tests swap `../db` for in-memory SQLite (`test/ai/harness.ts`).
+- Live routing accuracy against real Workers AI: `bunx wrangler dev -c scripts/ai-eval/wrangler.toml --port 3098` then `curl -s localhost:3098 | bun scripts/ai-eval/report.ts` (`/knowledge` for announcement thresholds). Re-run after changing examples, cues, thresholds or the model. Keep `test/ai/phrasings.ts` honest: never copy its questions into `intents.ts` (a test enforces it).
+- Per-user throttle: `AI_LIMITER` binding in `wrangler.toml` (15 / minute).
+- Deploy order: apply D1 migrations (`bun run db:migrate:remote`), then deploy the Worker. Without the new table the assistant still works (announcement search degrades to keywords).
+
 ## Environment & secrets
 
 **Never read, write, commit, or print contents of:**

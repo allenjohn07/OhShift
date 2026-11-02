@@ -1,0 +1,16 @@
+# Throwaway dev Worker that runs the router against REAL Workers AI embeddings
+# and reports accuracy. Not deployed. See scripts/ai-eval/worker.ts.
+name = "ohshift-ai-eval"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+[ai]
+binding = "AI"
+remote = true
+
+# The router imports the executors, which import the db module; give it a local
+# (empty) D1 so the import succeeds. Nothing here reads or writes it.
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-eval"
+database_id = "00000000-0000-0000-0000-000000000000"

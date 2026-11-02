@@ -21,6 +21,14 @@ migrations_dir = "drizzle"
 binding = "AI"
 remote = true
 
+# Per-user throttle for the AI endpoints (Workers Rate Limiting; period is 10 or 60s).
+[[ratelimits]]
+name = "AI_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 15
+  period = 60
+
 # Set secrets (do not put them in this file):
 #   bunx wrangler secret put AUTH_SECRET
 #   bunx wrangler secret put FRONTEND_URL

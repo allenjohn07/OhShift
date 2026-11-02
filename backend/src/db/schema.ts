@@ -257,6 +257,29 @@ export const announcementReads = sqliteTable(
   ],
 );
 
+/**
+ * Search index for the assistant: one embedding per announcement. Derived data
+ * (rebuilt from `announcements`), so it can be dropped and regenerated. The
+ * vector is a base64-encoded little-endian Float32Array.
+ */
+export const announcementEmbeddings = sqliteTable(
+  "announcement_embeddings",
+  {
+    announcementId: text("announcement_id")
+      .primaryKey()
+      .references(() => announcements.id, { onDelete: "cascade" }),
+    companyId: text("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    vector: text("vector").notNull(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index("announcement_embeddings_company_idx").on(t.companyId)],
+);
+
 /** pairKey = sorted "userIdA:userIdB" for unique 1:1 DMs within a company */
 export const conversations = sqliteTable(
   "conversations",

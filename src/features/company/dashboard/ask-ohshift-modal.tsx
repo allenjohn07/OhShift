@@ -87,12 +87,17 @@ function formatRange(startIso: string, endIso: string): string {
   return `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
 }
 
+type QuerySource = { id: string; title: string; created_at: string; author: string | null };
+
 export function AskOhShiftModal({
   onCreated,
   company,
+  canCreate = true,
 }: {
   onCreated?: () => void | Promise<void>;
   company?: CompanySettings | null;
+  /** Employees can ask questions but not create shifts. */
+  canCreate?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -101,6 +106,10 @@ export function AskOhShiftModal({
   const [queryShifts, setQueryShifts] = useState<QueryShift[]>([]);
   const [queryWindow, setQueryWindow] = useState<string | null>(null);
   const [queryPerson, setQueryPerson] = useState<string | null>(null);
+  const [queryTopic, setQueryTopic] = useState<"schedule" | "other">("schedule");
+  const [querySources, setQuerySources] = useState<QuerySource[]>([]);
+  // "I didn't get that / not allowed": a message plus questions that work.
+  const [helpState, setHelpState] = useState<{ answer: string; suggestions: string[] } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [fields, setFields] = useState<EditFields>({
     title: "",
@@ -121,6 +130,9 @@ export function AskOhShiftModal({
     setQueryShifts([]);
     setQueryWindow(null);
     setQueryPerson(null);
+    setQueryTopic("schedule");
+    setQuerySources([]);
+    setHelpState(null);
     setIsEditing(false);
     setFields({ title: "", date: "", startTime: "", endTime: "" });
     setError(null);
@@ -134,11 +146,11 @@ export function AskOhShiftModal({
     reset();
   }
 
-  async function handleAsk(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = prompt.trim();
+  async function runAsk(text: string) {
+    const trimmed = text.trim();
     if (!trimmed) return;
 
+    setPrompt(trimmed);
     setIsParsing(true);
     setError(null);
     setProposal(null);
@@ -146,6 +158,9 @@ export function AskOhShiftModal({
     setQueryShifts([]);
     setQueryWindow(null);
     setQueryPerson(null);
+    setQueryTopic("schedule");
+    setQuerySources([]);
+    setHelpState(null);
     setIsEditing(false);
 
     try {
@@ -159,6 +174,13 @@ export function AskOhShiftModal({
         setQueryShifts(data.shifts);
         setQueryWindow(data.window_label ?? null);
         setQueryPerson(data.person ?? null);
+        setQueryTopic(data.topic);
+        setQuerySources(data.sources);
+        return;
+      }
+
+      if (data.kind === "help") {
+        setHelpState({ answer: data.answer, suggestions: data.suggestions });
         return;
       }
 
@@ -171,6 +193,11 @@ export function AskOhShiftModal({
     } finally {
       setIsParsing(false);
     }
+  }
+
+  function handleAsk(e: React.FormEvent) {
+    e.preventDefault();
+    void runAsk(prompt);
   }
 
   async function handleConfirm() {
@@ -215,7 +242,7 @@ export function AskOhShiftModal({
   }
 
   const previewStartEnd = fieldsToIso(fields);
-  const showingQuery = queryAnswer !== null;
+  const showingQuery = queryAnswer !== null || helpState !== null;
   const showingCreate = proposal !== null;
 
   return (
@@ -248,7 +275,9 @@ export function AskOhShiftModal({
                       ? "Here’s what we found."
                       : showingCreate
                         ? "Review before creating a draft."
-                        : "Ask about the schedule or describe a shift to create."}
+                        : canCreate
+                          ? "Ask about your team and schedule, or describe a shift to create."
+                          : "Ask about your schedule, your team, or announcements."}
                 </DialogDescription>
               </DialogHeader>
 
@@ -263,7 +292,7 @@ export function AskOhShiftModal({
                 <form onSubmit={handleAsk} className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="ask-prompt" className="text-[13px] font-medium text-muted-foreground">
-                      Ask or schedule
+                      {canCreate ? "Ask or schedule" : "Ask a question"}
                     </label>
                     <textarea
                       id="ask-prompt"
@@ -271,7 +300,11 @@ export function AskOhShiftModal({
                       onChange={(e) => setPrompt(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      placeholder="e.g. Who is the manager? Who is working Tuesday? Or: Add me to next Friday evening"
+                      placeholder={
+                        canCreate
+                          ? "e.g. Who is the manager? Who is working Tuesday? Or: Add me to next Friday evening"
+                          : "e.g. When do I work next? Who is working Friday? Who is the manager?"
+                      }
                       className={cn(fieldClass, "py-2 resize-none")}
                       disabled={isParsing}
                       autoFocus
@@ -305,7 +338,7 @@ export function AskOhShiftModal({
                 </form>
               ) : showingQuery ? (
                 <div className="space-y-4">
-                  {(queryWindow || queryPerson) && (
+                  {!helpState && (queryWindow || queryPerson) && (
                     <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 space-y-1">
                       {queryPerson && (
                         <p className="text-[13px] font-medium text-muted-foreground">
@@ -315,7 +348,9 @@ export function AskOhShiftModal({
                       )}
                       {queryWindow && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 shrink-0" />
+                          {queryTopic === "schedule" && (
+                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                          )}
                           {queryWindow}
                         </p>
                       )}
@@ -323,9 +358,47 @@ export function AskOhShiftModal({
                   )}
 
                   <p className="text-sm leading-relaxed text-foreground">
-                    {queryAnswer}
+                    {helpState ? helpState.answer : queryAnswer}
                   </p>
 
+                  {helpState && helpState.suggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {helpState.suggestions.map((question) => (
+                        <button
+                          key={question}
+                          type="button"
+                          onClick={() => void runAsk(question)}
+                          disabled={isParsing}
+                          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-left text-[13px] transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!helpState && querySources.length > 0 && (
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <div className="px-3 py-2 border-b border-border bg-muted/30">
+                        <p className="text-[13px] font-medium text-muted-foreground">
+                          From announcements ({querySources.length})
+                        </p>
+                      </div>
+                      <ul className="divide-y divide-border">
+                        {querySources.map((source) => (
+                          <li key={source.id} className="px-3 py-2.5">
+                            <p className="text-sm font-medium">{source.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {source.author ? `${source.author} · ` : ""}
+                              {new Date(source.created_at).toLocaleDateString()}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!helpState && queryTopic === "schedule" && (
                   <div className="rounded-lg border border-border overflow-hidden">
                     <div className="px-3 py-2 border-b border-border bg-muted/30">
                       <p className="text-[13px] font-medium text-muted-foreground">
@@ -373,6 +446,7 @@ export function AskOhShiftModal({
                       </ScrollFade>
                     )}
                   </div>
+                  )}
 
                   <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover sm:justify-between">
                     <button
@@ -382,6 +456,8 @@ export function AskOhShiftModal({
                         setQueryShifts([]);
                         setQueryWindow(null);
                         setQueryPerson(null);
+                        setQuerySources([]);
+                        setHelpState(null);
                         setError(null);
                       }}
                       className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50 dark:bg-transparent"
