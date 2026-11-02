@@ -53,23 +53,14 @@ jobs:
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
         run: bun run build
 
-      - name: Ensure Pages project exists
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          packageManager: npm
-          # Succeeds if project already exists; creates it on first run
-          command: pages project create ohshift --production-branch=main
-        continue-on-error: true
-
+      # Use the existing project that owns ohshifts.com; fail if it is missing.
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
-          command: pages deploy out --project-name=ohshift
+          command: pages deploy out --project-name=ohshifts --branch=main
 
   deploy-worker:
     needs: verify

@@ -49,6 +49,9 @@ On Linux CI, install Chromium with `bunx playwright install --with-deps chromium
 
 ## Deployment and operations
 
+- GitHub Actions deploys the frontend to the existing Pages project **`ohshifts`**, which must own `ohshifts.com`. The workflow never creates a Pages project automatically. Build variables (`VITE_API_URL`, `VITE_APP_URL`, `VITE_BASE_PATH`) come from GitHub repository variables, not the Pages build settings.
+- Disable automatic Git deployments for both production and preview branches in the `ohshifts` Pages project's build/branch controls, so GitHub Actions is the only deployment path. Wrangler uploads to an existing Git-integrated project are supported: see [Cloudflare Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/).
+- After this workflow change reaches `main`, wait for **Deploy to Cloudflare → Deploy Pages (frontend)** to succeed. Confirm its output targets `ohshifts`, confirm `ohshifts.com` is attached to that project, and smoke-test login and API access on the custom domain. Then delete only the duplicate **`ohshift`** Pages project (`ohshift-6v7.pages.dev`), after confirming it has no required custom domains. Keep **`ohshifts`** and **`ohshift-api`**.
 - Deploy migrations and the Worker before Pages. CI orders deployments this way so a new frontend cannot arrive before its API.
 - Configure exact CORS origins; production no longer allows arbitrary `*.pages.dev` origins. The committed `APP_URL` enables `https://ohshifts.com`; set public Pages/GitHub variables separately from Worker secrets.
 - Use a separate Worker, D1 database, sender/test recipients and secrets for staging. Do not point staging or local tests at production D1. Real resource IDs must be created/configured in your Cloudflare account; they are not inferred or fabricated in the repository.
