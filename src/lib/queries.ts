@@ -1,4 +1,4 @@
-import { QueryCache, QueryClient, queryOptions } from "@tanstack/react-query";
+import { QueryCache, QueryClient, infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ApiRequestError, rpc, unwrap } from "@/lib/rpc";
 
@@ -46,13 +46,13 @@ export const queries = {
   employeeDashboard: () =>
     queryOptions({
       queryKey: ["dashboard", "employee"],
-      queryFn: () => unwrap(rpc.dashboard.employee.$get()),
+      queryFn: () => unwrap(rpc.dashboard.employee.$get({ query: {} })),
       refetchInterval: LIVE_MS,
     }),
   companyDashboard: () =>
     queryOptions({
       queryKey: ["dashboard", "company"],
-      queryFn: () => unwrap(rpc.dashboard.company.$get()),
+      queryFn: () => unwrap(rpc.dashboard.company.$get({ query: {} })),
       refetchInterval: LIVE_MS,
     }),
   profile: () =>
@@ -88,13 +88,28 @@ export const queries = {
           "Failed to load eligible team members",
         ),
     }),
-  myShifts: () =>
+  myShifts: (from?: string, to?: string) =>
     queryOptions({
-      queryKey: ["shifts", "mine"],
-      queryFn: () => unwrap(rpc.shifts.mine.$get(), "Failed to load shifts"),
+      queryKey: ["shifts", "mine", from, to],
+      queryFn: () => unwrap(rpc.shifts.mine.$get({ query: { from, to } }), "Failed to load shifts"),
       refetchInterval: LIVE_MS,
       meta: { errorMessage: "Failed to load shifts" },
     }),
+  companyShifts: (from: string, to: string) => queryOptions({
+    queryKey: ["shifts", "company", from, to],
+    queryFn: () => unwrap(rpc.shifts.company.$get({ query: { from, to } }), "Failed to load schedule"),
+    refetchInterval: LIVE_MS,
+    meta: { errorMessage: "Failed to load schedule" },
+  }),
+  threadHistory: (id: string) => infiniteQueryOptions({
+    queryKey: ["messages", "conversations", id, "history"],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => unwrap(rpc.messages.conversations[":id"].$get({ param: { id }, query: { before: pageParam } }), "Failed to load older messages"),
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    meta: { errorMessage: "Failed to load older messages" },
+  }),
   myTimeOff: () =>
     queryOptions({
       queryKey: ["time-off", "mine"],
@@ -161,7 +176,7 @@ export const queries = {
       queryKey: ["messages", "conversations", id],
       queryFn: () =>
         unwrap(
-          rpc.messages.conversations[":id"].$get({ param: { id } }),
+          rpc.messages.conversations[":id"].$get({ param: { id }, query: {} }),
           "Failed to load messages",
         ),
       refetchInterval: LIVE_MS,

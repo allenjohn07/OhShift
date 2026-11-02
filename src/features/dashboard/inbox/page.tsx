@@ -1,5 +1,6 @@
+import { mergeMessages } from "@/lib/messages";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -116,7 +117,8 @@ function InboxPageContent() {
 
   const announcements = announcementsQuery.data?.announcements ?? NO_ANNOUNCEMENTS;
   const conversations = conversationsQuery.data?.conversations ?? NO_CONVERSATIONS;
-  const messages = threadQuery.data?.messages ?? NO_MESSAGES;
+  const historyQuery = useInfiniteQuery({ ...queries.threadHistory(activeId ?? ""), enabled: Boolean(activeId) });
+  const messages = mergeMessages(historyQuery.data?.pages.flatMap(page => page.messages) ?? NO_MESSAGES, threadQuery.data?.messages ?? NO_MESSAGES);
   const directory = directoryQuery.data?.members ?? [];
   const loading = announcementsQuery.isPending || conversationsQuery.isPending;
 
@@ -593,6 +595,7 @@ function InboxPageContent() {
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3">
+                      {historyQuery.hasNextPage && <Button variant="outline" size="sm" tooltip="Load older messages" disabled={historyQuery.isFetchingNextPage} onClick={() => void historyQuery.fetchNextPage()}> {historyQuery.isFetchingNextPage ? "Loading…" : "Load older messages"}</Button>}
                       {messages.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground py-8">
                           Say hello — send the first message.

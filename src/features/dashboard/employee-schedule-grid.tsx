@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { queries } from "@/lib/queries";
 import { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
@@ -37,7 +39,6 @@ export function EmployeeScheduleGrid({
   employeeId?: string;
   employeeName: string;
 }) {
-  const shifts = initialShifts ?? [];
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -150,6 +151,9 @@ export function EmployeeScheduleGrid({
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
+  const rangeEnd = new Date(startOfWeek); rangeEnd.setDate(rangeEnd.getDate() + 7);
+  const weekQuery = useQuery(queries.myShifts(startOfWeek.toISOString(), rangeEnd.toISOString()));
+  const shifts = weekQuery.data?.shifts ?? initialShifts ?? [];
   const headerDateRange = `${formatDateLabel(startOfWeek)} - ${formatDateLabel(endOfWeek)}, ${startOfWeek.getFullYear()}`;
 
   return (

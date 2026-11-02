@@ -1,5 +1,6 @@
+import { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql, lt } from "drizzle-orm";
 import * as v from "../lib/validation";
-import { and, asc, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { messageCursor, parseMessageCursor } from "../lib/message-cursor";
 import { Hono } from "hono";
 import { db } from "../db";
 import {
@@ -8,7 +9,7 @@ import {
   directMessages,
   users,
 } from "../db/schema";
-import { ApiError, jsonBody, requireCompanyMember, requireUser } from "../lib/auth-guard";
+import { ApiError, jsonBody, requireCompanyMember, requireUser, queryParams } from "../lib/auth-guard";
 
 const BODY_MAX = 2000;
 const MESSAGE_LIMIT = 100;
@@ -272,19 +273,21 @@ export const messagesRoutes = new Hono()
       conversation: serializeConversation(conversation!, user.id, unread),
     });
   })
-  .get("/conversations/:id", async (c) => {
+  .get("/conversations/:id", queryParams<"before">(), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
     const conversationId = c.req.param("id");
     await assertParticipant(conversationId, user.id, companyId);
 
-    const messages = await db.query.directMessages.findMany({
-      where: eq(directMessages.conversationId, conversationId),
-      orderBy: asc(directMessages.createdAt),
-      limit: MESSAGE_LIMIT,
+    const before = parseMessageCursor(c.req.query("before"));
+    const rows = await db.query.directMessages.findMany({
+      where: and(eq(directMessages.conversationId, conversationId), before ? or(lt(directMessages.createdAt, before.at), and(eq(directMessages.createdAt, before.at), lt(directMessages.id, before.id))) : undefined),
+      orderBy: [desc(directMessages.createdAt), desc(directMessages.id)],
+      limit: MESSAGE_LIMIT + 1,
     });
-
-    return c.json({ messages: messages.map(serializeMessage) });
+    const page = rows.slice(0, MESSAGE_LIMIT);
+    const oldest = page.at(-1);
+    return c.json({ messages: page.reverse().map(serializeMessage), next_cursor: rows.length > MESSAGE_LIMIT && oldest ? messageCursor(oldest) : null });
   })
   .post("/conversations/:id", jsonBody<SendMessageBody>({ body: v.text(2000, 1) }), async (c) => {
     const user = await requireUser(c);
