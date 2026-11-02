@@ -10,6 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { rpc, unwrap, withToken } from "@/lib/rpc";
 import {
+  SESSION_EXPIRED_EVENT,
   clearAccessToken,
   getAccessToken,
   setAccessToken,
@@ -68,6 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setTokenState(null);
   }, [queryClient]);
+
+  useEffect(() => {
+    const expired = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === sessionTokenRef.current) applySession(null, null);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+  }, [applySession]);
 
   const refreshUser = useCallback(async () => {
     const token = getAccessToken();

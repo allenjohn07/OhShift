@@ -107,7 +107,7 @@ The user commits. Agents **must not** run `git commit` / `git push` unless the u
 - Every new feature must include meaningful automated tests in the same change. Cover successful behavior, invalid input, permissions and tenant isolation where applicable. Bug fixes require a regression test.
 - Test observable behavior, including UI interactions and both sides of cross-role updates when affected; do not substitute implementation-mirroring assertions for behavioral tests.
 - Run `bun run verify` before every commit and before integrating or pushing. It runs lint, backend type checks, all automated tests and the frontend build. Fix failures before proceeding; never bypass hooks with `--no-verify`, `HUSKY=0`, or equivalent. If checks cannot run, report the blocker and do not commit.
-- Install dependencies with `bun install` in the root and backend after cloning; root installation activates Husky. Local hooks are a guardrail, not a security boundary; CI must also pass. Required status checks on main need GitHub branch protection configured by the repository owner.
+- Install dependencies with `bun install` in the root and backend after cloning; root installation activates Husky. In every new worktree, run `bun run prepare` and verify that `.husky/_/pre-commit` exists before committing; installing hooks in another checkout does not install them here. Local hooks are a guardrail, not a security boundary; CI must also pass. Required status checks on main need GitHub branch protection configured by the repository owner.
 
 ## Finish cleanly
 

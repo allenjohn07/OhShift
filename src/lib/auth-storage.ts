@@ -1,3 +1,4 @@
+export const SESSION_EXPIRED_EVENT = "ohshift-session-expired";
 const TOKEN_KEY = "ohshift_access_token";
 
 export function getAccessToken() {

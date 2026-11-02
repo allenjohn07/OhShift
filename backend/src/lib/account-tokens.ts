@@ -42,7 +42,7 @@ export async function consumeAccountToken(raw: string, password: string) {
   // Check freshness inside the write, so concurrent uses cannot both succeed.
   const [updated] = await db.batch([
     db.update(users).set({ passwordHash, sessionVersion: sql`${users.sessionVersion} + 1` })
-      .where(and(eq(users.id, row.userId), eq(users.sessionVersion, row.sessionVersion), sql`EXISTS (SELECT 1 FROM account_tokens WHERE token_hash = ${tokenHash} AND consumed_at IS NULL AND expires_at > ${now.getTime()})`))
+      .where(and(eq(users.id, row.userId), eq(users.isActive, true), eq(users.sessionVersion, row.sessionVersion), sql`EXISTS (SELECT 1 FROM account_tokens WHERE token_hash = ${tokenHash} AND consumed_at IS NULL AND expires_at > ${now.getTime()})`))
       .returning({ id: users.id }),
     db.update(accountTokens).set({ consumedAt: now }).where(eq(accountTokens.id, row.id)),
   ]);

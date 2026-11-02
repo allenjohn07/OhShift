@@ -1,12 +1,14 @@
 import { deliverScheduleEmails } from "./lib/schedule-emails";
+import { databaseConflict } from "./lib/database-error";
+import { bodyLimit } from "hono/body-limit";
 import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { db } from "./db";
-import { databaseConflict } from "./lib/database-error";
 import { ApiError } from "./lib/auth-guard";
 import { aiRoutes } from "./routes/ai";
 import { announcementsRoutes } from "./routes/announcements";
@@ -46,10 +48,11 @@ function allowOrigin(origin: string): string | null {
   if (configuredOrigins.length > 0) {
     return configuredOrigins.includes(origin) ? origin : null;
   }
+  if (vars.NODE_ENV === "production") return null;
   if (
     origin === "http://localhost:3000" ||
     origin === "http://127.0.0.1:3000" ||
-    /^https:\/\/.*\.pages\.dev$/.test(origin)
+    false
   ) {
     return origin;
   }
@@ -57,7 +60,8 @@ function allowOrigin(origin: string): string | null {
 }
 
 export const app = new Hono()
-  .use(bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
+  .use(requestId())
+  .use(secureHeaders())
   .use(
     cors({
       origin: allowOrigin,
@@ -65,6 +69,7 @@ export const app = new Hono()
       allowHeaders: ["Content-Type", "Authorization"],
     }),
   )
+  .use(bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
   .get("/ping", (c) =>
     c.json({
       ok: true,
@@ -85,7 +90,7 @@ export const app = new Hono()
         ok: false,
         database: "disconnected",
         timestamp: new Date().toISOString(),
-      });
+      }, 503);
     }
   })
   .get("/", (c) =>
@@ -110,22 +115,16 @@ export const app = new Hono()
   .onError((err, c) => {
     const conflict = databaseConflict(err);
     if (conflict) return c.json({ error: conflict }, 409);
-    let cause: unknown = err;
-    for (let depth = 0; depth < 8 && cause instanceof Error; depth++, cause = cause.cause) {
-      if (cause.message.includes("OHSHIFT_HISTORY_PROTECTED")) return c.json({ error: "This change would remove historical time records and is not allowed." }, 409);
-    }
     if (err instanceof ApiError) {
       return c.json({ error: err.message }, err.status as 400);
     }
     if (err instanceof HTTPException) {
       return c.json({ error: err.message }, err.status);
     }
-    console.error(err);
+    console.error("Unhandled API error", { method: c.req.method, path: c.req.path, requestId: c.get("requestId") });
     return c.json({ error: "Internal Server Error" }, 500);
   });
 
 export type AppType = typeof app;
 
-export default Object.assign(app, {
-  async scheduled() { await deliverScheduleEmails(); },
-});
+export default Object.assign(app, { async scheduled() { await deliverScheduleEmails(); } });

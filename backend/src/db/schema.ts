@@ -73,8 +73,8 @@ export const users = sqliteTable(
     fullName: text("full_name").notNull(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash"),
-    sessionVersion: integer("session_version").notNull().default(1),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    sessionVersion: integer("session_version").notNull().default(1),
     role: text("role", { enum: USER_ROLES }).notNull(),
     companyId: text("company_id").references(
       (): AnySQLiteColumn => companies.id,
@@ -104,6 +104,7 @@ export const authRateBuckets = sqliteTable("auth_rate_buckets", {
   attempts: integer("attempts").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
 }, (t) => [index("auth_rate_buckets_expires_idx").on(t.expiresAt)]);
+
 /** Durable outbox: publication and notification creation share one D1 batch. */
 export const emailJobs = sqliteTable("email_jobs", {
   id: text("id").primaryKey(),

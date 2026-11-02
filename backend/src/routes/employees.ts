@@ -111,7 +111,7 @@ export const employeesRoutes = new Hono()
       const fullName = invite.fullName.trim();
       try {
         let member = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email}` });
-        if (member && (member.companyId !== sender.companyId || member.passwordHash !== null)) {
+        if (member && (!member.isActive || member.companyId !== sender.companyId || member.passwordHash !== null)) {
           inviteErrors.push(`${email}: already registered`);
           continue;
         }

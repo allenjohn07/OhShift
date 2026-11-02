@@ -28,4 +28,37 @@ Recovery links expire after 30 minutes; invitations after 48 hours. Only SHA-256
 
 Provider acceptance is not proof of inbox delivery. Check bounces and delivery events in Resend; actual domain verification and delivery must be verified in your accounts before launch.
 
+## Publication email outbox
+
+Publishing creates the schedule change, audit entry and one notification per affected worker in a single D1 batch. A minute cron drains at most 10 jobs per invocation. Jobs have leases, provider idempotency keys, bounded retries and a terminal failed state. Users who have been deactivated are skipped. Email contains a sign-in link, not coworkers' names or shift details. Larger teams may take several cron cycles; live schedules remain visible through polling immediately.
+
+Monitor pending and failed `email_jobs` records, Worker delivery errors, and Resend delivery/bounce events. To retry a terminal job after fixing delivery, use an audited administrative operation and retain its existing ID/idempotency key. Do not delete historical shifts or users to clean up delivery records.
+
+## Local verification
+
+```sh
+bun install --frozen-lockfile
+bun install --cwd backend --frozen-lockfile
+bunx playwright install chromium
+bun run verify
+```
+
+In a new Git worktree, run `bun run prepare` before the first commit to install that checkout’s Husky hooks.
+
+On Linux CI, install Chromium with `bunx playwright install --with-deps chromium`. Verification includes lint, backend/frontend test type checks, unit/route tests, production build, local workerd/D1 integration and Chromium regressions. Runtime tests supply their own test bindings and intercept outbound mail; they do not load Wrangler secrets or send email.
+
+## Deployment and operations
+
+- Deploy migrations and the Worker before Pages. CI orders deployments this way so a new frontend cannot arrive before its API.
+- Configure exact CORS origins; production no longer allows arbitrary `*.pages.dev` origins. The committed `APP_URL` enables `https://ohshifts.com`; set public Pages/GitHub variables separately from Worker secrets.
+- Use a separate Worker, D1 database, sender/test recipients and secrets for staging. Do not point staging or local tests at production D1. Real resource IDs must be created/configured in your Cloudflare account; they are not inferred or fabricated in the repository.
+- Make the Verify status required on main in GitHub branch protection/rulesets; local hooks can be bypassed. Allow direct pushes only with the checks/policies you intend to enforce.
+- Configure an uptime monitor on `/health` and alert on HTTP 503. Worker errors include request IDs and paths without dumping SQL parameters or credentials. Enable alerts for elevated 5xx rates, authentication throttles, failed email jobs and unexpected mail volume.
+- Confirm D1 recovery retention for your plan, take an export before applying schema changes to existing data, and rehearse a restore into a separate staging database. Never test a restore by overwriting production.
+- Keep deployed API/schema changes backward-compatible until both deployments complete. A frontend failure after a successful Worker deployment should not require reversing destructive migrations.
+- Existing overlapping shifts are not silently deleted by migration 0003. Its guards prevent new conflicting writes. Review any existing conflicts before launch.
+- Deactivated employee records remain for historical schedules/timesheets. Existing future shifts remain visible until a manager explicitly changes them. Employees with an open clock-in must clock out before deactivation.
+
+Account creation, login, recovery and password completion are throttled by atomic D1 counters shared across isolates. Passwords are 12–128 characters for new accounts and changes; existing shorter passwords can still be used to sign in and upgrade. A successful change/reset invalidates prior JWTs. The frontend clears the session and cached data when an authenticated request receives 401.
+
 Provider reference: [verified domains](https://resend.com/docs/dashboard/domains/introduction), [send email](https://resend.com/docs/api-reference/emails/send-email), [idempotency keys](https://resend.com/docs/dashboard/emails/idempotency-keys).

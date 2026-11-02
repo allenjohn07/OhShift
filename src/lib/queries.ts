@@ -46,12 +46,14 @@ export const queries = {
   employeeDashboard: () =>
     queryOptions({
       queryKey: ["dashboard", "employee"],
+      meta: { errorMessage: "Could not load your dashboard" },
       queryFn: () => unwrap(rpc.dashboard.employee.$get({ query: {} })),
       refetchInterval: LIVE_MS,
     }),
   companyDashboard: () =>
     queryOptions({
       queryKey: ["dashboard", "company"],
+      meta: { errorMessage: "Could not load the company dashboard" },
       queryFn: () => unwrap(rpc.dashboard.company.$get({ query: {} })),
       refetchInterval: LIVE_MS,
     }),

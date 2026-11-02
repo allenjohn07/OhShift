@@ -125,13 +125,13 @@ export const authRoutes = new Hono()
     }
 
     await limitAuth(c, "reset", typeof email === "string" ? email : undefined);
-    const user = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`, columns: { id: true, email: true, fullName: true, sessionVersion: true } });
-    if (user) c.executionCtx.waitUntil(sendAccountLink(user, "reset").catch(() => {
+    const user = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`, columns: { id: true, email: true, fullName: true, sessionVersion: true, isActive: true } });
+    if (user?.isActive) c.executionCtx.waitUntil(sendAccountLink(user, "reset").catch(() => {
       console.error("Account recovery delivery failed");
     }));
     return c.json({ message: "If an account exists for that email, a password link will arrive shortly." });
   })
-  .post("/set-password", jsonBody<{ token: string; password: string }>(), async (c) => {
+  .post("/set-password", jsonBody<{ token: string; password: string }>({ token: v.text(64, 64), password: v.text(128, 12) }), async (c) => {
     const { token, password } = c.req.valid("json");
     await limitAuth(c, "set-password");
     if (typeof token !== "string" || typeof password !== "string" || password.length < 12 || password.length > 128) {
