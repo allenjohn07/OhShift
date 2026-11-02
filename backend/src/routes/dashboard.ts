@@ -66,6 +66,7 @@ export const dashboardRoutes = new Hono()
         .where(
           and(
             eq(users.companyId, user.companyId),
+          eq(users.isActive, true),
             inArray(users.role, ["employee", "manager"]),
           ),
         )

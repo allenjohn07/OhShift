@@ -41,7 +41,7 @@ export const authRoutes = new Hono()
       with: { company: true },
     });
 
-    if (!user?.passwordHash) {
+    if (!user?.passwordHash || !user.isActive) {
       return c.json({ error: "Invalid credentials" }, 401);
     }
 

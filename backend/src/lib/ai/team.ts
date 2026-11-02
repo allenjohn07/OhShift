@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { companies, users } from "../../db/schema";
 import type { ShiftPresets } from "../nl-shift-parse";
@@ -17,7 +17,7 @@ export async function loadTeam(companyId: string): Promise<TeamMember[]> {
       designation: users.designation,
     })
     .from(users)
-    .where(eq(users.companyId, companyId))
+    .where(and(eq(users.companyId, companyId), eq(users.isActive, true)))
     .orderBy(asc(users.fullName));
   return rows;
 }

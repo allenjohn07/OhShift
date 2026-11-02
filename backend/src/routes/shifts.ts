@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
-import { shifts, users } from "../db/schema";
+import { shifts, timeEntries, users } from "../db/schema";
 import { loadAssignmentContext } from "../lib/assignment-context";
 import { jsonBody, requireManager, requireUser, queryParams } from "../lib/auth-guard";
 import { serializeShift } from "../lib/serialize";
@@ -89,6 +89,7 @@ export const shiftsRoutes = new Hono()
         .where(
           and(
             eq(users.companyId, user.companyId),
+          eq(users.isActive, true),
             inArray(users.role, ["employee", "manager"]),
           ),
         )
@@ -223,6 +224,10 @@ export const shiftsRoutes = new Hono()
       return c.json({ error: "Shift not found or access denied" }, 404);
     }
 
+    const entry = await db.query.timeEntries.findFirst({ where: eq(timeEntries.shiftId, shiftId), columns: { id: true } });
+    if (entry && (new Date(startTime).getTime() !== existing.startTime.getTime() || new Date(endTime).getTime() !== existing.endTime.getTime())) {
+      return c.json({ error: "Shifts with time entries cannot be rescheduled. Review the timesheet instead." }, 409);
+    }
     const start = new Date(startTime);
     const end = new Date(endTime);
 
@@ -272,6 +277,8 @@ export const shiftsRoutes = new Hono()
       return c.json({ error: "Shift not found or access denied" }, 404);
     }
 
+    const entry = await db.query.timeEntries.findFirst({ where: eq(timeEntries.shiftId, shiftId), columns: { id: true } });
+    if (entry) return c.json({ error: "Shifts with time entries cannot be deleted." }, 409);
     await db.delete(shifts).where(eq(shifts.id, shiftId));
 
     await logShiftAction({

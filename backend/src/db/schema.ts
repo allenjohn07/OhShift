@@ -73,6 +73,7 @@ export const users = sqliteTable(
     fullName: text("full_name").notNull(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash"),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     role: text("role", { enum: USER_ROLES }).notNull(),
     companyId: text("company_id").references(
       (): AnySQLiteColumn => companies.id,

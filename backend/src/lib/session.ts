@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { sign, verify } from "hono/jwt";
 import { db } from "../db";
 import { users, type UserRole } from "../db/schema";
@@ -61,7 +61,7 @@ export async function createAccessToken(user: {
 
 export async function getDbUser(userId: string) {
   return db.query.users.findFirst({
-    where: eq(users.id, userId),
+    where: and(eq(users.id, userId), eq(users.isActive, true)),
     with: { company: true },
   });
 }

@@ -183,7 +183,7 @@ export async function createDraftShifts(options: {
       .select({ id: users.id, fullName: users.fullName })
       .from(users)
       .where(
-        and(eq(users.companyId, companyId), inArray(users.id, employeeIds)),
+        and(eq(users.companyId, companyId), eq(users.isActive, true), inArray(users.id, employeeIds)),
       ),
   ]);
   const memberNames = new Map(members.map((m) => [m.id, m.fullName]));

@@ -97,7 +97,7 @@ export function ManageTeamModal({
   const handleRemoveEmployee = async (employeeId: string, name: string) => {
     if (
       !confirm(
-        `Are you sure you want to completely remove ${name} from your team? This action cannot be undone.`,
+        `Deactivate ${name}? They will lose access. Historical shifts and timesheets will be preserved.`,
       )
     )
       return;
@@ -109,7 +109,7 @@ export function ManageTeamModal({
         "Failed to remove employee",
       );
 
-      toast.success(`${name} was removed from the team`);
+      toast.success(`${name} was deactivated`);
       await onChanged?.();
     } catch (error: unknown) {
       toast.error(
@@ -131,7 +131,7 @@ export function ManageTeamModal({
         <DialogHeader>
           <DialogTitle>Manage team</DialogTitle>
           <DialogDescription>
-            Update titles, roles, or remove team members.
+            Update titles, roles, or deactivate team members.
           </DialogDescription>
         </DialogHeader>
 
