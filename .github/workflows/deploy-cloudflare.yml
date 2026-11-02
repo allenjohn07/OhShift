@@ -20,10 +20,11 @@ jobs:
           node-version: "22"
       - run: bun install --frozen-lockfile
       - run: bun install --cwd backend --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
       - run: bun run verify
 
   deploy-pages:
-    needs: verify
+    needs: [verify, deploy-worker]
     runs-on: ubuntu-latest
     name: Deploy Pages (frontend)
     steps:

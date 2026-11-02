@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/auth-storage";
+import { getAccessToken, SESSION_EXPIRED_EVENT } from "@/lib/auth-storage";
 
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -19,7 +19,9 @@ export async function authedFetch(
   }
 
   try {
-    return await fetch(input, { ...init, headers });
+    const response = await fetch(input, { ...init, headers });
+    if (response.status === 401 && token) window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: token }));
+    return response;
   } catch (err) {
     if (
       err instanceof DOMException &&

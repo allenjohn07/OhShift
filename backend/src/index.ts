@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { db } from "./db";
@@ -43,10 +45,11 @@ function allowOrigin(origin: string): string | null {
   if (configuredOrigins.length > 0) {
     return configuredOrigins.includes(origin) ? origin : null;
   }
+  if (vars.NODE_ENV === "production") return null;
   if (
     origin === "http://localhost:3000" ||
     origin === "http://127.0.0.1:3000" ||
-    /^https:\/\/.*\.pages\.dev$/.test(origin)
+    false
   ) {
     return origin;
   }
@@ -54,6 +57,8 @@ function allowOrigin(origin: string): string | null {
 }
 
 const app = new Hono()
+  .use(requestId())
+  .use(secureHeaders())
   .use(
     cors({
       origin: allowOrigin,
@@ -81,7 +86,7 @@ const app = new Hono()
         ok: false,
         database: "disconnected",
         timestamp: new Date().toISOString(),
-      });
+      }, 503);
     }
   })
   .get("/", (c) =>
@@ -110,7 +115,7 @@ const app = new Hono()
     if (err instanceof HTTPException) {
       return c.json({ error: err.message }, err.status);
     }
-    console.error(err);
+    console.error("Unhandled API error", { method: c.req.method, path: c.req.path, requestId: c.get("requestId") });
     return c.json({ error: "Internal Server Error" }, 500);
   });
 

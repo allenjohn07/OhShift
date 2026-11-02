@@ -14,4 +14,5 @@ jobs:
           node-version: "22"
       - run: bun install --frozen-lockfile
       - run: bun install --cwd backend --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
       - run: bun run verify
