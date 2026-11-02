@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { db } from "./db";
+import { databaseConflict } from "./lib/database-error";
 import { ApiError } from "./lib/auth-guard";
 import { aiRoutes } from "./routes/ai";
 import { announcementsRoutes } from "./routes/announcements";
@@ -104,6 +105,8 @@ const app = new Hono()
   .route("/ai", aiRoutes)
   .notFound((c) => c.json({ error: "Not found" }, 404))
   .onError((err, c) => {
+    const conflict = databaseConflict(err);
+    if (conflict) return c.json({ error: conflict }, 409);
     if (err instanceof ApiError) {
       return c.json({ error: err.message }, err.status as 400);
     }
