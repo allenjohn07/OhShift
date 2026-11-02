@@ -62,41 +62,61 @@ export type AvailabilityWindowLike = {
   endTime: string;
 };
 
+const DAY_MINUTES = 24 * 60;
+
 /**
- * Returns an error message if the shift conflicts with availability,
- * or null if allowed. Missing windows = available (default week).
+ * A window's [start, end) in minutes from its own day's midnight. An end at or
+ * before the start is overnight and runs into the next morning (e.g. 20:00–04:00).
+ */
+function windowMinutes(window: AvailabilityWindowLike): [number, number] {
+  const start = toMinutes(window.startTime);
+  let end = toMinutes(window.endTime);
+  if (end <= start) end += DAY_MINUTES;
+  return [start, end];
+}
+
+function windowLabel(window: AvailabilityWindowLike) {
+  const overnight = toMinutes(window.endTime) <= toMinutes(window.startTime);
+  return `${window.startTime}–${window.endTime}${overnight ? " (overnight)" : ""}`;
+}
+
+/**
+ * Returns an error message if the shift conflicts with availability, or null if
+ * allowed. Missing windows = available (default week). Night shifts are fine:
+ * the shift must fit the start day's window (overnight windows included), or an
+ * early-morning shift may fit the previous day's overnight window.
  */
 export function availabilityConflictMessage(
-  window: AvailabilityWindowLike | null | undefined,
+  windows: {
+    /** Window for the shift's start day */
+    day: AvailabilityWindowLike | null | undefined;
+    /** Window for the day before (its overnight part can cover early mornings) */
+    previousDay?: AvailabilityWindowLike | null;
+  },
   start: Date,
   end: Date,
   timeZone?: string,
 ): string | null {
-  const startDay = localDateKey(start, timeZone);
-  const endDay = localDateKey(end, timeZone);
-  if (startDay !== endDay) {
-    return "Shift must stay on a single day to match the employee's availability";
-  }
-
+  const { day, previousDay } = windows;
   // No saved window → employee uses defaults (available)
-  if (!window) return null;
+  if (!day) return null;
+  if (!isHhMm(day.startTime) || !isHhMm(day.endTime)) return null;
 
-  if (!window.isAvailable) {
+  // Shift in minutes from its start day's midnight; past 1440 = next morning.
+  const shiftStart = toMinutes(localHhMm(start, timeZone));
+  const shiftEnd = shiftStart + Math.round((end.getTime() - start.getTime()) / 60_000);
+
+  const fits = (window: AvailabilityWindowLike | null | undefined, offset: number) => {
+    if (!window?.isAvailable) return false;
+    if (!isHhMm(window.startTime) || !isHhMm(window.endTime)) return false;
+    const [from, to] = windowMinutes(window);
+    return shiftStart >= from + offset && shiftEnd <= to + offset;
+  };
+
+  if (fits(day, 0) || fits(previousDay, -DAY_MINUTES)) return null;
+
+  if (!day.isAvailable) {
     return "Employee is marked unavailable on this day";
   }
-
-  if (!isHhMm(window.startTime) || !isHhMm(window.endTime)) {
-    return null;
-  }
-
-  const shiftStart = toMinutes(localHhMm(start, timeZone));
-  const shiftEnd = toMinutes(localHhMm(end, timeZone));
-  const availStart = toMinutes(window.startTime);
-  const availEnd = toMinutes(window.endTime);
-
-  if (shiftStart < availStart || shiftEnd > availEnd) {
-    return `Employee is only available ${window.startTime}–${window.endTime} on this day`;
-  }
-
-  return null;
+  return `Employee is only available ${windowLabel(day)} on this day`;
 }

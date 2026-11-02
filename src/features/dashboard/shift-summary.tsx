@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { formatTime } from "@/lib/dates";
+import { clockEntriesRange, formatTime, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 
@@ -69,18 +69,16 @@ export function ShiftSummary({
   const now = new Date();
   const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
+  // A shift in progress wins (a night shift that started yesterday), then
+  // the first one starting today.
   const todayShift =
-    shifts.find((s) => toLocalDate(s.start_time) === localToday) ?? null;
+    shifts.find((s) => isInProgress(s, now)) ??
+    shifts.find((s) => toLocalDate(s.start_time) === localToday) ??
+    null;
   const todayShiftId = todayShift?.id ?? null;
 
-  // Today's bounds — built like the Hours page so both share one cached query.
-  const dayRange = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return { from: start.toISOString(), to: end.toISOString() };
-  }, []);
+  // Same range as the Hours page → one shared cached query.
+  const dayRange = useMemo(() => clockEntriesRange(), []);
 
   // Live clock status (only needed when there's a shift today).
   const enabled = Boolean(todayShiftId);

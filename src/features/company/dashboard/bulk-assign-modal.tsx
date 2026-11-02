@@ -14,6 +14,8 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { shiftRange } from "@/lib/dates";
+import { OvernightHint } from "@/components/overnight-hint";
 
 type EligibilityReason =
   | "unavailable"
@@ -66,8 +68,12 @@ function todayLocalDate(): string {
   return `${y}-${m}-${day}`;
 }
 
-function toIso(date: string, time: string): string {
-  return new Date(`${date}T${time}`).toISOString();
+/** ISO start/end; an end at/before the start ends the next day (night shift). */
+function toIsoRange(date: string, startTime: string, endTime: string) {
+  const range = shiftRange(date, startTime, endTime);
+  return range
+    ? { start: range.start.toISOString(), end: range.end.toISOString() }
+    : null;
 }
 
 export function BulkAssignModal({
@@ -94,10 +100,9 @@ export function BulkAssignModal({
   // Eligibility for the chosen window — debounced so picking times doesn't
   // fire a request per change. Serialized so the debounce compares by value.
   const eligibleParams = useDebouncedValue(
-    date && startTime && endTime
+    toIsoRange(date, startTime, endTime)
       ? JSON.stringify({
-          start: toIso(date, startTime),
-          end: toIso(date, endTime),
+          ...toIsoRange(date, startTime, endTime),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           ...(designation ? { designation } : {}),
         })
@@ -208,8 +213,8 @@ export function BulkAssignModal({
         return {
           employeeId: p.id,
           title: f.title,
-          startTime: toIso(f.date, f.startTime),
-          endTime: toIso(f.date, f.endTime),
+          startTime: toIsoRange(f.date, f.startTime, f.endTime)?.start ?? "",
+          endTime: toIsoRange(f.date, f.startTime, f.endTime)?.end ?? "",
         };
       });
 
@@ -350,6 +355,7 @@ export function BulkAssignModal({
                     />
                   </div>
                 </div>
+                <OvernightHint startTime={startTime} endTime={endTime} />
               </div>
             </section>
 

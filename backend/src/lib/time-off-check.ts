@@ -42,6 +42,5 @@ export function reasonFromAvailabilityMessage(
   if (!message) return null;
   if (message.includes("unavailable")) return "unavailable";
   if (message.includes("only available")) return "outside_window";
-  if (message.includes("single day")) return "outside_window";
   return "unavailable";
 }

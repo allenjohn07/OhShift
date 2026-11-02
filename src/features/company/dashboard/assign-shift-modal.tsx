@@ -16,6 +16,8 @@ import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { shiftRange } from "@/lib/dates";
+import { OvernightHint } from "@/components/overnight-hint";
 
 interface Employee {
   id: string;
@@ -109,8 +111,15 @@ export function AssignShiftModal({
     setIsLoading(true);
     setError(null);
 
-    const start = new Date(`${date}T${startTime}`).toISOString();
-    const end = new Date(`${date}T${endTime}`).toISOString();
+    // An end at/before the start is a night shift ending the next day.
+    const range = shiftRange(date, startTime, endTime);
+    if (!range) {
+      setError("Pick a date and different start and end times");
+      setIsLoading(false);
+      return;
+    }
+    const start = range.start.toISOString();
+    const end = range.end.toISOString();
 
     try {
       await unwrap(
@@ -313,6 +322,7 @@ export function AssignShiftModal({
                 />
               </div>
             </div>
+            <OvernightHint startTime={startTime} endTime={endTime} />
           </div>
             </DialogBody>
             <DialogFooter>

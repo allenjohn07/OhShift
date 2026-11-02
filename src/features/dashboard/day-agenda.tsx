@@ -52,8 +52,13 @@ export function DayAgenda({
   day.setHours(0, 0, 0, 0);
   day.setDate(day.getDate() + offset);
 
+  const nextDay = new Date(day);
+  nextDay.setDate(day.getDate() + 1);
+
+  // Anyone working during this day — includes night shifts that started the
+  // evening before (a shift ending exactly at midnight doesn't spill over).
   const rows = (shifts ?? [])
-    .filter((s) => sameLocalDay(new Date(s.start_time), day))
+    .filter((s) => new Date(s.start_time) < nextDay && new Date(s.end_time) > day)
     .sort(
       (a, b) =>
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),

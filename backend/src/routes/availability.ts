@@ -101,8 +101,9 @@ export const availabilityRoutes = new Hono()
         return c.json({ error: "Times must be HH:mm (24h)" }, 400);
       }
 
-      if (isAvailable && toMinutes(endTime) <= toMinutes(startTime)) {
-        return c.json({ error: "End time must be after start time (same day)" }, 400);
+      // End before start = overnight window (e.g. 20:00–04:00 for night shifts).
+      if (isAvailable && toMinutes(endTime) === toMinutes(startTime)) {
+        return c.json({ error: "Start and end time can't be the same" }, 400);
       }
 
       normalized.push({

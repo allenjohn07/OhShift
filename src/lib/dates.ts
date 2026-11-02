@@ -69,3 +69,42 @@ export function weekdayLabels(style: "short" | "narrow" | "long" = "short") {
     fmt.format(new Date(2000, 0, 2 + ((weekStartDay() + i) % 7))),
   );
 }
+
+/** True when an end time at or before the start means the next morning. */
+export function endsNextDay(startTime: string, endTime: string) {
+  return Boolean(startTime && endTime) && endTime <= startTime;
+}
+
+/**
+ * Local start/end for a shift that starts on `date` ("YYYY-MM-DD", times "HH:mm").
+ * An end at or before the start is a night shift ending the next day
+ * (20:00–04:00, or 16:00–00:00). Null if incomplete or start === end.
+ */
+export function shiftRange(date: string, startTime: string, endTime: string) {
+  if (!date || !startTime || !endTime || startTime === endTime) return null;
+  const start = new Date(`${date}T${startTime}`);
+  const end = new Date(`${date}T${endTime}`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (end <= start) end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+/**
+ * Range for "today's" clock entries: from yesterday's midnight so a night shift
+ * clocked in last evening is still found after midnight. Shared by the
+ * dashboard clock card and the Hours page (same query key → one cache entry).
+ */
+export function clockEntriesRange(now = new Date()) {
+  const from = new Date(now);
+  from.setHours(0, 0, 0, 0);
+  from.setDate(from.getDate() - 1);
+  const to = new Date(now);
+  to.setHours(0, 0, 0, 0);
+  to.setDate(to.getDate() + 1);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+/** A shift running right now (e.g. a night shift that started yesterday). */
+export function isInProgress(shift: { start_time: string; end_time: string }, now = new Date()) {
+  return new Date(shift.start_time) <= now && now < new Date(shift.end_time);
+}

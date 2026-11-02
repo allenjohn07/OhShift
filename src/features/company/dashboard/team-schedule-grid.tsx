@@ -19,9 +19,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShiftProperties } from "@/features/dashboard/shift-properties";
-import { toLocalDateInput, toLocalTimeInput, formatTimeShort, startOfWeek as firstDayOfWeek, weekdayLabels } from "@/lib/dates";
+import { toLocalDateInput, toLocalTimeInput, formatTimeShort, startOfWeek as firstDayOfWeek, weekdayLabels, shiftRange } from "@/lib/dates";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { OvernightHint } from "@/components/overnight-hint";
 
 interface Shift {
   id: string;
@@ -45,6 +46,7 @@ export function TeamScheduleGrid({
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editTimes, setEditTimes] = useState<{ start: string; end: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const doneButtonRef = useRef<HTMLButtonElement>(null);
@@ -169,8 +171,15 @@ export function TeamScheduleGrid({
     const startTimeStr = formData.get("startTime") as string;
     const endTimeStr = formData.get("endTime") as string;
 
-    const startTime = new Date(`${date}T${startTimeStr}`).toISOString();
-    const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
+    // An end at/before the start is a night shift ending the next day.
+    const range = shiftRange(date, startTimeStr, endTimeStr);
+    if (!range) {
+      toast.error("Pick different start and end times");
+      setIsSaving(false);
+      return;
+    }
+    const startTime = range.start.toISOString();
+    const endTime = range.end.toISOString();
 
     try {
       await unwrap(
@@ -450,6 +459,7 @@ export function TeamScheduleGrid({
                           name="startTime"
                           required
                           defaultValue={toLocalTimeInput(new Date(selectedShift.start_time))}
+                          onChange={(start) => setEditTimes((t) => t && { ...t, start })}
                         />
                       </div>
                       <div className="space-y-2">
@@ -459,9 +469,13 @@ export function TeamScheduleGrid({
                           name="endTime"
                           required
                           defaultValue={toLocalTimeInput(new Date(selectedShift.end_time))}
+                          onChange={(end) => setEditTimes((t) => t && { ...t, end })}
                         />
                       </div>
                     </div>
+                    {editTimes && (
+                      <OvernightHint startTime={editTimes.start} endTime={editTimes.end} />
+                    )}
                   </DialogBody>
                   <DialogFooter>
                     <Button
@@ -501,7 +515,16 @@ export function TeamScheduleGrid({
                       {isDeleting ? "Deleting…" : "Delete"}
                     </Button>
                     <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                      <Button variant="outline" onClick={() => setIsEditing(true)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditTimes({
+                            start: toLocalTimeInput(new Date(selectedShift.start_time)),
+                            end: toLocalTimeInput(new Date(selectedShift.end_time)),
+                          });
+                          setIsEditing(true);
+                        }}
+                      >
                         <Edit2 className="h-4 w-4" />
                         Edit
                       </Button>

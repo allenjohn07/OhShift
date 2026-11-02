@@ -17,8 +17,9 @@ import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
-import { timeFormatOptions } from "@/lib/dates";
+import { timeFormatOptions, shiftRange } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
+import { OvernightHint } from "@/components/overnight-hint";
 
 type ShiftProposal = {
   employee_id: string;
@@ -69,14 +70,9 @@ function proposalToFields(proposal: ShiftProposal): EditFields {
 }
 
 function fieldsToIso(fields: EditFields): { start: string; end: string } | null {
-  if (!fields.date || !fields.startTime || !fields.endTime) return null;
-  const start = new Date(`${fields.date}T${fields.startTime}`);
-  let end = new Date(`${fields.date}T${fields.endTime}`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  if (end <= start) {
-    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-  }
-  return { start: start.toISOString(), end: end.toISOString() };
+  const range = shiftRange(fields.date, fields.startTime, fields.endTime);
+  if (!range) return null;
+  return { start: range.start.toISOString(), end: range.end.toISOString() };
 }
 
 function formatRange(startIso: string, endIso: string): string {
@@ -510,6 +506,10 @@ export function AskOhShiftModal({
                         />
                       </div>
                     </div>
+                    <OvernightHint
+                      startTime={fields.startTime}
+                      endTime={fields.endTime}
+                    />
                   </div>
 
                   <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">

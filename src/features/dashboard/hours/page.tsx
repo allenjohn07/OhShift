@@ -17,7 +17,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import { formatTime } from "@/lib/dates";
+import { formatTime, clockEntriesRange, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 
@@ -141,13 +141,8 @@ function HoursPageContent() {
     return d.toISOString();
   }, [periodStart, periodDays]);
 
-  const todayRange = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return { from: start.toISOString(), to: end.toISOString() };
-  }, []);
+  // From yesterday's midnight so last night's clock-in is still found.
+  const todayRange = useMemo(() => clockEntriesRange(), []);
 
   const headerRange = `${formatDateLabel(periodStart)} – ${formatDateLabel(periodEnd)}, ${periodEnd.getFullYear()}`;
 
@@ -194,7 +189,8 @@ function HoursPageContent() {
 
   const todayKey = toLocalDateKey(new Date());
   const todayShifts = shifts.filter(
-    (s) => toLocalDateKeyFromIso(s.start_time) === todayKey,
+    // Also a night shift still running from yesterday.
+    (s) => toLocalDateKeyFromIso(s.start_time) === todayKey || isInProgress(s),
   );
 
   const entryByShift = useMemo(() => {
