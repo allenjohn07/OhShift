@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="public/logo/ohshift-os-monogram.svg" alt="OhShift logo" width="88" height="88" />
-  <h1>OhShift</h1>
+  <img src="public/logo/ohshift-os-monogram.svg" alt="OhShifts logo" width="48" height="48" />
+  <h1>OhShifts</h1>
   <p><strong>Plan the week. Keep your team in sync.</strong></p>
   <p>Employee scheduling, availability, time tracking, and team communication in one place.</p>
 
