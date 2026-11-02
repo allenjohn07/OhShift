@@ -37,3 +37,7 @@ namespace_id = "1001"
 #
 # APP_URL is the canonical app/CORS origin. FRONTEND_URL is a legacy fallback.
 # Local dev reads AUTH_SECRET / FRONTEND_URL from backend/.dev.vars.
+
+# Drain the durable schedule-notification outbox.
+[triggers]
+crons = ["* * * * *"]

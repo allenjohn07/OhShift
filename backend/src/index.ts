@@ -1,3 +1,4 @@
+import { deliverScheduleEmails } from "./lib/schedule-emails";
 import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -55,7 +56,7 @@ function allowOrigin(origin: string): string | null {
   return null;
 }
 
-const app = new Hono()
+export const app = new Hono()
   .use(bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
   .use(
     cors({
@@ -125,4 +126,6 @@ const app = new Hono()
 
 export type AppType = typeof app;
 
-export default app;
+export default Object.assign(app, {
+  async scheduled() { await deliverScheduleEmails(); },
+});
