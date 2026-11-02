@@ -85,6 +85,21 @@ export const users = sqliteTable(
   (t) => [index("users_company_id_idx").on(t.companyId)],
 );
 
+/** Durable outbox: publication and notification creation share one D1 batch. */
+export const emailJobs = sqliteTable("email_jobs", {
+  id: text("id").primaryKey(),
+  companyId: text("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  employeeId: text("employee_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  weekStart: text("week_start").notNull(),
+  status: text("status", { enum: ["pending", "sending", "sent", "failed", "cancelled"] }).notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: timestamp("available_at").notNull(),
+  leaseToken: text("lease_token"),
+  leaseUntil: timestamp("lease_until"),
+  sentAt: timestamp("sent_at"),
+  createdAt: createdAt(),
+}, (t) => [index("email_jobs_delivery_idx").on(t.status, t.availableAt)]);
+
 export const shifts = sqliteTable(
   "shifts",
   {

@@ -1,3 +1,4 @@
+import { deliverScheduleEmails } from "./lib/schedule-emails";
 import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -53,7 +54,7 @@ function allowOrigin(origin: string): string | null {
   return null;
 }
 
-const app = new Hono()
+export const app = new Hono()
   .use(
     cors({
       origin: allowOrigin,
@@ -116,4 +117,6 @@ const app = new Hono()
 
 export type AppType = typeof app;
 
-export default app;
+export default Object.assign(app, {
+  async scheduled() { await deliverScheduleEmails(); },
+});

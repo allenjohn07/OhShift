@@ -35,3 +35,7 @@ namespace_id = "1001"
 #
 # FRONTEND_URL must be the Pages origin, e.g. https://ohshift.pages.dev
 # Local dev reads AUTH_SECRET / FRONTEND_URL from backend/.dev.vars.
+
+# Drain the durable schedule-notification outbox.
+[triggers]
+crons = ["* * * * *"]

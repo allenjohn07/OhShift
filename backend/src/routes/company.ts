@@ -1,10 +1,9 @@
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { companies, shiftLogs, shifts } from "../db/schema";
 import { jsonBody, requireManager } from "../lib/auth-guard";
 import { serializeCompany } from "../lib/serialize";
-import { logShiftAction } from "../lib/shift-log";
 import { weekRangeFromStart } from "../lib/week-range";
 
 type PublishedShift = {
@@ -101,29 +100,21 @@ export const companyRoutes = new Hono()
       }
     }
 
-    const published = await db
-      .update(shifts)
-      .set({ status: "published", publishedAt: new Date() })
-      .where(
-        and(
-          eq(shifts.companyId, user.companyId),
-          eq(shifts.status, "draft"),
-          gte(shifts.startTime, range.start),
-          lt(shifts.startTime, range.end),
-        ),
-      )
-      .returning({ id: shifts.id });
+    const eventId = crypto.randomUUID();
+    const now = new Date();
+    const draftWhere = sql`s.company_id = ${user.companyId} AND s.status = 'draft' AND s.start_time >= ${range.start.getTime()} AND s.start_time < ${range.end.getTime()}`;
+    // The outbox/log select only drafts; a competing publish sees zero after this
+    // batch commits, so it cannot enqueue duplicate notifications.
+    const [, , published] = await db.batch([
+      db.run(sql`INSERT INTO email_jobs (id, company_id, employee_id, week_start, status, attempts, available_at, created_at)
+        SELECT ${eventId} || ':' || s.employee_id, ${user.companyId}, s.employee_id, ${weekStart}, 'pending', 0, ${now.getTime()}, ${now.getTime()}
+        FROM shifts s WHERE ${draftWhere} GROUP BY s.employee_id`),
+      db.run(sql`INSERT INTO shift_logs (id, company_id, actor_id, action, detail, week_start, created_at)
+        SELECT ${eventId}, ${user.companyId}, ${user.id}, 'published', 'Published ' || COUNT(*) || ' shift(s) for the week of ' || ${weekStart}, ${weekStart}, ${now.getTime()}
+        FROM shifts s WHERE ${draftWhere} HAVING COUNT(*) > 0`),
+      db.update(shifts).set({ status: "published", publishedAt: now }).where(and(eq(shifts.companyId, user.companyId), eq(shifts.status, "draft"), gte(shifts.startTime, range.start), lt(shifts.startTime, range.end))).returning({ id: shifts.id }),
+    ]);
     const count = published.length;
-
-    if (count > 0) {
-      await logShiftAction({
-        companyId: user.companyId,
-        actorId: user.id,
-        action: "published",
-        detail: `Published ${count} shift(s) for the week of ${weekStart}`,
-        weekStart,
-      });
-    }
 
     return c.json({
       message: `Published ${count} shift(s) for the week of ${weekStart}`,
