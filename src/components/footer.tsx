@@ -97,11 +97,29 @@ export function Footer({ className }: { className?: string }) {
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-6 border-t border-border py-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border py-6">
           <p className="text-[13px] text-muted-foreground">
             © {new Date().getFullYear()} OhShifts
           </p>
-          <p className="text-[13px] text-muted-foreground">Now in public beta</p>
+          <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
+            Built by
+            <a
+              href="https://allenjohn.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}allen-john.png`}
+                alt=""
+                width={20}
+                height={20}
+                // Black line art on transparent — invert so it shows in dark mode.
+                className="h-5 w-5 dark:invert"
+              />
+              Allen John
+            </a>
+          </p>
         </div>
       </div>
     </footer>
