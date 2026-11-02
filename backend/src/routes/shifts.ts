@@ -1,4 +1,5 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { queryRange } from "../lib/query-range";
+import { and, asc, eq, gt, inArray, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { shifts, users } from "../db/schema";
@@ -48,13 +49,24 @@ type UpdateShiftBody = {
 };
 
 export const shiftsRoutes = new Hono()
-  .get("/mine", async (c) => {
+  .get("/mine", queryParams<"from" | "to">(), async (c) => {
     const user = await requireUser(c);
+    const range = queryRange(c);
     const rows = await db.query.shifts.findMany({
-      where: and(eq(shifts.employeeId, user.id), eq(shifts.status, "published")),
+      where: and(eq(shifts.employeeId, user.id), eq(shifts.status, "published"), lt(shifts.startTime, range.end), gt(shifts.endTime, range.start)),
       orderBy: asc(shifts.startTime),
     });
     return c.json({ shifts: rows.map((s) => serializeShift(s)) });
+  })
+  .get("/company", queryParams<"from" | "to">(), async (c) => {
+    const user = await requireManager(c);
+    const range = queryRange(c);
+    const rows = await db.query.shifts.findMany({
+      where: and(eq(shifts.companyId, user.companyId), lt(shifts.startTime, range.end), gt(shifts.endTime, range.start)),
+      with: { employee: { columns: { fullName: true } } },
+      orderBy: asc(shifts.startTime),
+    });
+    return c.json({ shifts: rows.map(s => serializeShift({ ...s, users: { fullName: s.employee.fullName } })) });
   })
   .get("/eligible", queryParams<"start" | "end" | "timezone" | "designation">(), async (c) => {
     const user = await requireManager(c);

@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { queries } from "@/lib/queries";
 import { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
@@ -221,8 +223,10 @@ export function TeamScheduleGrid({
 
   const weekStartIso = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
 
+  const rangeEnd = new Date(startOfWeek); rangeEnd.setDate(rangeEnd.getDate() + 7);
+  const weekQuery = useQuery(queries.companyShifts(startOfWeek.toISOString(), rangeEnd.toISOString()));
   const weekShifts =
-    shifts?.filter((s) => {
+    (weekQuery.data?.shifts ?? shifts)?.filter((s) => {
       const shiftDate = new Date(s.start_time);
       const weekEndExclusive = new Date(startOfWeek);
       weekEndExclusive.setDate(startOfWeek.getDate() + 7);

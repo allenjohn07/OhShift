@@ -89,7 +89,7 @@ test("draft creation, conflict rejection, publishing and employee visibility", a
   expect(created.status).toBe(200);
   const { shift } = await created.json();
   expect(shift.status).toBe("draft");
-  expect((await (await request("/shifts/mine")).json()).shifts).toHaveLength(0);
+  expect((await (await request("/shifts/mine?from=2035-01-08T00:00:00Z&to=2035-01-15T00:00:00Z")).json()).shifts).toHaveLength(0);
   expect((await request("/shifts", "manager", "POST", shiftBody())).status).toBe(409);
   expect((await request("/shifts", "manager", "POST", shiftBody("2035-01-08T11:00:00Z", "2035-01-08T13:00:00Z"))).status).toBe(409);
   expect((await request("/shifts", "manager", "POST", shiftBody("2035-01-08T12:00:00Z", "2035-01-08T13:00:00Z"))).status).toBe(200);
@@ -98,7 +98,7 @@ test("draft creation, conflict rejection, publishing and employee visibility", a
   expect((await request("/company/schedule/publish", "employee", "POST", publish)).status).toBe(403);
   expect((await (await request("/company/schedule/publish", "other", "POST", publish)).json()).publishedCount).toBe(0);
   expect((await (await request("/company/schedule/publish", "manager", "POST", publish)).json()).publishedCount).toBe(2);
-  expect((await (await request("/shifts/mine")).json()).shifts).toHaveLength(2);
+  expect((await (await request("/shifts/mine?from=2035-01-08T00:00:00Z&to=2035-01-15T00:00:00Z")).json()).shifts).toHaveLength(2);
   expect((await (await request("/company/schedule/publish", "manager", "POST", publish)).json()).publishedCount).toBe(0);
   expect((await request(`/shifts?id=${shift.id}`, "other", "DELETE")).status).toBe(404);
 });
