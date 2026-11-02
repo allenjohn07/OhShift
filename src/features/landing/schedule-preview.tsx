@@ -101,7 +101,7 @@ export function SchedulePreview() {
 
         {/* Overview page */}
         <div className="min-w-0 flex-1 space-y-4 px-4 py-5 sm:px-7 sm:py-6">
-          <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[11px] text-muted-foreground">
                 Brew &amp; Co. · Monday, October 26
@@ -110,7 +110,7 @@ export function SchedulePreview() {
                 Good morning, Alex
               </p>
             </div>
-            <div className="hidden items-center gap-1.5 sm:flex">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex h-6 items-center gap-1 rounded-md border border-input px-2 text-[11px] font-medium">
                 <Sparkles className="h-3 w-3 text-brand" />
                 Ask OhShifts
