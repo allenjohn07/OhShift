@@ -9,43 +9,34 @@ import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  usePendingTimesheetsSnapshot,
-  useRefreshPendingTimesheets,
-} from "@/hooks/use-pending-timesheets";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+  usePendingTimesheets,
+  type CompanyTimeEntry,
+} from "@/hooks/use-live-badges";
 import type { AppRole } from "@/lib/nav";
-import type {
-  PendingTimeEntry,
-  TimeEntryStatus,
-} from "@/lib/pending-timesheets-store";
 
 import { cn } from "@/lib/utils";
+import { DateTimePicker } from "@/components/ui/time-picker";
+import { formatTime, timeFormatOptions } from "@/lib/dates";
+import { rpc, unwrap } from "@/lib/rpc";
 
-const STATUS_STYLES: Record<TimeEntryStatus, string> = {
+/** Stable fallback so effects keyed on `pending` don't rerun every render. */
+const NO_ENTRIES: CompanyTimeEntry[] = [];
+
+const STATUS_STYLES: Record<CompanyTimeEntry["status"], string> = {
   open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   denied: "bg-destructive/10 text-destructive",
 };
 
-function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(iso));
-}
-
 function formatDateTime(iso: string) {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
+    ...timeFormatOptions(),
   }).format(new Date(iso));
 }
 
@@ -83,11 +74,13 @@ type EditState = {
 };
 
 function TimesheetsContent() {
-  const api = useApi();
   const { user } = useAuth();
   const myId = user?.profile.id ?? user?.id;
-  const { pending, recent, loaded } = usePendingTimesheetsSnapshot();
-  const refresh = useRefreshPendingTimesheets();
+  const queryClient = useQueryClient();
+  const { data } = usePendingTimesheets();
+  const loaded = data !== undefined;
+  const pending = data?.pending ?? NO_ENTRIES;
+  const recent = data?.recent ?? NO_ENTRIES;
   const [actingId, setActingId] = useState<string | null>(null);
   const [edits, setEdits] = useState<Record<string, EditState>>({});
 
@@ -108,7 +101,7 @@ function TimesheetsContent() {
   }, [pending]);
 
   const review = async (
-    entry: PendingTimeEntry,
+    entry: CompanyTimeEntry,
     decision: "approved" | "denied",
   ) => {
     const edit = edits[entry.id];
@@ -127,21 +120,22 @@ function TimesheetsContent() {
 
     setActingId(entry.id);
     try {
-      const res = await api(`/time-entries/${entry.id}/review`, {
-        method: "POST",
-        body: JSON.stringify({
-          decision,
-          clock_in_at: clockInAt,
-          clock_out_at: clockOutAt,
-          note: edit.note.trim() || null,
+      await unwrap(
+        rpc["time-entries"][":id"].review.$post({
+          param: { id: entry.id },
+          json: {
+            decision,
+            clock_in_at: clockInAt,
+            clock_out_at: clockOutAt,
+            note: edit.note.trim() || null,
+          },
         }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to update timesheet");
+        "Failed to update timesheet",
+      );
       toast.success(
         decision === "approved" ? "Timesheet approved" : "Timesheet denied",
       );
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["time-entries"] });
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to update timesheet",
@@ -236,38 +230,30 @@ function TimesheetsContent() {
                           <label className="text-[13px] font-medium text-muted-foreground">
                             Clock in
                           </label>
-                          <Input
-                            type="datetime-local"
+                          <DateTimePicker
                             value={edit.clockIn}
-                            onChange={(e) =>
+                            onChange={(clockIn) =>
                               setEdits((prev) => ({
                                 ...prev,
-                                [entry.id]: {
-                                  ...edit,
-                                  clockIn: e.target.value,
-                                },
+                                [entry.id]: { ...edit, clockIn },
                               }))
                             }
-                            className="h-9"
+                            aria-label="Clock in"
                           />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[13px] font-medium text-muted-foreground">
                             Clock out
                           </label>
-                          <Input
-                            type="datetime-local"
+                          <DateTimePicker
                             value={edit.clockOut}
-                            onChange={(e) =>
+                            onChange={(clockOut) =>
                               setEdits((prev) => ({
                                 ...prev,
-                                [entry.id]: {
-                                  ...edit,
-                                  clockOut: e.target.value,
-                                },
+                                [entry.id]: { ...edit, clockOut },
                               }))
                             }
-                            className="h-9"
+                            aria-label="Clock out"
                           />
                         </div>
                       </div>

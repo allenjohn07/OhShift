@@ -11,12 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import type { CompanySettings } from "./company-settings";
 import { ScrollFade } from "@/components/scroll-fade";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { timeFormatOptions, shiftRange } from "@/lib/dates";
+import { rpc, unwrap } from "@/lib/rpc";
+import { OvernightHint } from "@/components/overnight-hint";
 
 type ShiftProposal = {
   employee_id: string;
@@ -67,14 +70,9 @@ function proposalToFields(proposal: ShiftProposal): EditFields {
 }
 
 function fieldsToIso(fields: EditFields): { start: string; end: string } | null {
-  if (!fields.date || !fields.startTime || !fields.endTime) return null;
-  const start = new Date(`${fields.date}T${fields.startTime}`);
-  let end = new Date(`${fields.date}T${fields.endTime}`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  if (end <= start) {
-    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-  }
-  return { start: start.toISOString(), end: end.toISOString() };
+  const range = shiftRange(fields.date, fields.startTime, fields.endTime);
+  if (!range) return null;
+  return { start: range.start.toISOString(), end: range.end.toISOString() };
 }
 
 function formatRange(startIso: string, endIso: string): string {
@@ -85,10 +83,7 @@ function formatRange(startIso: string, endIso: string): string {
     month: "short",
     day: "numeric",
   });
-  const timeFmt = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const timeFmt = new Intl.DateTimeFormat("en-US", timeFormatOptions());
   return `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
 }
 
@@ -99,7 +94,6 @@ export function AskOhShiftModal({
   onCreated?: () => void | Promise<void>;
   company?: CompanySettings | null;
 }) {
-  const api = useApi();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [proposal, setProposal] = useState<ShiftProposal | null>(null);
@@ -155,39 +149,21 @@ export function AskOhShiftModal({
     setIsEditing(false);
 
     try {
-      const res = await api("/ai/ask", {
-        method: "POST",
-        body: JSON.stringify({ prompt: trimmed, timezone }),
-      });
-      const data = await parseApiJson<{
-        error?: string;
-        kind?: "create" | "query";
-        proposal?: ShiftProposal;
-        answer?: string;
-        window_label?: string;
-        person?: string | null;
-        shifts?: QueryShift[];
-      }>(res);
-
-      if (!res.ok) {
-        throw new Error(data.error || "Could not process that request");
-      }
+      const data = await unwrap(
+        rpc.ai.ask.$post({ json: { prompt: trimmed, timezone } }),
+        "Could not process that request",
+      );
 
       if (data.kind === "query") {
         setQueryAnswer(data.answer || "No answer returned.");
-        setQueryShifts(data.shifts ?? []);
+        setQueryShifts(data.shifts);
         setQueryWindow(data.window_label ?? null);
         setQueryPerson(data.person ?? null);
         return;
       }
 
-      if (data.kind === "create" && data.proposal) {
-        setProposal(data.proposal);
-        setFields(proposalToFields(data.proposal));
-        return;
-      }
-
-      throw new Error(data.error || "Could not process that request");
+      setProposal(data.proposal);
+      setFields(proposalToFields(data.proposal));
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Could not process that request",
@@ -214,21 +190,18 @@ export function AskOhShiftModal({
     setError(null);
 
     try {
-      const res = await api("/shifts", {
-        method: "POST",
-        body: JSON.stringify({
-          employeeId: proposal.employee_id,
-          title: fields.title.trim(),
-          startTime: times.start,
-          endTime: times.end,
-          timezone,
+      await unwrap(
+        rpc.shifts.$post({
+          json: {
+            employeeId: proposal.employee_id,
+            title: fields.title.trim(),
+            startTime: times.start,
+            endTime: times.end,
+            timezone,
+          },
         }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create shift");
-      }
+        "Failed to create shift",
+      );
 
       toast.success("Shift saved as draft — publish the week when ready");
       setIsOpen(false);
@@ -253,7 +226,7 @@ export function AskOhShiftModal({
         className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent dark:bg-transparent [&_svg]:text-brand"
       >
         <Sparkles className="w-4 h-4" />
-        Ask OhShift
+        Ask OhShifts
       </button>
 
       <Dialog
@@ -266,7 +239,7 @@ export function AskOhShiftModal({
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand" />
-                  Ask OhShift
+                  Ask OhShifts
                 </DialogTitle>
                 <DialogDescription>
                   {isEditing
@@ -454,15 +427,11 @@ export function AskOhShiftModal({
                     >
                       Date
                     </label>
-                    <input
+                    <DatePicker
                       id="ask-date"
-                      type="date"
                       value={fields.date}
-                      onChange={(e) =>
-                        setFields((f) => ({ ...f, date: e.target.value }))
-                      }
+                      onChange={(date) => setFields((f) => ({ ...f, date }))}
                       required
-                      className={cn(fieldClass, "h-9")}
                     />
                   </div>
 
@@ -511,18 +480,13 @@ export function AskOhShiftModal({
                         >
                           Start
                         </label>
-                        <input
+                        <TimePicker
                           id="ask-start"
-                          type="time"
                           value={fields.startTime}
-                          onChange={(e) =>
-                            setFields((f) => ({
-                              ...f,
-                              startTime: e.target.value,
-                            }))
+                          onChange={(startTime) =>
+                            setFields((f) => ({ ...f, startTime }))
                           }
                           required
-                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                       <div className="space-y-2">
@@ -532,21 +496,20 @@ export function AskOhShiftModal({
                         >
                           End
                         </label>
-                        <input
+                        <TimePicker
                           id="ask-end"
-                          type="time"
                           value={fields.endTime}
-                          onChange={(e) =>
-                            setFields((f) => ({
-                              ...f,
-                              endTime: e.target.value,
-                            }))
+                          onChange={(endTime) =>
+                            setFields((f) => ({ ...f, endTime }))
                           }
                           required
-                          className={cn(fieldClass, "h-9")}
                         />
                       </div>
                     </div>
+                    <OvernightHint
+                      startTime={fields.startTime}
+                      endTime={fields.endTime}
+                    />
                   </div>
 
                   <DialogFooter className="sticky -bottom-5 -mx-6 -mb-5 mt-5 bg-popover">

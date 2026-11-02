@@ -8,14 +8,9 @@ import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import {
-  usePendingTimeOffSnapshot,
-  useRefreshPendingTimeOff,
-} from "@/hooks/use-pending-time-off";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePendingTimeOff } from "@/hooks/use-live-badges";
 import type { AppRole } from "@/lib/nav";
-import type { PendingTimeOffType } from "@/lib/pending-time-off-store";
 
 import {
   TIME_OFF_STATUS_STYLES,
@@ -23,8 +18,10 @@ import {
   TIME_OFF_TYPE_STYLES,
   dayCount,
   formatDateRange,
+  type TimeOffType,
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
+import { rpc, unwrap } from "@/lib/rpc";
 
 function timeAgo(iso?: string | null) {
   if (!iso) return null;
@@ -36,7 +33,7 @@ function timeAgo(iso?: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function TypeTag({ type }: { type: PendingTimeOffType }) {
+function TypeTag({ type }: { type: TimeOffType }) {
   return (
     <span
       className={cn(
@@ -50,24 +47,24 @@ function TypeTag({ type }: { type: PendingTimeOffType }) {
 }
 
 function RequestsContent() {
-  const api = useApi();
   const { user } = useAuth();
   const myId = user?.profile.id ?? user?.id;
-  const { pending, recent, loaded } = usePendingTimeOffSnapshot();
-  const refresh = useRefreshPendingTimeOff();
+  const queryClient = useQueryClient();
+  const { data } = usePendingTimeOff();
+  const pending = data?.pending ?? [];
+  const recent = data?.recent ?? [];
+  const loaded = data !== undefined;
   const [actingId, setActingId] = useState<string | null>(null);
 
   const review = async (id: string, decision: "approved" | "denied") => {
     setActingId(id);
     try {
-      const res = await api(`/time-off/${id}/review`, {
-        method: "POST",
-        body: JSON.stringify({ decision }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to update request");
+      await unwrap(
+        rpc["time-off"][":id"].review.$post({ param: { id }, json: { decision } }),
+        "Failed to update request",
+      );
       toast.success(decision === "approved" ? "Request approved" : "Request denied");
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["time-off"] });
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to update request",

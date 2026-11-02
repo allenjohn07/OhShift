@@ -2,17 +2,35 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { companies, users } from "../db/schema";
-import { readJson, requireUser } from "../lib/auth-guard";
+import { jsonBody, requireUser } from "../lib/auth-guard";
 import { generateTempPassword, hashPassword, verifyPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
 import { createAccessToken, getAuthFromBearer, getDbUser } from "../lib/session";
 
+type LoginBody = {
+  email: string;
+  password: string;
+};
+
+type RegisterCompanyBody = {
+  companyName: string;
+  name: string;
+  email: string;
+  password: string;
+};
+
+type ResetPasswordBody = { email: string };
+
+type UpdateAvatarBody = { avatarUrl: string };
+
+type ChangePasswordBody = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 export const authRoutes = new Hono()
-  .post("/login", async (c) => {
-    const { email, password } = await readJson<{
-      email: string;
-      password: string;
-    }>(c);
+  .post("/login", jsonBody<LoginBody>(), async (c) => {
+    const { email, password } = c.req.valid("json");
 
     if (!email || !password) {
       return c.json({ error: "Email and password are required" }, 400);
@@ -49,13 +67,8 @@ export const authRoutes = new Hono()
       },
     });
   })
-  .post("/register-company", async (c) => {
-    const { companyName, name, email, password } = await readJson<{
-      companyName: string;
-      name: string;
-      email: string;
-      password: string;
-    }>(c);
+  .post("/register-company", jsonBody<RegisterCompanyBody>(), async (c) => {
+    const { companyName, name, email, password } = c.req.valid("json");
 
     if (!companyName || !name || !email || !password) {
       return c.json({ error: "All fields are required" }, 400);
@@ -98,8 +111,8 @@ export const authRoutes = new Hono()
       201,
     );
   })
-  .post("/reset-password", async (c) => {
-    const { email } = await readJson<{ email: string }>(c);
+  .post("/reset-password", jsonBody<ResetPasswordBody>(), async (c) => {
+    const { email } = c.req.valid("json");
 
     if (!email) {
       return c.json({ error: "Email is required" }, 400);
@@ -127,9 +140,9 @@ export const authRoutes = new Hono()
       tempPassword,
     });
   })
-  .post("/update-avatar", async (c) => {
+  .post("/update-avatar", jsonBody<UpdateAvatarBody>(), async (c) => {
     const user = await requireUser(c);
-    const { avatarUrl } = await readJson<{ avatarUrl: string }>(c);
+    const { avatarUrl } = c.req.valid("json");
 
     if (!avatarUrl) {
       return c.json({ error: "Avatar URL is required" }, 400);
@@ -139,12 +152,9 @@ export const authRoutes = new Hono()
 
     return c.json({ message: "Profile picture updated successfully" });
   })
-  .post("/change-password", async (c) => {
+  .post("/change-password", jsonBody<ChangePasswordBody>(), async (c) => {
     const user = await requireUser(c);
-    const { currentPassword, newPassword } = await readJson<{
-      currentPassword: string;
-      newPassword: string;
-    }>(c);
+    const { currentPassword, newPassword } = c.req.valid("json");
 
     if (!currentPassword || !newPassword) {
       return c.json({ error: "Current and new passwords are required" }, 400);

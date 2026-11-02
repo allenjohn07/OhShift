@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { shifts, timeEntries, type TimeEntryStatus } from "../db/schema";
-import { readJson, requireManager, requireUser } from "../lib/auth-guard";
+import { jsonBody, requireManager, requireUser, queryParams } from "../lib/auth-guard";
 
 const CLOCK_IN_EARLY_MS = 30 * 60 * 1000;
 
@@ -88,6 +88,15 @@ async function loadEntry(id: string) {
   return serializeTimeEntry(entry!);
 }
 
+type ClockBody = { shift_id: string };
+
+type ReviewEntryBody = {
+  decision: string;
+  clock_in_at: string;
+  clock_out_at: string;
+  note: string | null;
+};
+
 export const timeEntriesRoutes = new Hono()
   .get("/active", async (c) => {
     const user = await requireUser(c);
@@ -102,7 +111,7 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: entry ? serializeTimeEntry(entry) : null });
   })
-  .get("/mine", async (c) => {
+  .get("/mine", queryParams<"from" | "to">(), async (c) => {
     const user = await requireUser(c);
     const fromRaw = c.req.query("from");
     const toRaw = c.req.query("to");
@@ -156,13 +165,13 @@ export const timeEntriesRoutes = new Hono()
       recent: recent.map(serializeTimeEntry),
     });
   })
-  .post("/clock-in", async (c) => {
+  .post("/clock-in", jsonBody<ClockBody>(), async (c) => {
     const user = await requireUser(c);
     if (!user.companyId) {
       return c.json({ error: "No company associated" }, 400);
     }
 
-    const payload = await readJson<{ shift_id: string }>(c);
+    const payload = c.req.valid("json");
     const shiftId = payload.shift_id?.trim();
     if (!shiftId) {
       return c.json({ error: "shift_id is required" }, 400);
@@ -239,10 +248,10 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: await loadEntry(created!.id) });
   })
-  .post("/clock-out", async (c) => {
+  .post("/clock-out", jsonBody<ClockBody>(), async (c) => {
     const user = await requireUser(c);
 
-    const payload = await readJson<{ shift_id: string }>(c);
+    const payload = c.req.valid("json");
     const shiftId = payload.shift_id?.trim();
     if (!shiftId) {
       return c.json({ error: "shift_id is required" }, 400);
@@ -275,14 +284,9 @@ export const timeEntriesRoutes = new Hono()
 
     return c.json({ entry: await loadEntry(entry.id) });
   })
-  .post("/:id/review", async (c) => {
+  .post("/:id/review", jsonBody<ReviewEntryBody>(), async (c) => {
     const user = await requireManager(c);
-    const payload = await readJson<{
-      decision: string;
-      clock_in_at: string;
-      clock_out_at: string;
-      note: string | null;
-    }>(c);
+    const payload = c.req.valid("json");
 
     const decision = payload.decision;
     if (decision !== "approved" && decision !== "denied") {

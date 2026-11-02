@@ -1,39 +1,16 @@
-import { useCallback, useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
 import { useAuth } from "@/components/auth-provider";
-import { useApi } from "@/hooks/use-api";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import { ShiftSummary } from "./shift-summary";
 import { EmployeeScheduleGrid } from "./employee-schedule-grid";
 import { DayAgenda } from "./day-agenda";
 import { greeting, todayLabel } from "@/lib/greeting";
-
-type DashboardData = {
-  profile: {
-    full_name: string;
-    role: string;
-    company_id: string;
-    companies?: { name: string } | null;
-  };
-  shifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-  }>;
-  companyShifts: Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    end_time: string;
-    employee_id: string;
-    users?: { full_name: string };
-  }>;
-};
+import { queries } from "@/lib/queries";
+import { ApiRequestError } from "@/lib/rpc";
 
 function PageSpinner() {
   return (
@@ -45,30 +22,18 @@ function PageSpinner() {
 
 function EmployeeDashboard() {
   const { user } = useAuth();
-  const api = useApi();
-  const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const navigate = useNavigate();
+  const { data, error } = useQuery(queries.employeeDashboard());
+  const unauthorized = error instanceof ApiRequestError && error.status === 401;
+  const role = data?.profile.role;
+  const isManager = role === "owner" || role === "manager";
 
-  const load = useCallback(async () => {
-    const res = await api("/dashboard/employee");
-    const json = await parseApiJson<DashboardData & { error?: string }>(res);
+  useEffect(() => {
+    if (unauthorized) navigate({ to: "/login", replace: true });
+    else if (isManager) navigate({ to: "/company/dashboard", replace: true });
+  }, [unauthorized, isManager, navigate]);
 
-    if (res.status === 401) {
-      router.replace("/login");
-      return;
-    }
-    if (!res.ok || !json.profile) return;
-
-    if (json.profile.role === "owner" || json.profile.role === "manager") {
-      router.replace("/company/dashboard");
-      return;
-    }
-    setData(json);
-  }, [api, router]);
-
-  useVisiblePoll(true, load);
-
-  if (!data || !user) {
+  if (!data || !user || isManager) {
     return <PageSpinner />;
   }
 

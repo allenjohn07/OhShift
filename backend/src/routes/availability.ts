@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { availabilityWindows } from "../db/schema";
-import { readJson, requireUser } from "../lib/auth-guard";
+import { jsonBody, requireUser } from "../lib/auth-guard";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6] as const; // Mon–Sun
 
@@ -40,6 +40,15 @@ function defaultWeek(morningStart?: string, morningEnd?: string) {
   }));
 }
 
+type AvailabilityBody = {
+  days: Array<{
+    day_of_week: number;
+    is_available: boolean;
+    start_time: string;
+    end_time: string;
+  }>;
+};
+
 export const availabilityRoutes = new Hono()
   .get("/", async (c) => {
     const user = await requireUser(c);
@@ -65,17 +74,10 @@ export const availabilityRoutes = new Hono()
       }),
     });
   })
-  .put("/", async (c) => {
+  .put("/", jsonBody<AvailabilityBody>(), async (c) => {
     const user = await requireUser(c);
 
-    const payload = await readJson<{
-      days: Array<{
-        day_of_week: number;
-        is_available: boolean;
-        start_time: string;
-        end_time: string;
-      }>;
-    }>(c);
+    const payload = c.req.valid("json");
 
     if (!payload.days || !Array.isArray(payload.days) || payload.days.length !== 7) {
       return c.json({ error: "Expected days array with 7 entries (Mon–Sun)" }, 400);
@@ -99,8 +101,9 @@ export const availabilityRoutes = new Hono()
         return c.json({ error: "Times must be HH:mm (24h)" }, 400);
       }
 
-      if (isAvailable && toMinutes(endTime) <= toMinutes(startTime)) {
-        return c.json({ error: "End time must be after start time (same day)" }, 400);
+      // End before start = overnight window (e.g. 20:00–04:00 for night shifts).
+      if (isAvailable && toMinutes(endTime) === toMinutes(startTime)) {
+        return c.json({ error: "Start and end time can't be the same" }, 400);
       }
 
       normalized.push({

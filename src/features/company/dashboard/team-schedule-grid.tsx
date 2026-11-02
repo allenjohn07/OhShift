@@ -2,8 +2,7 @@ import { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import { AskOhShiftModal } from "./ask-ohshift-modal";
 import type { CompanySettings } from "./company-settings";
 import { getEmployeeColor } from "@/lib/tag-colors";
@@ -20,6 +19,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShiftProperties } from "@/features/dashboard/shift-properties";
+import { toLocalDateInput, toLocalTimeInput, formatTimeShort, startOfWeek as firstDayOfWeek, weekdayLabels, shiftRange } from "@/lib/dates";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { OvernightHint } from "@/components/overnight-hint";
 
 interface Shift {
   id: string;
@@ -39,11 +42,11 @@ export function TeamScheduleGrid({
   company?: CompanySettings | null;
   onScheduleChanged?: () => void | Promise<void>;
 }) {
-  const api = useApi();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editTimes, setEditTimes] = useState<{ start: string; end: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const doneButtonRef = useRef<HTMLButtonElement>(null);
@@ -142,17 +145,16 @@ export function TeamScheduleGrid({
     if (!selectedShift) return;
     setIsDeleting(true);
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const res = await api(`/shifts?id=${selectedShift.id}&timezone=${encodeURIComponent(timezone)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete shift');
+      await unwrap(
+        rpc.shifts.$delete({ query: { id: selectedShift.id } }),
+        "Could not delete shift",
+      );
       
       toast.success("Shift deleted successfully");
       setSelectedShift(null);
       await onScheduleChanged?.();
-    } catch {
-      toast.error("Could not delete shift");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Could not delete shift");
     } finally {
       setIsDeleting(false);
     }
@@ -169,25 +171,29 @@ export function TeamScheduleGrid({
     const startTimeStr = formData.get("startTime") as string;
     const endTimeStr = formData.get("endTime") as string;
 
-    const startTime = new Date(`${date}T${startTimeStr}`).toISOString();
-    const endTime = new Date(`${date}T${endTimeStr}`).toISOString();
+    // An end at/before the start is a night shift ending the next day.
+    const range = shiftRange(date, startTimeStr, endTimeStr);
+    if (!range) {
+      toast.error("Pick different start and end times");
+      setIsSaving(false);
+      return;
+    }
+    const startTime = range.start.toISOString();
+    const endTime = range.end.toISOString();
 
     try {
-      const res = await api("/shifts", {
-        method: "PUT",
-        body: JSON.stringify({
-          shiftId: selectedShift.id,
-          title,
-          startTime,
-          endTime,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      await unwrap(
+        rpc.shifts.$put({
+          json: {
+            shiftId: selectedShift.id,
+            title,
+            startTime,
+            endTime,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to edit shift");
-      }
+        "Failed to edit shift",
+      );
 
       toast.success("Shift updated successfully");
       setIsEditing(false);
@@ -201,14 +207,6 @@ export function TeamScheduleGrid({
   };
 
   // Formatting utilities
-  const formatTime = (dateStr: string) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(new Date(dateStr));
-  };
-
   const formatDateLabel = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -216,19 +214,9 @@ export function TeamScheduleGrid({
     }).format(date);
   };
 
-  // Determine starting date
-  const referenceDate = new Date();
-  referenceDate.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = referenceDate.getDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
-  const baseStartOfWeek = new Date(referenceDate);
-  baseStartOfWeek.setDate(referenceDate.getDate() + diffToMonday);
-
-  // Apply offset
-  const startOfWeek = new Date(baseStartOfWeek);
-  startOfWeek.setDate(baseStartOfWeek.getDate() + (weekOffset * 7));
+  // First day of the requested week (Monday or Sunday, per display prefs), then offset
+  const startOfWeek = firstDayOfWeek();
+  startOfWeek.setDate(startOfWeek.getDate() + weekOffset * 7);
 
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -260,22 +248,16 @@ export function TeamScheduleGrid({
       const weekEndExclusive = new Date(startOfWeek);
       weekEndExclusive.setDate(startOfWeek.getDate() + 7);
 
-      const res = await api("/company/schedule/publish", {
-        method: "POST",
-        body: JSON.stringify({
-          weekStart: weekStartIso,
-          from: startOfWeek.toISOString(),
-          to: weekEndExclusive.toISOString(),
+      const data = await unwrap(
+        rpc.company.schedule.publish.$post({
+          json: {
+            weekStart: weekStartIso,
+            from: startOfWeek.toISOString(),
+            to: weekEndExclusive.toISOString(),
+          },
         }),
-      });
-      const data = await parseApiJson<{
-        message?: string;
-        publishedCount?: number;
-        error?: string;
-      }>(res);
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to publish schedule");
-      }
+        "Failed to publish schedule",
+      );
       toast.success(data.message || "Schedule published");
       await onScheduleChanged?.();
     } catch (err: unknown) {
@@ -359,10 +341,7 @@ export function TeamScheduleGrid({
           >
             <div className="min-w-[560px] bg-card">
               <div className="grid grid-cols-7 gap-px bg-border/30">
-                {[
-                  ["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"],
-                  ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]
-                ].map(([full, short]) => (
+                {weekdayLabels().map((full) => [full, full[0]]).map(([full, short]) => (
                   <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card snap-start">
                     <span className="hidden sm:inline">{full}</span>
                     <span className="sm:hidden">{short}</span>
@@ -391,7 +370,7 @@ export function TeamScheduleGrid({
                              key={shift.id} 
                              onClick={() => setSelectedShift(shift)}
                              className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-sm relative z-10 cursor-pointer border border-transparent transition-[filter] hover:brightness-95 dark:hover:brightness-125 ${getEmployeeColor(shift.users?.full_name)} ${shift.status === "draft" ? "border-dashed border-current/40 opacity-75" : ""}`}>
-                            <span className="block truncate">{formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}</span>
+                            <span className="block truncate">{formatTimeShort(shift.start_time)} – {formatTimeShort(shift.end_time)}</span>
                             <span className="opacity-80 block truncate mt-0.5">
                               {shift.users?.full_name?.split(' ')[0]}: {shift.title}
                               {shift.status === "draft" && (
@@ -465,36 +444,38 @@ export function TeamScheduleGrid({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="date">Date</Label>
-                      <Input
-                        type="date"
+                      <DatePicker
                         id="date"
                         name="date"
                         required
-                        defaultValue={new Date(selectedShift.start_time).toISOString().split("T")[0]}
+                        defaultValue={toLocalDateInput(new Date(selectedShift.start_time))}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label htmlFor="startTime">Start</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           id="startTime"
                           name="startTime"
                           required
-                          defaultValue={new Date(selectedShift.start_time).toTimeString().substring(0, 5)}
+                          defaultValue={toLocalTimeInput(new Date(selectedShift.start_time))}
+                          onChange={(start) => setEditTimes((t) => t && { ...t, start })}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="endTime">End</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           id="endTime"
                           name="endTime"
                           required
-                          defaultValue={new Date(selectedShift.end_time).toTimeString().substring(0, 5)}
+                          defaultValue={toLocalTimeInput(new Date(selectedShift.end_time))}
+                          onChange={(end) => setEditTimes((t) => t && { ...t, end })}
                         />
                       </div>
                     </div>
+                    {editTimes && (
+                      <OvernightHint startTime={editTimes.start} endTime={editTimes.end} />
+                    )}
                   </DialogBody>
                   <DialogFooter>
                     <Button
@@ -534,7 +515,16 @@ export function TeamScheduleGrid({
                       {isDeleting ? "Deleting…" : "Delete"}
                     </Button>
                     <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                      <Button variant="outline" onClick={() => setIsEditing(true)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditTimes({
+                            start: toLocalTimeInput(new Date(selectedShift.start_time)),
+                            end: toLocalTimeInput(new Date(selectedShift.end_time)),
+                          });
+                          setIsEditing(true);
+                        }}
+                      >
                         <Edit2 className="h-4 w-4" />
                         Edit
                       </Button>

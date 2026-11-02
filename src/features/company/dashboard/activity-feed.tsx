@@ -1,39 +1,17 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDown, ChevronRight, Send } from "lucide-react";
-import { useApi } from "@/hooks/use-api";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
+import { queries } from "@/lib/queries";
+import type { ApiData, rpc } from "@/lib/rpc";
+import { useQuery } from "@tanstack/react-query";
 
-type PublishedShift = {
-  id: string;
-  title: string;
-  employee_name: string;
-  start_time: string;
-  end_time: string;
-};
-
-type LogEntry = {
-  id: string;
-  action: "published";
-  detail: string;
-  week_start: string | null;
-  created_at: string;
-  actor: { full_name: string; role: string };
-  shifts: PublishedShift[];
-};
-
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(dateStr));
-}
+type LogEntry = ApiData<typeof rpc.company.activity.$get>["activity"][number];
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -191,41 +169,15 @@ function PublishEntry({ log, isLatest }: { log: LogEntry; isLatest: boolean }) {
 
 /** Always-visible list of published weeks (fixed-height panel, scrolls inside). */
 export function ActivityFeed({
-  refreshKey,
   className,
 }: {
-  refreshKey?: number;
   className?: string;
 }) {
-  const api = useApi();
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Live: other managers publishing show up without a reload.
+  const { data, isPending: loading } = useQuery(queries.activity());
+  const logs = data?.activity ?? [];
   const [open, setOpen] = useState(false);
   const panelId = useId();
-
-  const fetchLogs = useCallback(async () => {
-    try {
-      const res = await api("/company/activity");
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.activity) setLogs(data.activity);
-    } catch {
-      // Network/CORS/5xx — keep existing list (background refresh stays quiet).
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  // Live: other managers publishing show up without a reload.
-  useVisiblePoll(true, fetchLogs);
-
-  const prevKeyRef = useRef(refreshKey);
-  useEffect(() => {
-    if (refreshKey !== undefined && refreshKey !== prevKeyRef.current) {
-      prevKeyRef.current = refreshKey;
-      fetchLogs();
-    }
-  }, [refreshKey, fetchLogs]);
 
   const toggle = () => setOpen((o) => !o);
 

@@ -1,18 +1,18 @@
-import { Link, useRouter } from "@/lib/navigation";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
+import { rpc, unwrap } from "@/lib/rpc";
 
 export default function CompanyLoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,11 +28,9 @@ export default function CompanyLoginPage() {
       toast.success("Welcome back!", {
         description: "Redirecting to your dashboard...",
       });
-      router.push(
-        authUser.profile.role === "employee"
+      navigate({ to: authUser.profile.role === "employee"
           ? "/dashboard"
-          : "/company/dashboard",
-      );
+          : "/company/dashboard" });
     } catch (err: unknown) {
       toast.error("Login failed", {
         description:
@@ -52,13 +50,14 @@ export default function CompanyLoginPage() {
     }
     try {
       setIsLoading(true);
-      const res = await apiFetch("/auth/reset-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-        timeoutMs: 90_000,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      const data = await unwrap(
+        rpc.auth["reset-password"].$post(
+          { json: { email } },
+          // The API can be cold-starting; give it time.
+          { init: { signal: AbortSignal.timeout(90_000) } },
+        ),
+        "Failed to reset password",
+      );
       toast.success("Temporary password ready", {
         description: data.tempPassword
           ? `Copy this password and log in: ${data.tempPassword}`
@@ -85,7 +84,7 @@ export default function CompanyLoginPage() {
         <div className="h-16 shrink-0 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
             <Link
-              href="/"
+              to="/"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 inline-flex items-center gap-1.5 animate-fade-in"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -97,10 +96,10 @@ export default function CompanyLoginPage() {
         <div className="flex-1 flex items-start sm:items-center justify-center px-6 pt-8 pb-12 sm:py-12">
           <div className="w-full max-w-sm space-y-8">
             <div className="text-center space-y-3 animate-fade-in">
-              <Link href="/" className="inline-flex items-center gap-1.5 mb-4">
+              <Link to="/" className="inline-flex items-center gap-1.5 mb-4">
                 <BrandMark size={22} />
                 <span className="text-xl font-semibold tracking-tight">
-                  OhShift
+                  OhShifts
                 </span>
               </Link>
               <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
@@ -197,7 +196,7 @@ export default function CompanyLoginPage() {
               <p className="text-sm text-muted-foreground">
                 Don&apos;t have a company account?{" "}
                 <Link
-                  href="/company/register"
+                  to="/company/register"
                   className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
                 >
                   Register your company →
@@ -207,7 +206,7 @@ export default function CompanyLoginPage() {
               <p className="text-sm text-muted-foreground">
                 Looking for the employee login?{" "}
                 <Link
-                  href="/login"
+                  to="/login"
                   className="text-foreground underline underline-offset-4 hover:text-foreground/80 font-medium transition-colors duration-300"
                 >
                   Employee sign in →

@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
@@ -7,7 +8,7 @@ import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelEmpty, PanelFooter, PanelHeader } from "@/components/panel";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input, fieldClass } from "@/components/ui/input";
+import { fieldClass } from "@/components/ui/input";
 import {
   Dialog,
   DialogBody,
@@ -17,9 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import {
   TIME_OFF_STATUS_STYLES,
@@ -32,6 +30,9 @@ import {
   type TimeOffType,
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 
 type TimeOffRequest = {
@@ -45,10 +46,11 @@ type TimeOffRequest = {
 };
 
 function TimeOffPageContent() {
-  const api = useApi();
   const { user } = useAuth();
-  const [requests, setRequests] = useState<TimeOffRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // Live: a manager's approve/deny shows up without a reload.
+  const { data, isPending: loading } = useQuery(queries.myTimeOff());
+  const requests: TimeOffRequest[] = data?.requests ?? [];
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -58,35 +60,9 @@ function TimeOffPageContent() {
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
 
-  const load = useCallback(async (opts?: { quiet?: boolean }) => {
-    const res = await api("/time-off");
-    const data = await parseApiJson<{
-      requests?: TimeOffRequest[];
-      error?: string;
-    }>(res);
-    if (!res.ok) {
-      if (!opts?.quiet && res.status !== 401) {
-        toast.error(data.error || "Failed to load time-off requests");
-      }
-      return;
-    }
-    setRequests(data.requests ?? []);
-  }, [api]);
+  /** Same-tab refresh after submit/cancel (also updates the manager queue cache). */
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["time-off"] });
 
-  const initialLoadRef = useRef(true);
-  const poll = useCallback(async () => {
-    const quiet = !initialLoadRef.current;
-    try {
-      await load({ quiet });
-    } catch {
-      if (!quiet) toast.error("Failed to load time-off requests");
-    } finally {
-      initialLoadRef.current = false;
-      setLoading(false);
-    }
-  }, [load]);
-
-  useVisiblePoll(true, poll);
   const openModal = () => {
     setType("vacation");
     setStartDate("");
@@ -108,20 +84,20 @@ function TimeOffPageContent() {
 
     setSubmitting(true);
     try {
-      const res = await api("/time-off", {
-        method: "POST",
-        body: JSON.stringify({
-          type,
-          start_date: startDate,
-          end_date: endDate,
-          note: note.trim() || null,
+      await unwrap(
+        rpc["time-off"].$post({
+          json: {
+            type,
+            start_date: startDate,
+            end_date: endDate,
+            note: note.trim() || null,
+          },
         }),
-      });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to submit request");
+        "Failed to submit request",
+      );
       toast.success("Time-off request submitted");
       setModalOpen(false);
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to submit request",
@@ -134,11 +110,12 @@ function TimeOffPageContent() {
   const handleCancel = async (id: string) => {
     setCancellingId(id);
     try {
-      const res = await api(`/time-off/${id}/cancel`, { method: "POST" });
-      const data = await parseApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "Failed to cancel request");
+      await unwrap(
+        rpc["time-off"][":id"].cancel.$post({ param: { id } }),
+        "Failed to cancel request",
+      );
       toast.success("Request cancelled");
-      await load();
+      await refresh();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to cancel request",
@@ -318,32 +295,26 @@ function TimeOffPageContent() {
                 <label htmlFor="start" className="text-[13px] font-medium text-muted-foreground">
                   Start
                 </label>
-                <Input
+                <DatePicker
                   id="start"
-                  type="date"
                   required
                   value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (endDate && e.target.value > endDate) {
-                      setEndDate(e.target.value);
-                    }
+                  onChange={(v) => {
+                    setStartDate(v);
+                    if (endDate && v > endDate) setEndDate(v);
                   }}
-                  className="h-9"
                 />
               </div>
               <div className="space-y-2">
                 <label htmlFor="end" className="text-[13px] font-medium text-muted-foreground">
                   End
                 </label>
-                <Input
+                <DatePicker
                   id="end"
-                  type="date"
                   required
                   value={endDate}
                   min={startDate || undefined}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-9"
+                  onChange={setEndDate}
                 />
               </div>
             </div>
@@ -406,7 +377,8 @@ export default function TimeOffPage() {
 
   return (
     <AppShell role={role}>
-      <AuthGuard allowedRoles={["employee", "manager", "owner"]}>
+      {/* Owners run the workspace and don't work shifts — the guard sends them to Overview. */}
+      <AuthGuard allowedRoles={["employee", "manager"]}>
         <TimeOffPageContent />
       </AuthGuard>
     </AppShell>

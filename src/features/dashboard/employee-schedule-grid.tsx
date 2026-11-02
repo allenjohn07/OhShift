@@ -13,20 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ShiftProperties } from "./shift-properties";
+import { formatTimeShort, startOfWeek as firstDayOfWeek, weekdayLabels } from "@/lib/dates";
 
 interface Shift {
   id: string;
   title: string;
   start_time: string;
   end_time: string;
-}
-
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(dateStr));
 }
 
 const formatDateLabel = (date: Date) => {
@@ -150,18 +143,9 @@ export function EmployeeScheduleGrid({
     }
   };
 
-  // Build the requested week (Mon–Sun) based on offset
-  const referenceDate = new Date();
-  referenceDate.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = referenceDate.getDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
-  const baseStartOfWeek = new Date(referenceDate);
-  baseStartOfWeek.setDate(referenceDate.getDate() + diffToMonday);
-
-  const startOfWeek = new Date(baseStartOfWeek);
-  startOfWeek.setDate(baseStartOfWeek.getDate() + (weekOffset * 7));
+  // First day of the requested week (Monday or Sunday, per display prefs), then offset
+  const startOfWeek = firstDayOfWeek();
+  startOfWeek.setDate(startOfWeek.getDate() + weekOffset * 7);
 
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -215,7 +199,7 @@ export function EmployeeScheduleGrid({
       >
         <div className="min-w-[560px] bg-card">
           <div className="grid grid-cols-7 gap-px bg-border/30">
-            {[["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"], ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]].map(([full, short]) => (
+            {weekdayLabels().map((full) => [full, full[0]]).map(([full, short]) => (
               <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card">
                 <span className="hidden sm:inline">{full}</span>
                 <span className="sm:hidden">{short}</span>
@@ -244,7 +228,7 @@ export function EmployeeScheduleGrid({
                       onClick={() => setSelectedShift(shift)}
                       className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-sm cursor-pointer border border-transparent transition-[filter] hover:brightness-95 dark:hover:brightness-125 relative z-10 ${getEmployeeColor(employeeName)}`}
                     >
-                      {formatTime(shift.start_time).replace(":00", "").toLowerCase()} – {formatTime(shift.end_time).replace(":00", "").toLowerCase()}
+                      {formatTimeShort(shift.start_time)} – {formatTimeShort(shift.end_time)}
                       <br />
                       <span className="opacity-80 block truncate mt-0.5">{shift.title}</span>
                     </div>

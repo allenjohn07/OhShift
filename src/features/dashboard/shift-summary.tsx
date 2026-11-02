@@ -1,12 +1,13 @@
-import { Link } from "@/lib/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { useApi } from "@/hooks/use-api";
-import { useVisiblePoll } from "@/hooks/use-visible-poll";
-import { parseApiJson } from "@/lib/api";
+import { clockEntriesRange, formatTime, isInProgress } from "@/lib/dates";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 interface Shift {
   id: string;
@@ -54,14 +55,6 @@ function toLocalDate(dateStr: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(dateStr));
-}
-
 export function ShiftSummary({
   initialShifts,
 }: {
@@ -69,77 +62,55 @@ export function ShiftSummary({
   /** @deprecated kept for call-site compat; unused */
   employeeId?: string;
 }) {
-  const api = useApi();
   const shifts = initialShifts ?? [];
-  const [active, setActive] = useState<TimeEntry | null>(null);
-  const [todayEntry, setTodayEntry] = useState<TimeEntry | null>(null);
-  const [statusReady, setStatusReady] = useState(false);
+  const queryClient = useQueryClient();
   const [acting, setActing] = useState(false);
 
   const now = new Date();
   const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
+  // A shift in progress wins (a night shift that started yesterday), then
+  // the first one starting today.
   const todayShift =
-    shifts.find((s) => toLocalDate(s.start_time) === localToday) ?? null;
+    shifts.find((s) => isInProgress(s, now)) ??
+    shifts.find((s) => toLocalDate(s.start_time) === localToday) ??
+    null;
   const todayShiftId = todayShift?.id ?? null;
 
-  useEffect(() => {
-    if (!todayShiftId) {
-      setTodayEntry(null);
-      setActive(null);
-      setStatusReady(true);
-      return;
-    }
-    const cached = readCachedEntry(todayShiftId);
-    if (cached) {
-      setTodayEntry(cached);
-      setStatusReady(true);
-    } else {
-      setStatusReady(false);
-    }
-  }, [todayShiftId]);
+  // Same range as the Hours page → one shared cached query.
+  const dayRange = useMemo(() => clockEntriesRange(), []);
 
-  const refreshClock = useCallback(async () => {
-    if (!todayShift) {
-      setActive(null);
-      setTodayEntry(null);
-      setStatusReady(true);
-      return;
-    }
+  // Live clock status (only needed when there's a shift today).
+  const enabled = Boolean(todayShiftId);
+  const activeQuery = useQuery({ ...queries.activeEntry(), enabled });
+  const todayQuery = useQuery({
+    ...queries.myEntries(dayRange.from, dayRange.to),
+    enabled,
+  });
 
-    const dayStart = new Date();
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
-    const [activeRes, mineRes] = await Promise.all([
-      api("/time-entries/active"),
-      api(
-        `/time-entries/mine?from=${encodeURIComponent(dayStart.toISOString())}&to=${encodeURIComponent(dayEnd.toISOString())}`,
-      ),
-    ]);
-
-    const activeData = await parseApiJson<{ entry?: TimeEntry | null }>(
-      activeRes,
+  // Last known status for this shift — shown instantly before the API answers.
+  const cached = useMemo(
+    () => (todayShiftId ? readCachedEntry(todayShiftId) : null),
+    [todayShiftId],
+  );
+  const fetched = activeQuery.isFetched && todayQuery.isFetched;
+  const active = activeQuery.data?.entry ?? null;
+  const todayEntry = useMemo(() => {
+    if (!fetched) return cached;
+    return (
+      todayQuery.data?.entries.find((e) => e.shift_id === todayShiftId) ??
+      (active?.shift_id === todayShiftId ? active : null)
     );
-    const mineData = await parseApiJson<{ entries?: TimeEntry[] }>(mineRes);
+  }, [fetched, cached, todayQuery.data, active, todayShiftId]);
+  const statusReady = !todayShiftId || fetched || cached !== null;
 
-    const nextActive = activeRes.ok ? (activeData.entry ?? null) : null;
-    const match = mineRes.ok
-      ? ((mineData.entries ?? []).find((e) => e.shift_id === todayShift.id) ??
-        null)
-      : null;
-    const resolved =
-      match ??
-      (nextActive?.shift_id === todayShift.id ? nextActive : null);
+  useEffect(() => {
+    if (todayShiftId && fetched) writeCachedEntry(todayShiftId, todayEntry);
+  }, [todayShiftId, fetched, todayEntry]);
 
-    setActive(nextActive);
-    setTodayEntry(resolved);
-    writeCachedEntry(todayShift.id, resolved);
-    setStatusReady(true);
-  }, [api, todayShift]);
-
-  useVisiblePoll(Boolean(todayShift), refreshClock);
+  /** Same-tab refresh after clock in/out (also updates the Hours page cache). */
+  const refreshClock = () =>
+    queryClient.invalidateQueries({ queryKey: ["time-entries"] });
 
   const entry =
     (todayShift &&
@@ -168,21 +139,12 @@ export function ShiftSummary({
     if (!todayShift) return;
     setActing(true);
     try {
-      const res = await api("/time-entries/clock-in", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: todayShift.id }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-in"].$post({ json: { shift_id: todayShift.id } }),
+        "Failed to clock in",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock in");
       toast.success("Clocked in");
-      if (data.entry) {
-        setTodayEntry(data.entry);
-        setActive(data.entry);
-        writeCachedEntry(todayShift.id, data.entry);
-        setStatusReady(true);
-      }
+      writeCachedEntry(todayShift.id, data.entry);
       await refreshClock();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to clock in");
@@ -195,21 +157,12 @@ export function ShiftSummary({
     if (!todayShift) return;
     setActing(true);
     try {
-      const res = await api("/time-entries/clock-out", {
-        method: "POST",
-        body: JSON.stringify({ shift_id: todayShift.id }),
-      });
-      const data = await parseApiJson<{ entry?: TimeEntry; error?: string }>(
-        res,
+      const data = await unwrap(
+        rpc["time-entries"]["clock-out"].$post({ json: { shift_id: todayShift.id } }),
+        "Failed to clock out",
       );
-      if (!res.ok) throw new Error(data.error || "Failed to clock out");
       toast.success("Clocked out — pending manager approval");
-      if (data.entry) {
-        setTodayEntry(data.entry);
-        setActive(null);
-        writeCachedEntry(todayShift.id, data.entry);
-        setStatusReady(true);
-      }
+      writeCachedEntry(todayShift.id, data.entry);
       await refreshClock();
     } catch (error: unknown) {
       toast.error(
@@ -321,7 +274,7 @@ export function ShiftSummary({
                 <span className="text-xs text-muted-foreground">{clockHint}</span>
               )}
               <Link
-                href="/dashboard/hours"
+                to="/dashboard/hours"
                 className="ml-auto text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 View hours →
@@ -336,7 +289,7 @@ export function ShiftSummary({
             </p>
             <div className="mt-auto pt-5">
               <Link
-                href="/dashboard/hours"
+                to="/dashboard/hours"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 View hours →

@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Moon } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { IconTooltip } from "@/components/icon-tooltip";
 import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelFooter, PanelHeader } from "@/components/panel";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { TimePicker } from "@/components/ui/time-picker";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
 
 type DayAvailability = {
   day_of_week: number;
@@ -42,6 +44,16 @@ function defaultDays(): DayAvailability[] {
 
 const DAY_MINUTES = 24 * 60;
 
+/** Window length in minutes; an end at/before the start runs overnight. */
+function windowMinutes(day: DayAvailability) {
+  const start = toMinutes(day.start_time);
+  const end = toMinutes(day.end_time);
+  return end > start ? end - start : end + DAY_MINUTES - start;
+}
+
+const isOvernight = (day: DayAvailability) =>
+  toMinutes(day.end_time) <= toMinutes(day.start_time);
+
 /** Always Mon–Sun in order, filling any missing day with the default window. */
 function normalizeDays(rows: DayAvailability[]): DayAvailability[] {
   const byDay = new Map(rows.map((d) => [d.day_of_week, d]));
@@ -62,41 +74,22 @@ function toMinutes(value: string) {
 }
 
 function AvailabilityEditor() {
-  const api = useApi();
   const [days, setDays] = useState<DayAvailability[]>(defaultDays);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const { user } = useAuth();
 
-  useEffect(() => {
-    let cancelled = false;
+  const queryClient = useQueryClient();
+  const { data, isPending: loading } = useQuery(queries.availability());
 
-    api("/availability")
-      .then(async (res) => {
-        const data = await parseApiJson<{ days?: DayAvailability[]; error?: string }>(res);
-        if (cancelled) return;
-        if (!res.ok || !data.days) {
-          if (res.status !== 401) {
-            toast.error(data.error || "Failed to load availability");
-          }
-          return;
-        }
-        const loaded = normalizeDays(data.days);
-        setDays(loaded);
-        setSavedSnapshot(JSON.stringify(loaded));
-      })
-      .catch(() => {
-        if (!cancelled) toast.error("Failed to load availability");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [api]);
+  // Seed the editor from the server once; later refetches never clobber edits.
+  const [seeded, setSeeded] = useState(false);
+  if (data && !seeded) {
+    const loaded = normalizeDays(data.days);
+    setSeeded(true);
+    setDays(loaded);
+    setSavedSnapshot(JSON.stringify(loaded));
+  }
 
   const updateDay = (index: number, patch: Partial<DayAvailability>) => {
     setDays((prev) =>
@@ -107,9 +100,10 @@ function AvailabilityEditor() {
   const handleSave = async () => {
     for (const day of days) {
       if (!day.is_available) continue;
-      if (toMinutes(day.end_time) <= toMinutes(day.start_time)) {
+      // End before start is fine (overnight, e.g. 20:00–04:00); equal isn't.
+      if (day.end_time === day.start_time) {
         toast.error(
-          `${DAY_LABELS[day.day_of_week]}: end time must be after start time`,
+          `${DAY_LABELS[day.day_of_week]}: start and end can't be the same time`,
         );
         return;
       }
@@ -117,19 +111,14 @@ function AvailabilityEditor() {
 
     setSaving(true);
     try {
-      const res = await api("/availability", {
-        method: "PUT",
-        body: JSON.stringify({ days }),
-      });
-      const data = await parseApiJson<{ days?: DayAvailability[]; error?: string }>(res);
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to save availability");
-      }
-      if (data.days) {
-        const saved = normalizeDays(data.days);
-        setDays(saved);
-        setSavedSnapshot(JSON.stringify(saved));
-      }
+      const data = await unwrap(
+        rpc.availability.$put({ json: { days } }),
+        "Failed to save availability",
+      );
+      queryClient.setQueryData(queries.availability().queryKey, data);
+      const saved = normalizeDays(data.days);
+      setDays(saved);
+      setSavedSnapshot(JSON.stringify(saved));
       toast.success("Availability saved");
     } catch (error: unknown) {
       toast.error(
@@ -144,7 +133,7 @@ function AvailabilityEditor() {
   const availableDays = days.filter((d) => d.is_available);
   const totalHours = availableDays.reduce(
     (sum, d) =>
-      sum + Math.max(0, toMinutes(d.end_time) - toMinutes(d.start_time)) / 60,
+      sum + windowMinutes(d) / 60,
     0,
   );
 
@@ -210,21 +199,30 @@ function AvailabilityEditor() {
 
                 {day.is_available ? (
                   <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={day.start_time}
-                      onChange={(e) => updateDay(index, { start_time: e.target.value })}
-                      className="min-w-0 flex-1 sm:w-32 sm:flex-none"
+                      onChange={(v) => updateDay(index, { start_time: v })}
+                      className="min-w-0 flex-1 sm:w-36 sm:flex-none"
                       aria-label={`${DAY_LABELS[index]} start`}
                     />
                     <span className="text-sm text-muted-foreground">–</span>
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={day.end_time}
-                      onChange={(e) => updateDay(index, { end_time: e.target.value })}
-                      className="min-w-0 flex-1 sm:w-32 sm:flex-none"
+                      onChange={(v) => updateDay(index, { end_time: v })}
+                      className="min-w-0 flex-1 sm:w-36 sm:flex-none"
                       aria-label={`${DAY_LABELS[index]} end`}
                     />
+                    {/* Fixed slot so rows stay aligned whether or not they're overnight. */}
+                    <span className="flex w-4 shrink-0 justify-center">
+                      {isOvernight(day) && day.end_time !== day.start_time && (
+                        <IconTooltip label="Ends the next morning (overnight)" side="top">
+                          <Moon
+                            className="h-4 w-4 text-muted-foreground"
+                            aria-label="Overnight"
+                          />
+                        </IconTooltip>
+                      )}
+                    </span>
                   </div>
                 ) : (
                   <span className="ml-auto text-sm text-muted-foreground">
@@ -244,24 +242,33 @@ function AvailabilityEditor() {
           />
           <div className="flex flex-1 flex-col justify-center gap-2.5 px-4 py-4 sm:px-5">
             {days.map((day, index) => {
-              const start = toMinutes(day.start_time);
-              const end = toMinutes(day.end_time);
-              const valid = day.is_available && end > start;
+              // This day's window (until midnight), plus the morning part of
+              // the previous day's overnight window.
+              const segments: Array<[number, number]> = [];
+              if (day.is_available && day.end_time !== day.start_time) {
+                const start = toMinutes(day.start_time);
+                segments.push([start, isOvernight(day) ? DAY_MINUTES : toMinutes(day.end_time)]);
+              }
+              const prev = days[(index + 6) % 7];
+              if (prev.is_available && isOvernight(prev) && prev.end_time !== prev.start_time) {
+                segments.push([0, toMinutes(prev.end_time)]);
+              }
               return (
                 <div key={day.day_of_week} className="flex items-center gap-3">
                   <span className="w-8 text-xs text-muted-foreground">
                     {DAY_LABELS[index].slice(0, 3)}
                   </span>
                   <div className="relative h-5 flex-1 rounded-sm bg-foreground/[0.05] dark:bg-foreground/[0.07]">
-                    {valid && (
+                    {segments.map(([from, to]) => (
                       <div
+                        key={from}
                         className="absolute inset-y-0 rounded-sm bg-brand/25 dark:bg-brand/35"
                         style={{
-                          left: `${(start / DAY_MINUTES) * 100}%`,
-                          width: `${((end - start) / DAY_MINUTES) * 100}%`,
+                          left: `${(from / DAY_MINUTES) * 100}%`,
+                          width: `${((to - from) / DAY_MINUTES) * 100}%`,
                         }}
                       />
-                    )}
+                    ))}
                   </div>
                 </div>
               );
@@ -295,7 +302,8 @@ export default function AvailabilityPage() {
 
   return (
     <AppShell role={role}>
-      <AuthGuard allowedRoles={["employee", "manager", "owner"]}>
+      {/* Owners run the workspace and don't work shifts — the guard sends them to Overview. */}
+      <AuthGuard allowedRoles={["employee", "manager"]}>
         <AvailabilityEditor />
       </AuthGuard>
     </AppShell>

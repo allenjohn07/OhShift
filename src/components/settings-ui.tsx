@@ -1,13 +1,16 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
+import type { RoutePath } from "@/lib/nav";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
-import { IconTooltip } from "@/components/icon-tooltip";
+import { CalendarClock, ChevronRight, Clock } from "lucide-react";
 import { PageHeader, PageMain } from "@/components/page";
 import { Panel, PanelHeader } from "@/components/panel";
-
-import { Switch } from "@/components/ui/switch";
-
 import { SimpleSelect } from "@/components/ui/select";
+import {
+  setDisplayPrefs,
+  useDisplayPrefs,
+  type TimeFormat,
+  type WeekStart,
+} from "@/lib/display-prefs";
 
 export function SettingsPageShell({
   title,
@@ -33,12 +36,15 @@ export function SettingsSection({
   title,
   description,
   wide,
+  footer,
   children,
 }: {
   title: string;
   description?: string;
   /** Span both columns */
   wide?: boolean;
+  /** Rendered below the rows (e.g. a Save button in a PanelFooter) */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -48,25 +54,25 @@ export function SettingsSection({
         <p className="px-4 pt-3 text-xs text-muted-foreground sm:px-5">{description}</p>
       )}
       <ul className="divide-y divide-border">{children}</ul>
+      {footer}
     </Panel>
   );
 }
 
-export function SettingsToggleRow({
+/** Icon + title/description on the left, any control on the right. */
+export function SettingsRow({
   icon: Icon,
   title,
   description,
-  checked,
-  onCheckedChange,
+  children,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
+  children: React.ReactNode;
 }) {
   return (
-    <li className="px-4 sm:px-5 py-3 flex items-start sm:items-center gap-3 sm:gap-4 justify-between">
+    <li className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 justify-between">
       <div className="flex items-start gap-3 min-w-0">
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground dark:bg-foreground/[0.06]">
           <Icon className="h-4 w-4" />
@@ -76,20 +82,13 @@ export function SettingsToggleRow({
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         </div>
       </div>
-      <IconTooltip
-        label={checked ? `Turn off ${title}` : `Turn on ${title}`}
-        side="top"
-      >
-        <span>
-          <Switch checked={checked} onCheckedChange={onCheckedChange} label={title} />
-        </span>
-      </IconTooltip>
+      {children}
     </li>
   );
 }
 
 export function SettingsSelectRow({
-  icon: Icon,
+  icon,
   title,
   description,
   value,
@@ -104,16 +103,7 @@ export function SettingsSelectRow({
   onChange: (value: string) => void;
 }) {
   return (
-    <li className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 justify-between">
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground dark:bg-foreground/[0.06]">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-        </div>
-      </div>
+    <SettingsRow icon={icon} title={title} description={description}>
       <SimpleSelect
         size="sm"
         value={value}
@@ -122,7 +112,41 @@ export function SettingsSelectRow({
         className="w-full shrink-0 sm:w-48"
         aria-label={title}
       />
-    </li>
+    </SettingsRow>
+  );
+}
+
+/** Time format + week start, saved on this device and applied app-wide. */
+export function DisplayPrefsSection() {
+  const prefs = useDisplayPrefs();
+  return (
+    <SettingsSection
+      title="Display"
+      description="Saved on this device and applied right away."
+    >
+      <SettingsSelectRow
+        icon={Clock}
+        title="Time format"
+        description="Use 12-hour or 24-hour clocks."
+        value={prefs.timeFormat}
+        onChange={(v) => setDisplayPrefs({ timeFormat: v as TimeFormat })}
+        options={[
+          { value: "12h", label: "12-hour (1:00 PM)" },
+          { value: "24h", label: "24-hour (13:00)" },
+        ]}
+      />
+      <SettingsSelectRow
+        icon={CalendarClock}
+        title="Week starts on"
+        description="First day on schedules and calendars."
+        value={prefs.weekStartsOn}
+        onChange={(v) => setDisplayPrefs({ weekStartsOn: v as WeekStart })}
+        options={[
+          { value: "monday", label: "Monday" },
+          { value: "sunday", label: "Sunday" },
+        ]}
+      />
+    </SettingsSection>
   );
 }
 
@@ -135,12 +159,12 @@ export function SettingsLinkRow({
   icon: LucideIcon;
   title: string;
   description: string;
-  href: string;
+  href: RoutePath;
 }) {
   return (
     <li>
       <Link
-        href={href}
+        to={href}
         className="px-4 sm:px-5 py-3 flex items-start sm:items-center gap-3 sm:gap-4 justify-between hover:bg-accent/60 transition-colors"
       >
         <div className="flex items-start gap-3 min-w-0">

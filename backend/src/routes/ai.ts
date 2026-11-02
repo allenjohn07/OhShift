@@ -2,7 +2,7 @@ import { and, asc, eq, inArray, or } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { db } from "../db";
 import { companies, users } from "../db/schema";
-import { ApiError, readJson, requireManager } from "../lib/auth-guard";
+import { ApiError, jsonBody, requireManager } from "../lib/auth-guard";
 import { askSchedule } from "../lib/nl-schedule-ask";
 import { parseShiftFromPrompt } from "../lib/nl-shift-parse";
 
@@ -77,14 +77,14 @@ function aiErrorStatus(message: string): number {
   return isConfig ? 503 : 500;
 }
 
-/** Shared prompt/timezone parsing for both AI endpoints. */
-async function readPrompt(c: Context) {
-  const { prompt, timezone, employeeId } = await readJson<{
-    prompt: string;
-    timezone: string;
-    employeeId: string;
-  }>(c);
+type PromptBody = {
+  prompt: string;
+  timezone: string;
+  employeeId: string;
+};
 
+/** Shared prompt/timezone validation for both AI endpoints. */
+function readPrompt({ prompt, timezone, employeeId }: Partial<PromptBody>) {
   const trimmed = typeof prompt === "string" ? prompt.trim() : "";
   if (!trimmed) {
     throw new ApiError("Prompt is required", 400);
@@ -106,9 +106,9 @@ function aiFailure(c: Context, err: unknown, fallback: string) {
 }
 
 export const aiRoutes = new Hono()
-  .post("/parse-shift", async (c) => {
+  .post("/parse-shift", jsonBody<PromptBody>(), async (c) => {
     const user = await requireManager(c);
-    const { prompt, timezone, employeeId } = await readPrompt(c);
+    const { prompt, timezone, employeeId } = readPrompt(c.req.valid("json"));
 
     try {
       const { roster, selfRow, presets } = await loadRosterAndPresets(user);
@@ -133,9 +133,9 @@ export const aiRoutes = new Hono()
       return aiFailure(c, err, "Failed to parse shift request");
     }
   })
-  .post("/ask", async (c) => {
+  .post("/ask", jsonBody<PromptBody>(), async (c) => {
     const user = await requireManager(c);
-    const { prompt, timezone } = await readPrompt(c);
+    const { prompt, timezone } = readPrompt(c.req.valid("json"));
 
     try {
       const { roster, selfRow, presets } = await loadRosterAndPresets(user);
@@ -151,10 +151,10 @@ export const aiRoutes = new Hono()
 
       if ("kind" in result) {
         if (result.kind === "create") {
-          return c.json({ kind: "create", proposal: result.proposal });
+          return c.json({ kind: "create" as const, proposal: result.proposal });
         }
         return c.json({
-          kind: "query",
+          kind: "query" as const,
           answer: result.answer,
           window_label: result.window_label,
           person: result.person,

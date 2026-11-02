@@ -75,7 +75,7 @@ export function SchedulePreview() {
             <BrandMark size={16} />
             <div className="leading-tight">
               <div className="text-[12px] font-semibold">Brew &amp; Co.</div>
-              <div className="text-[9px] text-muted-foreground">OhShift workspace</div>
+              <div className="text-[9px] text-muted-foreground">OhShifts workspace</div>
             </div>
           </div>
           {NAV.map(({ icon: Icon, label, active, count }) => (
@@ -146,7 +146,7 @@ export function SchedulePreview() {
               <span className="text-[12px] font-semibold">Schedule</span>
               <span className="hidden items-center gap-1 rounded-md border border-input px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex">
                 <Sparkles className="h-2.5 w-2.5 text-brand" />
-                Ask OhShift
+                Ask OhShifts
               </span>
               <div className="ml-auto flex items-center gap-1.5 text-[10px]">
                 <ChevronLeft className="h-3 w-3 text-muted-foreground" />

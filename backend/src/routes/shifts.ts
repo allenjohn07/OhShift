@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { db } from "../db";
 import { shifts, users } from "../db/schema";
 import { loadAssignmentContext } from "../lib/assignment-context";
-import { readJson, requireManager, requireUser } from "../lib/auth-guard";
+import { jsonBody, requireManager, requireUser, queryParams } from "../lib/auth-guard";
 import { serializeShift } from "../lib/serialize";
 import {
   createDraftShifts,
@@ -21,6 +21,32 @@ async function findCompanyShift(shiftId: string, companyId: string) {
   });
 }
 
+type BulkShiftsBody = {
+  timezone: string;
+  shifts: Array<{
+    employeeId?: string;
+    title?: string;
+    startTime?: string;
+    endTime?: string;
+  }>;
+};
+
+type CreateShiftBody = {
+  employeeId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  timezone: string;
+};
+
+type UpdateShiftBody = {
+  shiftId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  timezone: string;
+};
+
 export const shiftsRoutes = new Hono()
   .get("/mine", async (c) => {
     const user = await requireUser(c);
@@ -30,7 +56,7 @@ export const shiftsRoutes = new Hono()
     });
     return c.json({ shifts: rows.map((s) => serializeShift(s)) });
   })
-  .get("/eligible", async (c) => {
+  .get("/eligible", queryParams<"start" | "end" | "timezone" | "designation">(), async (c) => {
     const user = await requireManager(c);
     const startRaw = c.req.query("start") ?? "";
     const endRaw = c.req.query("end") ?? "";
@@ -100,17 +126,9 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ people, designations });
   })
-  .post("/bulk", async (c) => {
+  .post("/bulk", jsonBody<BulkShiftsBody>(), async (c) => {
     const user = await requireManager(c);
-    const { timezone, shifts: items } = await readJson<{
-      timezone: string;
-      shifts: Array<{
-        employeeId?: string;
-        title?: string;
-        startTime?: string;
-        endTime?: string;
-      }>;
-    }>(c);
+    const { timezone, shifts: items } = c.req.valid("json");
 
     if (!Array.isArray(items) || items.length === 0) {
       return c.json({ error: "shifts array is required" }, 400);
@@ -164,15 +182,9 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ created, failed, results });
   })
-  .post("/", async (c) => {
+  .post("/", jsonBody<CreateShiftBody>(), async (c) => {
     const user = await requireManager(c);
-    const { employeeId, title, startTime, endTime, timezone } = await readJson<{
-      employeeId: string;
-      title: string;
-      startTime: string;
-      endTime: string;
-      timezone: string;
-    }>(c);
+    const { employeeId, title, startTime, endTime, timezone } = c.req.valid("json");
 
     if (!employeeId || !title || !startTime || !endTime) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -198,15 +210,9 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ shift: outcome!.shift });
   })
-  .put("/", async (c) => {
+  .put("/", jsonBody<UpdateShiftBody>(), async (c) => {
     const user = await requireManager(c);
-    const { shiftId, title, startTime, endTime, timezone } = await readJson<{
-      shiftId: string;
-      title: string;
-      startTime: string;
-      endTime: string;
-      timezone: string;
-    }>(c);
+    const { shiftId, title, startTime, endTime, timezone } = c.req.valid("json");
 
     if (!shiftId || !title || !startTime || !endTime) {
       return c.json({ error: "Missing required fields" }, 400);
@@ -253,7 +259,7 @@ export const shiftsRoutes = new Hono()
 
     return c.json({ shift: serializeShift(shift!) });
   })
-  .delete("/", async (c) => {
+  .delete("/", queryParams<"id">(), async (c) => {
     const user = await requireManager(c);
     const shiftId = c.req.query("id");
 

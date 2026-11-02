@@ -1,11 +1,15 @@
-import { Link } from "@/lib/navigation";
+import { Link } from "@tanstack/react-router";
+import type { RoutePath } from "@/lib/nav";
 import { scrollToSection } from "@/lib/scroll-to-section";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand-mark";
 
 const COLUMNS: Array<{
   title: string;
-  links: Array<{ label: string; href: string; external?: boolean; section?: string }>;
+  links: Array<
+    | { label: string; to: RoutePath }
+    | { label: string; href: string; external?: boolean; section?: string }
+  >;
 }> = [
   {
     title: "Product",
@@ -18,9 +22,9 @@ const COLUMNS: Array<{
   {
     title: "Get started",
     links: [
-      { label: "Register your company", href: "/company/register" },
-      { label: "Company login", href: "/company/login" },
-      { label: "Employee login", href: "/login" },
+      { label: "Register your company", to: "/company/register" },
+      { label: "Company login", to: "/company/login" },
+      { label: "Employee login", to: "/login" },
     ],
   },
   {
@@ -47,7 +51,7 @@ export function Footer({ className }: { className?: string }) {
             <div className="mb-3 flex items-center gap-2">
               <BrandMark size={22} />
               <span className="text-[15px] font-semibold tracking-tight">
-                OhShift
+                OhShifts
               </span>
             </div>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -62,7 +66,11 @@ export function Footer({ className }: { className?: string }) {
               <ul className="space-y-2">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    {link.external ? (
+                    {"to" in link ? (
+                      <Link to={link.to} className={linkClass}>
+                        {link.label}
+                      </Link>
+                    ) : link.external ? (
                       <a
                         href={link.href}
                         target="_blank"
@@ -71,18 +79,16 @@ export function Footer({ className }: { className?: string }) {
                       >
                         {link.label}
                       </a>
-                    ) : link.section ? (
+                    ) : (
                       <a
                         href={link.href}
-                        onClick={(e) => scrollToSection(e, link.section!)}
+                        onClick={(e) =>
+                          link.section && scrollToSection(e, link.section)
+                        }
                         className={linkClass}
                       >
                         {link.label}
                       </a>
-                    ) : (
-                      <Link href={link.href} className={linkClass}>
-                        {link.label}
-                      </Link>
                     )}
                   </li>
                 ))}
@@ -91,11 +97,29 @@ export function Footer({ className }: { className?: string }) {
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-6 border-t border-border py-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border py-6">
           <p className="text-[13px] text-muted-foreground">
-            © {new Date().getFullYear()} OhShift
+            © {new Date().getFullYear()} OhShifts
           </p>
-          <p className="text-[13px] text-muted-foreground">Now in public beta</p>
+          <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
+            Built by
+            <a
+              href="https://allenjohn.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}allen-john.png`}
+                alt=""
+                width={20}
+                height={20}
+                // Black line art on transparent — invert so it shows in dark mode.
+                className="h-5 w-5 dark:invert"
+              />
+              Allen John
+            </a>
+          </p>
         </div>
       </div>
     </footer>

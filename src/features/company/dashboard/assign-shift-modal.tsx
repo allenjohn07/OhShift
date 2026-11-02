@@ -11,10 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useApi } from "@/hooks/use-api";
-import { parseApiJson } from "@/lib/api";
+import { rpc, unwrap } from "@/lib/rpc";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { shiftRange } from "@/lib/dates";
+import { OvernightHint } from "@/components/overnight-hint";
 
 interface Employee {
   id: string;
@@ -56,7 +59,6 @@ export function AssignShiftModal({
   const [endTime, setEndTime] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiOpen, setAiOpen] = useState(false);
-  const api = useApi();
 
   function open() {
     setIsOpen(true);
@@ -77,38 +79,27 @@ export function AssignShiftModal({
     setError(null);
 
     try {
-      const res = await api("/ai/parse-shift", {
-        method: "POST",
-        body: JSON.stringify({
-          prompt: trimmed,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          employeeId: employee.id,
+      const data = await unwrap(
+        rpc.ai["parse-shift"].$post({
+          json: {
+            prompt: trimmed,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            employeeId: employee.id,
+          },
         }),
-      });
-      const data = await parseApiJson<{
-        error?: string;
-        proposal?: {
-          title: string;
-          start_time: string;
-          end_time: string;
-          interpretation?: string;
-        };
-      }>(res);
-
-      if (!res.ok || !data.proposal) {
-        throw new Error(data.error || "Could not understand that");
-      }
+        "Could not understand that",
+      );
 
       setTitle(data.proposal.title);
       setDate(toLocalDateInput(data.proposal.start_time));
       setStartTime(toLocalTimeInput(data.proposal.start_time));
       setEndTime(toLocalTimeInput(data.proposal.end_time));
       toast.success(
-        data.proposal.interpretation || "Filled from OhShift AI — review and assign",
+        data.proposal.interpretation || "Filled from OhShifts AI — review and assign",
       );
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Could not fill from OhShift AI",
+        err instanceof Error ? err.message : "Could not fill from OhShifts AI",
       );
     } finally {
       setIsAiLoading(false);
@@ -120,25 +111,29 @@ export function AssignShiftModal({
     setIsLoading(true);
     setError(null);
 
-    const start = new Date(`${date}T${startTime}`).toISOString();
-    const end = new Date(`${date}T${endTime}`).toISOString();
+    // An end at/before the start is a night shift ending the next day.
+    const range = shiftRange(date, startTime, endTime);
+    if (!range) {
+      setError("Pick a date and different start and end times");
+      setIsLoading(false);
+      return;
+    }
+    const start = range.start.toISOString();
+    const end = range.end.toISOString();
 
     try {
-      const res = await api("/shifts", {
-        method: "POST",
-        body: JSON.stringify({
-          employeeId: employee.id,
-          title,
-          startTime: start,
-          endTime: end,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      await unwrap(
+        rpc.shifts.$post({
+          json: {
+            employeeId: employee.id,
+            title,
+            startTime: start,
+            endTime: end,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to assign shift");
-      }
+        "Failed to assign shift",
+      );
 
       toast.success("Shift saved as draft — publish the week when ready");
       setIsOpen(false);
@@ -193,7 +188,7 @@ export function AssignShiftModal({
             >
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand" />
-                OhShift AI
+                OhShifts AI
               </span>
               <span className="text-xs text-muted-foreground">
                 {aiOpen ? "Hide" : "Describe in plain language"}
@@ -257,14 +252,12 @@ export function AssignShiftModal({
             >
               Date
             </label>
-            <input
-              type="date"
+            <DatePicker
               id="date"
               name="date"
               required
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={cn(fieldClass, "h-9")}
+              onChange={setDate}
             />
           </div>
 
@@ -305,14 +298,12 @@ export function AssignShiftModal({
                 >
                   Start
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   id="startTime"
                   name="startTime"
                   required
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className={cn(fieldClass, "h-9")}
+                  onChange={setStartTime}
                 />
               </div>
               <div className="space-y-2">
@@ -322,17 +313,16 @@ export function AssignShiftModal({
                 >
                   End
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   id="endTime"
                   name="endTime"
                   required
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className={cn(fieldClass, "h-9")}
+                  onChange={setEndTime}
                 />
               </div>
             </div>
+            <OvernightHint startTime={startTime} endTime={endTime} />
           </div>
             </DialogBody>
             <DialogFooter>

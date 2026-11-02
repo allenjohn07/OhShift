@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, UserPlus, Loader2, X, Plus, Pencil } from "lucide-react";
+import { Send, Loader2, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { useApi } from "@/hooks/use-api";
 import { IconTooltip } from "@/components/icon-tooltip";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { apiError, rpc } from "@/lib/rpc";
 
 interface Invitee {
   fullName: string;
@@ -24,13 +24,8 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function InviteEmployeeForm({
-  bare = false,
-}: {
-  /** Render without card chrome/header (e.g. inside a dialog). */
-  bare?: boolean;
-} = {}) {
-  const api = useApi();
+/** Invite form body — rendered inside the Invite dialog on the Overview. */
+export function InviteEmployeeForm() {
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -70,18 +65,14 @@ export function InviteEmployeeForm({
   const sendInvites = async (list: Invitee[], clearList: boolean) => {
     setIsLoading(true);
     try {
-      const res = await api("/employees/invite", {
-        method: "POST",
-        body: JSON.stringify({ invites: list }),
-      });
-
+      const res = await rpc.employees.invite.$post({ json: { invites: list } });
       const data = await res.json();
 
-      if (!res.ok) {
+      if ("error" in data) {
         const detail =
-          Array.isArray(data.details) && data.details.length > 0
+          "details" in data && Array.isArray(data.details) && data.details.length > 0
             ? data.details.join(" · ")
-            : data.error || "An unknown error occurred.";
+            : apiError(data, "An unknown error occurred.");
         toast.error("Failed to invite employee", {
           description: detail,
           duration: 12_000,
@@ -89,11 +80,7 @@ export function InviteEmployeeForm({
         return;
       }
 
-      const created = (data.invites ?? []) as Array<{
-        email: string;
-        fullName: string;
-        inviteCode: string;
-      }>;
+      const created = data.invites;
 
       if (created.length > 0) {
         const summary = created
@@ -106,10 +93,6 @@ export function InviteEmployeeForm({
             duration: 30_000,
           },
         );
-      } else if (data.details?.length) {
-        toast.warning(data.message || "Some invitations failed", {
-          description: data.details[0],
-        });
       } else {
         toast.success(data.message || "Invitations created");
       }
@@ -207,29 +190,8 @@ export function InviteEmployeeForm({
   const canSubmitForm = Boolean(fullName.trim() && email.trim());
 
   return (
-    <div
-      className={
-        bare
-          ? "flex flex-col"
-          : "rounded-lg border border-border bg-card overflow-hidden h-full flex flex-col"
-      }
-    >
-      {!bare && (
-        <div className="border-b border-border px-4 sm:px-6 py-4 bg-card flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-emerald-500" />
-          <h2 className="font-semibold text-lg">Invite Employee</h2>
-        </div>
-      )}
-
-      <div className={bare ? "flex flex-col" : "p-4 sm:p-6 flex-1 flex flex-col"}>
-        {!bare && (
-          <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
-            Invite someone now, or add several to a list and send them together.
-            We generate an invite code for each person — share it so they can log
-            in (email delivery comes later).
-          </p>
-        )}
-
+    <div className="flex flex-col">
+      <div className="flex flex-col">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">

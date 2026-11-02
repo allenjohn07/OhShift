@@ -72,10 +72,22 @@ export function validateShiftAssignment(
     };
   }
 
+  if (end.getTime() - start.getTime() > 24 * 60 * 60 * 1000) {
+    return {
+      ok: false,
+      error: "A shift can't be longer than 24 hours",
+      reason: "invalid",
+      status: 400,
+    };
+  }
+
   const dayOfWeek = ohShiftDayOfWeek(start, timezone);
-  const window = ctx.windows.get(employeeId)?.get(dayOfWeek);
+  const employeeWindows = ctx.windows.get(employeeId);
   const availabilityError = availabilityConflictMessage(
-    window,
+    {
+      day: employeeWindows?.get(dayOfWeek),
+      previousDay: employeeWindows?.get((dayOfWeek + 6) % 7),
+    },
     start,
     end,
     timezone,
@@ -114,7 +126,7 @@ export function validateShiftAssignment(
   if (sameStart) {
     return {
       ok: false,
-      error: formatSameStartMessage(sameStart),
+      error: formatSameStartMessage(sameStart, timezone),
       reason: "same_start",
       status: 409,
     };
@@ -130,7 +142,7 @@ export function validateShiftAssignment(
   if (conflicts.length > 0) {
     return {
       ok: false,
-      error: formatConflictMessage(conflicts),
+      error: formatConflictMessage(conflicts, timezone),
       reason: "conflict",
       status: 409,
     };

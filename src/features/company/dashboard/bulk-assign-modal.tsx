@@ -1,14 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CheckSquare, ChevronDown, ChevronRight, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CompanySettings } from "./company-settings";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fieldClass } from "@/components/ui/input";
-import { useApi } from "@/hooks/use-api";
 
 import { ScrollFade } from "@/components/scroll-fade";
 import { cn } from "@/lib/utils";
 import { SimpleSelect } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { queries } from "@/lib/queries";
+import { rpc, unwrap } from "@/lib/rpc";
+import { shiftRange } from "@/lib/dates";
+import { OvernightHint } from "@/components/overnight-hint";
 
 type EligibilityReason =
   | "unavailable"
@@ -61,8 +68,12 @@ function todayLocalDate(): string {
   return `${y}-${m}-${day}`;
 }
 
-function toIso(date: string, time: string): string {
-  return new Date(`${date}T${time}`).toISOString();
+/** ISO start/end; an end at/before the start ends the next day (night shift). */
+function toIsoRange(date: string, startTime: string, endTime: string) {
+  const range = shiftRange(date, startTime, endTime);
+  return range
+    ? { start: range.start.toISOString(), end: range.end.toISOString() }
+    : null;
 }
 
 export function BulkAssignModal({
@@ -74,7 +85,6 @@ export function BulkAssignModal({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [date, setDate] = useState(todayLocalDate);
@@ -82,15 +92,33 @@ export function BulkAssignModal({
   const [endTime, setEndTime] = useState(company.morning_end || "12:00");
   const [designation, setDesignation] = useState("");
   const [sharedTitle, setSharedTitle] = useState("");
-  const [designations, setDesignations] = useState<string[]>([]);
-  const [people, setPeople] = useState<EligiblePerson[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Map<string, PersonOverride>>(
     () => new Map(),
   );
 
-  const api = useApi();
-  const fetchGen = useRef(0);
+  // Eligibility for the chosen window — debounced so picking times doesn't
+  // fire a request per change. Serialized so the debounce compares by value.
+  const eligibleParams = useDebouncedValue(
+    toIsoRange(date, startTime, endTime)
+      ? JSON.stringify({
+          ...toIsoRange(date, startTime, endTime),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(designation ? { designation } : {}),
+        })
+      : "",
+    200,
+  );
+  const eligibleQuery = useQuery({
+    ...queries.eligible(eligibleParams ? JSON.parse(eligibleParams) : {}),
+    enabled: isOpen && Boolean(eligibleParams),
+    placeholderData: keepPreviousData,
+  });
+  const people: EligiblePerson[] = eligibleQuery.data?.people ?? [];
+  const designations = eligibleQuery.data?.designations ?? [];
+  const isFetching = eligibleQuery.isFetching;
+  const shownError =
+    error ?? (eligibleQuery.isError ? eligibleQuery.error.message : null);
 
   const eligiblePeople = people.filter((p) => p.eligible);
   const selectedCount = [...selected].filter((id) =>
@@ -104,59 +132,6 @@ export function BulkAssignModal({
     }
   }, [designation, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const gen = ++fetchGen.current;
-    const timer = window.setTimeout(async () => {
-      if (!date || !startTime || !endTime) return;
-
-      setIsFetching(true);
-      try {
-        const start = toIso(date, startTime);
-        const end = toIso(date, endTime);
-        const params = new URLSearchParams({
-          start,
-          end,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        });
-        if (designation) params.set("designation", designation);
-
-        const res = await api(`/shifts/eligible?${params}`);
-        const data = await res.json();
-        if (gen !== fetchGen.current) return;
-
-        if (!res.ok) {
-          setError(data.error || "Failed to load eligible team members");
-          setPeople([]);
-          return;
-        }
-
-        setError(null);
-        setPeople(data.people ?? []);
-        setDesignations(data.designations ?? []);
-        setSelected((prev) => {
-          const next = new Set<string>();
-          for (const id of prev) {
-            const person = (data.people as EligiblePerson[] | undefined)?.find(
-              (p) => p.id === id,
-            );
-            if (person?.eligible) next.add(id);
-          }
-          return next;
-        });
-      } catch {
-        if (gen !== fetchGen.current) return;
-        setError("Failed to load eligible team members");
-        setPeople([]);
-      } finally {
-        if (gen === fetchGen.current) setIsFetching(false);
-      }
-    }, 200);
-
-    return () => window.clearTimeout(timer);
-  }, [isOpen, date, startTime, endTime, designation, api]);
-
   function open() {
     setIsOpen(true);
     setError(null);
@@ -167,7 +142,6 @@ export function BulkAssignModal({
     setSharedTitle("");
     setSelected(new Set());
     setOverrides(new Map());
-    setPeople([]);
   }
 
   function close() {
@@ -239,23 +213,18 @@ export function BulkAssignModal({
         return {
           employeeId: p.id,
           title: f.title,
-          startTime: toIso(f.date, f.startTime),
-          endTime: toIso(f.date, f.endTime),
+          startTime: toIsoRange(f.date, f.startTime, f.endTime)?.start ?? "",
+          endTime: toIsoRange(f.date, f.startTime, f.endTime)?.end ?? "",
         };
       });
 
     try {
-      const res = await api("/shifts/bulk", {
-        method: "POST",
-        body: JSON.stringify({ timezone, shifts }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create shifts");
-      }
+      const data = await unwrap(
+        rpc.shifts.bulk.$post({ json: { timezone, shifts } }),
+        "Failed to create shifts",
+      );
 
-      const created = data.created ?? 0;
-      const failed = data.failed ?? 0;
+      const { created, failed } = data;
       if (created > 0 && failed === 0) {
         toast.success(
           `${created} draft shift${created === 1 ? "" : "s"} created — publish when ready`,
@@ -266,9 +235,7 @@ export function BulkAssignModal({
         );
       } else {
         toast.error("No shifts were created");
-        const firstErr = (data.results as Array<{ error?: string }> | undefined)?.find(
-          (r) => r.error,
-        )?.error;
+        const firstErr = data.results.flatMap((r) => ("error" in r ? [r.error] : []))[0];
         if (firstErr) setError(firstErr);
         return;
       }
@@ -308,9 +275,9 @@ export function BulkAssignModal({
           </DialogHeader>
 
           <DialogBody className="space-y-5">
-            {error && (
+            {shownError && (
               <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
+                {shownError}
               </div>
             )}
 
@@ -323,13 +290,11 @@ export function BulkAssignModal({
                 >
                   Date
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   id="bulk-date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   required
-                  className={cn(fieldClass, "h-9")}
                 />
               </div>
 
@@ -370,12 +335,10 @@ export function BulkAssignModal({
                     >
                       Start
                     </label>
-                    <input
-                      type="time"
+                    <TimePicker
                       id="bulk-start"
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className={cn(fieldClass, "h-9")}
+                      onChange={setStartTime}
                     />
                   </div>
                   <div className="space-y-2">
@@ -385,15 +348,14 @@ export function BulkAssignModal({
                     >
                       End
                     </label>
-                    <input
-                      type="time"
+                    <TimePicker
                       id="bulk-end"
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className={cn(fieldClass, "h-9")}
+                      onChange={setEndTime}
                     />
                   </div>
                 </div>
+                <OvernightHint startTime={startTime} endTime={endTime} />
               </div>
             </section>
 
@@ -535,36 +497,31 @@ export function BulkAssignModal({
                                 placeholder="Title"
                                 className={cn(fieldClass, "h-8")}
                               />
-                              <div className="grid grid-cols-3 gap-2">
-                                <input
-                                  type="date"
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                <DatePicker
+                                  size="sm"
+                                  className="col-span-2 sm:col-span-1"
                                   value={o.date || date}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      date: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { date: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} date`}
                                 />
-                                <input
-                                  type="time"
+                                <TimePicker
+                                  size="sm"
                                   value={o.startTime || startTime}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      startTime: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { startTime: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} start`}
                                 />
-                                <input
-                                  type="time"
+                                <TimePicker
+                                  size="sm"
                                   value={o.endTime || endTime}
-                                  onChange={(e) =>
-                                    patchOverride(person.id, {
-                                      endTime: e.target.value,
-                                    })
+                                  onChange={(v) =>
+                                    patchOverride(person.id, { endTime: v })
                                   }
-                                  className={cn(fieldClass, "h-8 px-2 text-xs")}
+                                  aria-label={`${person.full_name} end`}
                                 />
                               </div>
                             </div>

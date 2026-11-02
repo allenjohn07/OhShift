@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePathname, useRouter } from "@/lib/navigation";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth-provider";
 import { normalizePath } from "@/lib/nav";
 
@@ -21,23 +21,23 @@ export function AuthGuard({
   allowedRoles?: Array<"owner" | "manager" | "employee">;
 }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (l) => l.pathname });
   const path = normalizePath(pathname);
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      router.replace("/");
+      navigate({ to: "/", replace: true });
       return;
     }
 
     const role = user.profile.role as "owner" | "manager" | "employee";
 
     if (allowedRoles && !allowedRoles.includes(role)) {
-      if (role === "employee") router.replace("/dashboard");
-      else router.replace("/company/dashboard");
+      if (role === "employee") navigate({ to: "/dashboard", replace: true });
+      else navigate({ to: "/company/dashboard", replace: true });
       return;
     }
 
@@ -48,13 +48,13 @@ export function AuthGuard({
       role !== "employee" &&
       !isSharedSelfService
     ) {
-      router.replace("/company/dashboard");
+      navigate({ to: "/company/dashboard", replace: true });
     }
 
     if (pathname.startsWith("/company/dashboard") && role === "employee") {
-      router.replace("/dashboard");
+      navigate({ to: "/dashboard", replace: true });
     }
-  }, [user, loading, router, allowedRoles, pathname, path]);
+  }, [user, loading, navigate, allowedRoles, pathname, path]);
 
   if (loading) {
     return (

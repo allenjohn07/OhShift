@@ -4,23 +4,34 @@ import { db } from "../db";
 import { users, type UserRole } from "../db/schema";
 import {
   assertOwner,
-  readJson,
+  jsonBody,
   requireManager,
   verifyEmployeeInCompany,
+  queryParams,
 } from "../lib/auth-guard";
 import { generateTempPassword, hashPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
 
 const ASSIGNABLE_ROLES: UserRole[] = ["employee", "manager"];
 
+type UpdateEmployeeBody = {
+  employeeId: string;
+  designation: string | null;
+  role: UserRole;
+};
+
+type InviteBody = {
+  invites: Array<{
+    email: string;
+    fullName: string;
+    designation?: string;
+  }>;
+};
+
 export const employeesRoutes = new Hono()
-  .put("/", async (c) => {
+  .put("/", jsonBody<UpdateEmployeeBody>(), async (c) => {
     const user = await requireManager(c);
-    const { employeeId, designation, role } = await readJson<{
-      employeeId: string;
-      designation: string | null;
-      role: UserRole;
-    }>(c);
+    const { employeeId, designation, role } = c.req.valid("json");
 
     if (!employeeId) {
       return c.json({ error: "Missing employee ID" }, 400);
@@ -53,7 +64,7 @@ export const employeesRoutes = new Hono()
 
     return c.json({ employee: serializeUser(updated!) });
   })
-  .delete("/", async (c) => {
+  .delete("/", queryParams<"id">(), async (c) => {
     const user = await requireManager(c);
     const employeeId = c.req.query("id");
 
@@ -81,15 +92,9 @@ export const employeesRoutes = new Hono()
 
     return c.json({ message: "Employee removed successfully" });
   })
-  .post("/invite", async (c) => {
+  .post("/invite", jsonBody<InviteBody>(), async (c) => {
     const sender = await requireManager(c);
-    const { invites } = await readJson<{
-      invites: Array<{
-        email: string;
-        fullName: string;
-        designation?: string;
-      }>;
-    }>(c);
+    const { invites } = c.req.valid("json");
 
     if (!invites?.length) {
       return c.json({ error: "At least one invitee is required." }, 400);
