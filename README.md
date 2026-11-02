@@ -1,15 +1,14 @@
-<div align="center">
-  <img src="public/logo/ohshift-os-monogram.svg" alt="OhShifts logo" width="48" height="48" />
-  <h1>OhShifts</h1>
-  <p><strong>Plan the week. Keep your team in sync.</strong></p>
-  <p>Employee scheduling, availability, time tracking, and team communication in one place.</p>
+<h1><img src="public/logo/ohshift-os-monogram.svg" alt="OhShifts logo" width="48" height="48" align="absmiddle" /> OhShifts</h1>
 
-  [![CI](https://github.com/allenjohn07/OhShifts/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/verify.yml)
-  [![Deploy](https://github.com/allenjohn07/OhShifts/actions/workflows/deploy-cloudflare.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/deploy-cloudflare.yml)
-  [![CodeQL](https://github.com/allenjohn07/OhShifts/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/codeql.yml)
+**Plan the week. Keep your team in sync.**
 
-  <p><a href="https://ohshifts.com">Visit OhShift</a> · <a href="#getting-started">Get started</a> · <a href="docs/production-setup.md">Deployment guide</a></p>
-</div>
+Employee scheduling, availability, time tracking, and team communication in one place.
+
+[![CI](https://github.com/allenjohn07/OhShifts/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/verify.yml)
+[![Deploy](https://github.com/allenjohn07/OhShifts/actions/workflows/deploy-cloudflare.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/deploy-cloudflare.yml)
+[![CodeQL](https://github.com/allenjohn07/OhShifts/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/allenjohn07/OhShifts/actions/workflows/codeql.yml)
+
+[Visit OhShifts](https://ohshifts.com) · [Get started](#getting-started) · [Deployment guide](docs/production-setup.md)
 
 ---
 
