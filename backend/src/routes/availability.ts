@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -74,7 +75,7 @@ export const availabilityRoutes = new Hono()
       }),
     });
   })
-  .put("/", jsonBody<AvailabilityBody>(), async (c) => {
+  .put("/", jsonBody<AvailabilityBody>({ days: v.array(v.object({ day_of_week: v.integer(0, 6), is_available: v.boolean, start_time: v.time, end_time: v.time }, ["day_of_week", "is_available", "start_time", "end_time"]), 7, 7) }), async (c) => {
     const user = await requireUser(c);
 
     const payload = c.req.valid("json");

@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { db } from "./db";
@@ -55,6 +56,7 @@ function allowOrigin(origin: string): string | null {
 }
 
 const app = new Hono()
+  .use(bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
   .use(
     cors({
       origin: allowOrigin,

@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, desc, eq, ne, notExists, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -137,7 +138,7 @@ export const announcementsRoutes = new Hono()
     const count = await countUnreadAnnouncements(companyId, user.id);
     return c.json({ count });
   })
-  .post("/", jsonBody<AnnouncementBody>(), async (c) => {
+  .post("/", jsonBody<AnnouncementBody>({ title: v.text(120, 1), body: v.text(4000, 1) }), async (c) => {
     const user = await requireManager(c);
     const payload = c.req.valid("json");
 
@@ -214,7 +215,7 @@ export const announcementsRoutes = new Hono()
 
     return c.json({ ok: true });
   })
-  .patch("/:id", jsonBody<AnnouncementBody>(), async (c) => {
+  .patch("/:id", jsonBody<AnnouncementBody>({ title: v.text(120, 1), body: v.text(4000, 1) }), async (c) => {
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);
     const payload = c.req.valid("json");

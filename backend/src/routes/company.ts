@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -60,9 +61,12 @@ type PublishBody = {
 };
 
 export const companyRoutes = new Hono()
-  .put("/", jsonBody<PresetsBody>(), async (c) => {
+  .put("/", jsonBody<PresetsBody>({ morning_start: v.time, morning_end: v.time, evening_start: v.time, evening_end: v.time }), async (c) => {
     const user = await requireManager(c);
     const updates = c.req.valid("json");
+    if ([updates.morning_start, updates.morning_end, updates.evening_start, updates.evening_end].some(value => value === undefined)) {
+      return c.json({ error: "Provide all four shift preset times." }, 400);
+    }
 
     const [company] = await db
       .update(companies)
@@ -77,7 +81,7 @@ export const companyRoutes = new Hono()
 
     return c.json({ company: serializeCompany(company!) });
   })
-  .post("/schedule/publish", jsonBody<PublishBody>(), async (c) => {
+  .post("/schedule/publish", jsonBody<PublishBody>({ weekStart: v.dateOnly, from: v.instant, to: v.instant }), async (c) => {
     const user = await requireManager(c);
     const { weekStart, from, to } = c.req.valid("json");
 
@@ -85,6 +89,7 @@ export const companyRoutes = new Hono()
       return c.json({ error: "weekStart is required (YYYY-MM-DD)" }, 400);
     }
 
+    if (Boolean(from) !== Boolean(to)) return c.json({ error: "Provide both from and to, or neither." }, 400);
     let range: { start: Date; end: Date };
     const fromDate = from ? new Date(from) : null;
     const toDate = to ? new Date(to) : null;

@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, eq, inArray, or } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { db } from "../db";
@@ -114,7 +115,7 @@ function aiFailure(c: Context, err: unknown, fallback: string) {
 }
 
 export const aiRoutes = new Hono()
-  .post("/parse-shift", jsonBody<PromptBody>(), async (c) => {
+  .post("/parse-shift", jsonBody<PromptBody>({ prompt: v.text(500, 1), timezone: v.timezone, employeeId: v.text(100, 1) }), async (c) => {
     const user = await requireManager(c);
     const { prompt, timezone, employeeId } = readPrompt(c.req.valid("json"));
 
@@ -141,7 +142,7 @@ export const aiRoutes = new Hono()
       return aiFailure(c, err, "Failed to parse shift request");
     }
   })
-  .post("/ask", jsonBody<PromptBody>(), async (c) => {
+  .post("/ask", jsonBody<PromptBody>({ prompt: v.text(500, 1), timezone: v.timezone, employeeId: v.text(100, 1) }), async (c) => {
     // Any company member may ask; what they can learn is decided per role in lib/ai.
     const user = await requireUser(c);
     const companyId = requireCompanyMember(user);

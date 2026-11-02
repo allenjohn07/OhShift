@@ -1,3 +1,4 @@
+import * as v from "../lib/validation";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
@@ -94,7 +95,7 @@ export const timeOffRoutes = new Hono()
 
     return c.json({ requests: requests.map((r) => serializeTimeOff(r)) });
   })
-  .post("/", jsonBody<TimeOffBody>(), async (c) => {
+  .post("/", jsonBody<TimeOffBody>({ type: v.oneOf("vacation", "sick", "personal", "other"), start_date: v.dateOnly, end_date: v.dateOnly, note: v.nullable(v.text(500)) }), async (c) => {
     const user = await requireUser(c);
     if (!user.companyId) {
       return c.json({ error: "No company associated" }, 400);
@@ -208,7 +209,7 @@ export const timeOffRoutes = new Hono()
       recent: recent.map((r) => serializeTimeOff(r)),
     });
   })
-  .post("/:id/review", jsonBody<ReviewBody>(), async (c) => {
+  .post("/:id/review", jsonBody<ReviewBody>({ decision: v.oneOf("approved", "denied") }), async (c) => {
     const user = await requireManager(c);
     const { decision } = c.req.valid("json");
     if (decision !== "approved" && decision !== "denied") {
