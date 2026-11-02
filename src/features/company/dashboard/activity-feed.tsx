@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
 
 type PublishedShift = {
   id: string;
@@ -26,14 +27,6 @@ type LogEntry = {
   actor: { full_name: string; role: string };
   shifts: PublishedShift[];
 };
-
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(dateStr));
-}
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {

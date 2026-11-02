@@ -33,6 +33,7 @@ import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
 
 type TabId = "announcements" | "messages";
 
@@ -106,10 +107,7 @@ function formatRelative(iso: string) {
 }
 
 function formatMessageTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(iso));
+  return formatTime(iso);
 }
 
 function InboxPageContent() {

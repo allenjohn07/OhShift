@@ -19,6 +19,7 @@ import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
 
 type TimeEntryStatus = "open" | "pending" | "approved" | "denied";
 
@@ -61,14 +62,6 @@ function toLocalDateKey(d: Date) {
 
 function toLocalDateKeyFromIso(iso: string) {
   return toLocalDateKey(new Date(iso));
-}
-
-function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(iso));
 }
 
 function formatDateLabel(date: Date) {

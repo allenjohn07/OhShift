@@ -23,6 +23,7 @@ import type {
 
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/ui/time-picker";
+import { formatTime, timeFormatOptions } from "@/lib/dates";
 
 const STATUS_STYLES: Record<TimeEntryStatus, string> = {
   open: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -31,22 +32,12 @@ const STATUS_STYLES: Record<TimeEntryStatus, string> = {
   denied: "bg-destructive/10 text-destructive",
 };
 
-function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(iso));
-}
-
 function formatDateTime(iso: string) {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
+    ...timeFormatOptions(),
   }).format(new Date(iso));
 }
 

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/use-api";
 import { useVisiblePoll } from "@/hooks/use-visible-poll";
 import { parseApiJson } from "@/lib/api";
+import { formatTime } from "@/lib/dates";
 
 interface Shift {
   id: string;
@@ -52,14 +53,6 @@ function writeCachedEntry(shiftId: string, entry: TimeEntry | null) {
 function toLocalDate(dateStr: string) {
   const d = new Date(dateStr);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatTime(dateStr: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(dateStr));
 }
 
 export function ShiftSummary({

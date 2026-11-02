@@ -9,6 +9,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import { formatTimeLabel } from "@/lib/dates"
+import { useDisplayPrefs } from "@/lib/display-prefs"
 import { cn } from "@/lib/utils"
 
 const STEP_MINUTES = 15
@@ -50,6 +51,8 @@ function TimePicker({
 }) {
   const [inner, setInner] = React.useState(defaultValue)
   const value = valueProp ?? inner
+  // Re-render labels when the 12h/24h preference changes.
+  useDisplayPrefs()
   const options = React.useMemo(
     () =>
       value && !STEPS.includes(value) ? [...STEPS, value].sort() : STEPS,

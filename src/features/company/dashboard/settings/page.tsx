@@ -1,39 +1,194 @@
-import { useState } from "react";
-import {
-  Bell,
-  Building2,
-  CalendarClock,
-  Clock,
-  Inbox,
-  Mail,
-  MapPin,
-  Users,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Moon, Sun } from "lucide-react";
+import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
+import { PanelFooter } from "@/components/panel";
 import {
+  DisplayPrefsSection,
   SettingsPageShell,
+  SettingsRow,
   SettingsSection,
-  SettingsSelectRow,
-  SettingsToggleRow,
 } from "@/components/settings-ui";
+import { Button } from "@/components/ui/button";
+import { TimePicker } from "@/components/ui/time-picker";
+import { useApi } from "@/hooks/use-api";
+import { parseApiJson } from "@/lib/api";
 import type { AppRole } from "@/lib/nav";
+import type { CompanySettings } from "../company-settings";
+
+type Presets = Pick<
+  CompanySettings,
+  "morning_start" | "morning_end" | "evening_start" | "evening_end"
+>;
+
+const PRESET_KEYS = [
+  "morning_start",
+  "morning_end",
+  "evening_start",
+  "evening_end",
+] as const;
+
+function pickPresets(company: Presets): Presets {
+  return Object.fromEntries(PRESET_KEYS.map((k) => [k, company[k]])) as Presets;
+}
+
+function PresetRange({
+  label,
+  start,
+  end,
+  onStart,
+  onEnd,
+  disabled,
+}: {
+  label: string;
+  start: string;
+  end: string;
+  onStart: (v: string) => void;
+  onEnd: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex w-full items-center gap-2 sm:w-auto">
+      <TimePicker
+        size="sm"
+        value={start}
+        onChange={onStart}
+        disabled={disabled}
+        aria-label={`${label} start`}
+        className="min-w-0 flex-1 sm:w-28 sm:flex-none"
+      />
+      <span className="text-sm text-muted-foreground">–</span>
+      <TimePicker
+        size="sm"
+        value={end}
+        onChange={onEnd}
+        disabled={disabled}
+        aria-label={`${label} end`}
+        className="min-w-0 flex-1 sm:w-28 sm:flex-none"
+      />
+    </div>
+  );
+}
+
+function ShiftPresetsSection() {
+  const api = useApi();
+  const [saved, setSaved] = useState<Presets | null>(null);
+  const [draft, setDraft] = useState<Presets | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api("/dashboard/profile");
+      const data = await parseApiJson<{
+        profile?: { companies?: Presets | null };
+        error?: string;
+      }>(res);
+      if (!res.ok || !data.profile?.companies) {
+        throw new Error(data.error || "Could not load shift presets");
+      }
+      const presets = pickPresets(data.profile.companies);
+      setSaved(presets);
+      setDraft(presets);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load shift presets");
+    }
+  }, [api]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const dirty =
+    !!draft && !!saved && PRESET_KEYS.some((k) => draft[k] !== saved[k]);
+
+  const patch = (key: keyof Presets) => (value: string) =>
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+
+  async function save() {
+    if (!draft) return;
+    for (const [name, s, e] of [
+      ["Morning", draft.morning_start, draft.morning_end],
+      ["Evening", draft.evening_start, draft.evening_end],
+    ] as const) {
+      if (s === e) {
+        toast.error(`${name}: start and end can't be the same time`);
+        return;
+      }
+    }
+    setSaving(true);
+    try {
+      const res = await api("/company", {
+        method: "PUT",
+        body: JSON.stringify(draft),
+      });
+      const data = await parseApiJson<{ company?: Presets; error?: string }>(res);
+      if (!res.ok || !data.company) {
+        throw new Error(data.error || "Could not save shift presets");
+      }
+      const presets = pickPresets(data.company);
+      setSaved(presets);
+      setDraft(presets);
+      toast.success("Shift presets saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save shift presets");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SettingsSection
+      title="Shift presets"
+      description="The Morning and Evening buttons when assigning shifts. Shared by everyone in the workspace."
+      footer={
+        <PanelFooter className="flex items-center justify-end gap-2">
+          {dirty && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDraft(saved)}
+              disabled={saving}
+            >
+              Discard
+            </Button>
+          )}
+          <Button type="button" size="sm" onClick={save} disabled={!dirty || saving}>
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Save presets
+          </Button>
+        </PanelFooter>
+      }
+    >
+      <SettingsRow icon={Sun} title="Morning" description="Default morning shift window.">
+        <PresetRange
+          label="Morning"
+          start={draft?.morning_start ?? ""}
+          end={draft?.morning_end ?? ""}
+          onStart={patch("morning_start")}
+          onEnd={patch("morning_end")}
+          disabled={!draft || saving}
+        />
+      </SettingsRow>
+      <SettingsRow icon={Moon} title="Evening" description="Default evening shift window.">
+        <PresetRange
+          label="Evening"
+          start={draft?.evening_start ?? ""}
+          end={draft?.evening_end ?? ""}
+          onStart={patch("evening_start")}
+          onEnd={patch("evening_end")}
+          disabled={!draft || saving}
+        />
+      </SettingsRow>
+    </SettingsSection>
+  );
+}
 
 export default function CompanySettingsPage() {
   const { user } = useAuth();
   const role: AppRole = user?.profile.role === "owner" ? "owner" : "manager";
-
-  const [timeOffAlerts, setTimeOffAlerts] = useState(true);
-  const [publishReminders, setPublishReminders] = useState(true);
-  const [emailDigest, setEmailDigest] = useState(false);
-  const [weekStartsOn, setWeekStartsOn] = useState("monday");
-  const [timezone, setTimezone] = useState("local");
-  const [timeFormat, setTimeFormat] = useState("12h");
-  const [morningPreset, setMorningPreset] = useState("08:00–16:00");
-  const [eveningPreset, setEveningPreset] = useState("16:00–00:00");
-  const [requireSwapApproval, setRequireSwapApproval] = useState(true);
-  const [showCompanyName, setShowCompanyName] = useState(true);
 
   return (
     <AppShell role={role}>
@@ -41,121 +196,10 @@ export default function CompanySettingsPage() {
         <SettingsPageShell
           eyebrow={user?.profile.companies?.name}
           title="Settings"
-          description="Workspace schedule defaults, notifications, and team preferences."
+          description="Workspace shift presets and how dates and times appear for you."
         >
-          <SettingsSection
-            title="Schedule"
-            description="Defaults used when assigning shifts. Editable here soon — presets still work from Overview for now."
-          >
-            <SettingsSelectRow
-              icon={Clock}
-              title="Morning preset"
-              description="Default morning shift window."
-              value={morningPreset}
-              onChange={setMorningPreset}
-              options={[
-                { value: "08:00–16:00", label: "8:00 AM – 4:00 PM" },
-                { value: "07:00–15:00", label: "7:00 AM – 3:00 PM" },
-                { value: "09:00–17:00", label: "9:00 AM – 5:00 PM" },
-              ]}
-            />
-            <SettingsSelectRow
-              icon={Clock}
-              title="Evening preset"
-              description="Default evening shift window."
-              value={eveningPreset}
-              onChange={setEveningPreset}
-              options={[
-                { value: "16:00–00:00", label: "4:00 PM – 12:00 AM" },
-                { value: "15:00–23:00", label: "3:00 PM – 11:00 PM" },
-                { value: "14:00–22:00", label: "2:00 PM – 10:00 PM" },
-              ]}
-            />
-            <SettingsSelectRow
-              icon={CalendarClock}
-              title="Week starts on"
-              description="First day of the scheduling week."
-              value={weekStartsOn}
-              onChange={setWeekStartsOn}
-              options={[
-                { value: "monday", label: "Monday" },
-                { value: "sunday", label: "Sunday" },
-              ]}
-            />
-            <SettingsSelectRow
-              icon={MapPin}
-              title="Timezone"
-              description="Used for shift times and publish windows."
-              value={timezone}
-              onChange={setTimezone}
-              options={[
-                { value: "local", label: "Device local time" },
-                { value: "America/New_York", label: "Eastern (US)" },
-                { value: "America/Chicago", label: "Central (US)" },
-                { value: "America/Denver", label: "Mountain (US)" },
-                { value: "America/Los_Angeles", label: "Pacific (US)" },
-              ]}
-            />
-            <SettingsSelectRow
-              icon={Clock}
-              title="Time format"
-              description="How times appear across the company dashboard."
-              value={timeFormat}
-              onChange={setTimeFormat}
-              options={[
-                { value: "12h", label: "12-hour (1:00 PM)" },
-                { value: "24h", label: "24-hour (13:00)" },
-              ]}
-            />
-          </SettingsSection>
-
-          <SettingsSection
-            title="Notifications"
-            description="Stay on top of team requests and schedule changes."
-          >
-            <SettingsToggleRow
-              icon={Inbox}
-              title="Time-off requests"
-              description="When someone submits a new time-off request."
-              checked={timeOffAlerts}
-              onCheckedChange={setTimeOffAlerts}
-            />
-            <SettingsToggleRow
-              icon={Bell}
-              title="Publish reminders"
-              description="Nudge when a draft week still needs publishing."
-              checked={publishReminders}
-              onCheckedChange={setPublishReminders}
-            />
-            <SettingsToggleRow
-              icon={Mail}
-              title="Email digest"
-              description="Daily summary for managers (after email is enabled)."
-              checked={emailDigest}
-              onCheckedChange={setEmailDigest}
-            />
-          </SettingsSection>
-
-          <SettingsSection
-            wide
-            title="Team & workspace"
-            description="How invites and company details behave."
-          >
-            <SettingsToggleRow
-              icon={Users}
-              title="Require manager approval for swaps"
-              description="Employees can propose swaps; you confirm before they stick."
-              checked={requireSwapApproval}
-              onCheckedChange={setRequireSwapApproval}
-            />
-            <SettingsToggleRow
-              icon={Building2}
-              title="Show company name on employee schedule"
-              description="Display your workspace name on shared views."
-              checked={showCompanyName}
-              onCheckedChange={setShowCompanyName}
-            />
-          </SettingsSection>
+          <ShiftPresetsSection />
+          <DisplayPrefsSection />
         </SettingsPageShell>
       </AuthGuard>
     </AppShell>

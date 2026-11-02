@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShiftProperties } from "@/features/dashboard/shift-properties";
-import { toLocalDateInput, toLocalTimeInput } from "@/lib/dates";
+import { toLocalDateInput, toLocalTimeInput, formatTimeShort, startOfWeek as firstDayOfWeek, weekdayLabels } from "@/lib/dates";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 
@@ -204,14 +204,6 @@ export function TeamScheduleGrid({
   };
 
   // Formatting utilities
-  const formatTime = (dateStr: string) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(new Date(dateStr));
-  };
-
   const formatDateLabel = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -219,19 +211,9 @@ export function TeamScheduleGrid({
     }).format(date);
   };
 
-  // Determine starting date
-  const referenceDate = new Date();
-  referenceDate.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = referenceDate.getDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
-  const baseStartOfWeek = new Date(referenceDate);
-  baseStartOfWeek.setDate(referenceDate.getDate() + diffToMonday);
-
-  // Apply offset
-  const startOfWeek = new Date(baseStartOfWeek);
-  startOfWeek.setDate(baseStartOfWeek.getDate() + (weekOffset * 7));
+  // First day of the requested week (Monday or Sunday, per display prefs), then offset
+  const startOfWeek = firstDayOfWeek();
+  startOfWeek.setDate(startOfWeek.getDate() + weekOffset * 7);
 
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -362,10 +344,7 @@ export function TeamScheduleGrid({
           >
             <div className="min-w-[560px] bg-card">
               <div className="grid grid-cols-7 gap-px bg-border/30">
-                {[
-                  ["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"],
-                  ["Fri", "F"], ["Sat", "S"], ["Sun", "S"]
-                ].map(([full, short]) => (
+                {weekdayLabels().map((full) => [full, full[0]]).map(([full, short]) => (
                   <div key={full} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-2.5 sm:py-3 bg-card snap-start">
                     <span className="hidden sm:inline">{full}</span>
                     <span className="sm:hidden">{short}</span>
@@ -394,7 +373,7 @@ export function TeamScheduleGrid({
                              key={shift.id} 
                              onClick={() => setSelectedShift(shift)}
                              className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-sm relative z-10 cursor-pointer border border-transparent transition-[filter] hover:brightness-95 dark:hover:brightness-125 ${getEmployeeColor(shift.users?.full_name)} ${shift.status === "draft" ? "border-dashed border-current/40 opacity-75" : ""}`}>
-                            <span className="block truncate">{formatTime(shift.start_time).replace(':00', '').toLowerCase()} – {formatTime(shift.end_time).replace(':00', '').toLowerCase()}</span>
+                            <span className="block truncate">{formatTimeShort(shift.start_time)} – {formatTimeShort(shift.end_time)}</span>
                             <span className="opacity-80 block truncate mt-0.5">
                               {shift.users?.full_name?.split(' ')[0]}: {shift.title}
                               {shift.status === "draft" && (

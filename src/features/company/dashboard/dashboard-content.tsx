@@ -22,6 +22,7 @@ import { ManageTeamModal } from "@/features/company/dashboard/manage-team-modal"
 import type { CompanySettings } from "./company-settings";
 import { ShiftSummary } from "@/features/dashboard/shift-summary";
 import { ActivityFeed } from "./activity-feed";
+import { startOfWeek } from "@/lib/dates";
 
 type DashboardEmployee = {
   id: string;
@@ -48,18 +49,10 @@ type MyShift = {
   end_time: string;
 };
 
-/** Local Monday 00:00 of the current week. */
-function startOfThisWeek() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d;
-}
-
 function weekStats(shifts: DashboardShift[]) {
-  const monday = startOfThisWeek();
-  const nextMonday = new Date(monday);
-  nextMonday.setDate(monday.getDate() + 7);
+  const weekStart = startOfWeek();
+  const nextWeekStart = new Date(weekStart);
+  nextWeekStart.setDate(weekStart.getDate() + 7);
   const today = new Date().toDateString();
 
   let weekCount = 0;
@@ -69,11 +62,11 @@ function weekStats(shifts: DashboardShift[]) {
   for (const s of shifts) {
     const start = new Date(s.start_time);
     const end = new Date(s.end_time);
-    if (start >= monday && start < nextMonday) {
+    if (start >= weekStart && start < nextWeekStart) {
       weekCount += 1;
       weekHours += (end.getTime() - start.getTime()) / 3_600_000;
     }
-    if (s.status === "draft" && end >= monday) drafts += 1;
+    if (s.status === "draft" && end >= weekStart) drafts += 1;
     if (start.toDateString() === today) workingToday.add(s.employee_id);
   }
   return {

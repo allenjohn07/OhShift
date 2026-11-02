@@ -2,6 +2,7 @@ import { Calendar, CircleDot, Clock, User } from "lucide-react";
 import type { ReactNode } from "react";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
 
 type ShiftLike = {
   start_time: string;
@@ -13,10 +14,6 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
   month: "short",
   day: "numeric",
-});
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
 });
 
 function Row({
@@ -78,7 +75,7 @@ export function ShiftProperties({
       </Row>
       <Row icon={Clock} label="Time">
         <span className="tabular-nums">
-          {timeFmt.format(start)} – {timeFmt.format(end)}
+          {formatTime(start)} – {formatTime(end)}
         </span>
         <span className="text-muted-foreground"> · {hours}h</span>
       </Row>

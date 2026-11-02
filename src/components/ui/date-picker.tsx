@@ -7,11 +7,14 @@ import {
 } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { parseDateInput, toLocalDateInput } from "@/lib/dates"
+import {
+  parseDateInput,
+  toLocalDateInput,
+  weekStartDay,
+  weekdayLabels,
+} from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
-/** Monday-first, matching the schedule week. */
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 
 const monthFmt = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" })
 const longFmt = new Intl.DateTimeFormat("en-US", {
@@ -37,10 +40,15 @@ function addMonths(date: Date, months: number) {
   return d
 }
 
-/** Monday-first grid of whole weeks covering the month. */
+/** Days from the start of the user's week (Monday or Sunday) to `date`. */
+function daysIntoWeek(date: Date) {
+  return (date.getDay() - weekStartDay() + 7) % 7
+}
+
+/** Grid of whole weeks covering the month, starting on the user's week start. */
 function monthGrid(year: number, month: number) {
   const first = new Date(year, month, 1)
-  const start = addDays(first, -((first.getDay() + 6) % 7))
+  const start = addDays(first, -daysIntoWeek(first))
   const last = new Date(year, month + 1, 0)
   const days: Date[] = []
   for (let d = start; d <= last || days.length % 7 !== 0; d = addDays(d, 1)) {
@@ -100,8 +108,8 @@ function Calendar({
       ArrowDown: () => addDays(focusedDate, 7),
       PageUp: () => addMonths(focusedDate, -1),
       PageDown: () => addMonths(focusedDate, 1),
-      Home: () => addDays(focusedDate, -((focusedDate.getDay() + 6) % 7)),
-      End: () => addDays(focusedDate, 6 - ((focusedDate.getDay() + 6) % 7)),
+      Home: () => addDays(focusedDate, -daysIntoWeek(focusedDate)),
+      End: () => addDays(focusedDate, 6 - daysIntoWeek(focusedDate)),
     }
     const step = steps[e.key]
     if (!step) return
@@ -143,7 +151,7 @@ function Calendar({
       </div>
 
       <div className="mt-1 grid grid-cols-7 text-center text-[11px] text-muted-foreground">
-        {WEEKDAYS.map((d) => (
+        {weekdayLabels().map((d) => d.slice(0, 2)).map((d) => (
           <div key={d} className="flex h-7 items-center justify-center">
             {d}
           </div>

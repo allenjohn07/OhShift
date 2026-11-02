@@ -5,6 +5,7 @@ import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { ScrollFade } from "@/components/scroll-fade";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/dates";
 
 type AgendaShift = {
   id: string;
@@ -16,10 +17,6 @@ type AgendaShift = {
   users?: { full_name: string };
 };
 
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
-});
 
 function sameLocalDay(a: Date, b: Date) {
   return a.toDateString() === b.toDateString();
@@ -168,7 +165,7 @@ export function DayAgenda({
                   </p>
                 </div>
                 <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                  {timeFmt.format(start)} – {timeFmt.format(end)}
+                  {formatTime(start)} – {formatTime(end)}
                 </span>
               </li>
             );

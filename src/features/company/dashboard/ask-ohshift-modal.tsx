@@ -19,6 +19,7 @@ import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { timeFormatOptions } from "@/lib/dates";
 
 type ShiftProposal = {
   employee_id: string;
@@ -87,10 +88,7 @@ function formatRange(startIso: string, endIso: string): string {
     month: "short",
     day: "numeric",
   });
-  const timeFmt = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const timeFmt = new Intl.DateTimeFormat("en-US", timeFormatOptions());
   return `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
 }
 
