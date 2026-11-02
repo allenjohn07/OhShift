@@ -17,6 +17,8 @@ import {
   formatConflictMessage,
   formatSameStartMessage,
 } from "./shift-conflicts";
+import { databaseConflict } from "./database-error";
+import { ApiError } from "./auth-guard";
 import { shiftLogInsert } from "./shift-log";
 import {
   approvedTimeOffConflictMessage,
@@ -172,7 +174,11 @@ export async function createDraftShifts(options: {
   const { companyId, actorId, timezone, items } = options;
   if (items.length === 0) return [];
 
-  const times = validTimes(items);
+  const usable = items.filter(item => Number.isFinite(item.start.getTime()) && Number.isFinite(item.end.getTime()) && item.start < item.end && item.end.getTime() - item.start.getTime() <= 86_400_000);
+  const times = validTimes(usable);
+  if (times.length && Math.max(...times) - Math.min(...times) > 31 * 86_400_000) {
+    throw new ApiError("Assign shifts within a 31-day window per request.", 400);
+  }
   const from = new Date(times.length ? Math.min(...times) : 0);
   const to = new Date(times.length ? Math.max(...times) : 0);
 
@@ -242,7 +248,12 @@ export async function createDraftShifts(options: {
 
   const [first, ...rest] = statements;
   if (first) {
-    await db.batch([first, ...rest]);
+    try { await db.batch([first, ...rest]); }
+    catch (error) {
+      const conflict = databaseConflict(error);
+      if (conflict) throw new ApiError(conflict, 409);
+      throw error;
+    }
   }
 
   return results;

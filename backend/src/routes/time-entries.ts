@@ -273,14 +273,16 @@ export const timeEntriesRoutes = new Hono()
       return c.json({ error: "Clock-out must be after clock-in" }, 400);
     }
 
-    await db
+    const [changed] = await db
       .update(timeEntries)
       .set({
         punchedOutAt: now,
         clockOutAt: now,
         status: "pending",
       })
-      .where(eq(timeEntries.id, entry.id));
+      .where(and(eq(timeEntries.id, entry.id), eq(timeEntries.employeeId, user.id), eq(timeEntries.status, "open")))
+      .returning({ id: timeEntries.id });
+    if (!changed) return c.json({ error: "Time entry changed. Refresh and try again." }, 409);
 
     return c.json({ entry: await loadEntry(entry.id) });
   })
@@ -338,7 +340,7 @@ export const timeEntriesRoutes = new Hono()
         ? payload.note.trim().slice(0, 500)
         : null;
 
-    await db
+    const [changed] = await db
       .update(timeEntries)
       .set({
         clockInAt,
@@ -348,7 +350,9 @@ export const timeEntriesRoutes = new Hono()
         reviewedById: user.id,
         reviewedAt: new Date(),
       })
-      .where(eq(timeEntries.id, row.id));
+      .where(and(eq(timeEntries.id, row.id), eq(timeEntries.companyId, user.companyId), eq(timeEntries.status, "pending")))
+      .returning({ id: timeEntries.id });
+    if (!changed) return c.json({ error: "Time entry changed. Refresh and try again." }, 409);
 
     return c.json({ entry: await loadEntry(row.id) });
   });

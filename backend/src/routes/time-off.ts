@@ -169,11 +169,9 @@ export const timeOffRoutes = new Hono()
       return c.json({ error: "Only pending requests can be cancelled" }, 400);
     }
 
-    const [updated] = await db
-      .update(timeOffRequests)
-      .set({ status: "cancelled" })
-      .where(eq(timeOffRequests.id, row.id))
-      .returning();
+    const [updated] = await db.update(timeOffRequests).set({ status: "cancelled" })
+      .where(and(eq(timeOffRequests.id, row.id), eq(timeOffRequests.employeeId, user.id), eq(timeOffRequests.status, "pending"))).returning();
+    if (!updated) return c.json({ error: "Request changed. Refresh and try again." }, 409);
 
     return c.json({ request: serializeTimeOff(updated!) });
   })
@@ -233,14 +231,16 @@ export const timeOffRoutes = new Hono()
       return c.json({ error: "You cannot review your own time-off request" }, 403);
     }
 
-    await db
+    const [reviewed] = await db
       .update(timeOffRequests)
       .set({
         status: decision,
         reviewedById: user.id,
         reviewedAt: new Date(),
       })
-      .where(eq(timeOffRequests.id, row.id));
+      .where(and(eq(timeOffRequests.id, row.id), eq(timeOffRequests.companyId, user.companyId), eq(timeOffRequests.status, "pending")))
+      .returning({ id: timeOffRequests.id });
+    if (!reviewed) return c.json({ error: "Request changed. Refresh and try again." }, 409);
 
     const updated = await db.query.timeOffRequests.findFirst({
       where: eq(timeOffRequests.id, row.id),
