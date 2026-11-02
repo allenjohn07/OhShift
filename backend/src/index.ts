@@ -29,7 +29,7 @@ function parseOrigin(value: string): string | null {
 const vars = env as unknown as Record<string, string | undefined>;
 
 const configuredOrigins = [
-  vars.FRONTEND_URL,
+  vars.APP_URL ?? vars.FRONTEND_URL,
   ...(vars.FRONTEND_URLS ?? "")
     .split(",")
     .map((entry) => entry.trim())

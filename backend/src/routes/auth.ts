@@ -1,10 +1,12 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { companies, users } from "../db/schema";
 import { jsonBody, requireUser } from "../lib/auth-guard";
-import { generateTempPassword, hashPassword, verifyPassword } from "../lib/password";
+import { hashPassword, verifyPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
+import { consumeAccountToken, sendAccountLink } from "../lib/account-tokens";
+import { limitAuth } from "../lib/auth-rate-limit";
 import { createAccessToken, getAuthFromBearer, getDbUser } from "../lib/session";
 
 type LoginBody = {
@@ -31,13 +33,14 @@ type ChangePasswordBody = {
 export const authRoutes = new Hono()
   .post("/login", jsonBody<LoginBody>(), async (c) => {
     const { email, password } = c.req.valid("json");
+    await limitAuth(c, "login", typeof email === "string" ? email : undefined);
 
-    if (!email || !password) {
+    if (typeof email !== "string" || email.length > 254 || typeof password !== "string" || !password || password.length > 128) {
       return c.json({ error: "Email and password are required" }, 400);
     }
 
     const user = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`,
       with: { company: true },
     });
 
@@ -55,6 +58,7 @@ export const authRoutes = new Hono()
       email: user.email,
       role: user.role,
       companyId: user.companyId,
+      sessionVersion: user.sessionVersion,
     });
 
     return c.json({
@@ -69,13 +73,14 @@ export const authRoutes = new Hono()
   })
   .post("/register-company", jsonBody<RegisterCompanyBody>(), async (c) => {
     const { companyName, name, email, password } = c.req.valid("json");
+    await limitAuth(c, "register");
 
-    if (!companyName || !name || !email || !password) {
+    if (typeof companyName !== "string" || !companyName.trim() || companyName.length > 120 || typeof name !== "string" || !name.trim() || name.length > 120 || typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || typeof password !== "string" || password.length < 12 || password.length > 128) {
       return c.json({ error: "All fields are required" }, 400);
     }
 
     const existing = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`,
       columns: { id: true },
     });
     if (existing) {
@@ -90,14 +95,14 @@ export const authRoutes = new Hono()
     await db.batch([
       db.insert(users).values({
         id: ownerId,
-        fullName: name,
-        email,
+        fullName: name.trim(),
+        email: email.trim().toLowerCase(),
         passwordHash,
         role: "owner",
       }),
       db.insert(companies).values({
         id: companyId,
-        name: companyName,
+        name: companyName.trim(),
         ownerId,
       }),
       db.update(users).set({ companyId }).where(eq(users.id, ownerId)),
@@ -114,31 +119,25 @@ export const authRoutes = new Hono()
   .post("/reset-password", jsonBody<ResetPasswordBody>(), async (c) => {
     const { email } = c.req.valid("json");
 
-    if (!email) {
+    if (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return c.json({ error: "Email is required" }, 400);
     }
 
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email),
-      columns: { id: true },
-    });
-
-    if (!existingUser) {
-      return c.json({ error: "No account found with that email address" }, 404);
+    await limitAuth(c, "reset", typeof email === "string" ? email : undefined);
+    const user = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`, columns: { id: true, email: true, fullName: true, sessionVersion: true } });
+    if (user) c.executionCtx.waitUntil(sendAccountLink(user, "reset").catch(() => {
+      console.error("Account recovery delivery failed");
+    }));
+    return c.json({ message: "If an account exists for that email, a password link will arrive shortly." });
+  })
+  .post("/set-password", jsonBody<{ token: string; password: string }>(), async (c) => {
+    const { token, password } = c.req.valid("json");
+    await limitAuth(c, "set-password");
+    if (typeof token !== "string" || typeof password !== "string" || password.length < 12 || password.length > 128) {
+      return c.json({ error: "Use a valid link and a password between 12 and 128 characters." }, 400);
     }
-
-    const tempPassword = generateTempPassword();
-    const passwordHash = await hashPassword(tempPassword);
-
-    await db
-      .update(users)
-      .set({ passwordHash })
-      .where(eq(users.id, existingUser.id));
-
-    return c.json({
-      message: "Temporary password generated. Copy it now — it will not be emailed.",
-      tempPassword,
-    });
+    await consumeAccountToken(token, password);
+    return c.json({ message: "Password saved. Sign in with your new password." });
   })
   .post("/update-avatar", jsonBody<UpdateAvatarBody>(), async (c) => {
     const user = await requireUser(c);
@@ -156,7 +155,7 @@ export const authRoutes = new Hono()
     const user = await requireUser(c);
     const { currentPassword, newPassword } = c.req.valid("json");
 
-    if (!currentPassword || !newPassword) {
+    if (typeof currentPassword !== "string" || !currentPassword || currentPassword.length > 128 || typeof newPassword !== "string" || newPassword.length < 12 || newPassword.length > 128) {
       return c.json({ error: "Current and new passwords are required" }, 400);
     }
 
@@ -165,10 +164,11 @@ export const authRoutes = new Hono()
       return c.json({ error: "Incorrect current password." }, 400);
     }
 
-    await db
-      .update(users)
-      .set({ passwordHash: await hashPassword(newPassword) })
-      .where(eq(users.id, user.id));
+    const [updated] = await db.update(users)
+      .set({ passwordHash: await hashPassword(newPassword), sessionVersion: sql`${users.sessionVersion} + 1` })
+      .where(and(eq(users.id, user.id), eq(users.sessionVersion, user.sessionVersion)))
+      .returning({ id: users.id });
+    if (!updated) return c.json({ error: "Your session changed. Sign in again." }, 401);
 
     return c.json({ message: "Password updated successfully" });
   })
@@ -179,7 +179,7 @@ export const authRoutes = new Hono()
     }
 
     const profile = await getDbUser(payload.sub);
-    if (!profile) {
+    if (!profile || payload.sessionVersion !== profile.sessionVersion) {
       return c.json({ user: null });
     }
 

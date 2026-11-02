@@ -192,7 +192,7 @@ export function DashboardContent({
           <DialogHeader>
             <DialogTitle>Invite to {company.name}</DialogTitle>
             <DialogDescription>
-              Invite one person or add several to a list. Each gets an invite code to share (email delivery comes later).
+              Invite one person or add several to a list. Each receives an email link to set their password.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>

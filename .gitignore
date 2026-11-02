@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local plans
 .claude/plans/
+
+# isolated agent worktrees
+/.worktrees/

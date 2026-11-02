@@ -24,9 +24,9 @@ export default function CompanyRegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) {
+    if (password.length < 12) {
       toast.error("Password too short", {
-        description: "Password must be at least 8 characters.",
+        description: "Password must be at least 12 characters.",
       });
       return;
     }

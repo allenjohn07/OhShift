@@ -73,6 +73,7 @@ export const users = sqliteTable(
     fullName: text("full_name").notNull(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash"),
+    sessionVersion: integer("session_version").notNull().default(1),
     role: text("role", { enum: USER_ROLES }).notNull(),
     companyId: text("company_id").references(
       (): AnySQLiteColumn => companies.id,
@@ -84,6 +85,24 @@ export const users = sqliteTable(
   },
   (t) => [index("users_company_id_idx").on(t.companyId)],
 );
+
+/** Only token digests are persisted; raw tokens travel only in email. */
+export const accountTokens = sqliteTable("account_tokens", {
+  id: id(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  purpose: text("purpose", { enum: ["reset", "invite"] }).notNull(),
+  sessionVersion: integer("session_version").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: createdAt(),
+}, (t) => [index("account_tokens_user_idx").on(t.userId)]);
+
+export const authRateBuckets = sqliteTable("auth_rate_buckets", {
+  key: text("key").primaryKey(),
+  attempts: integer("attempts").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (t) => [index("auth_rate_buckets_expires_idx").on(t.expiresAt)]);
 
 export const shifts = sqliteTable(
   "shifts",

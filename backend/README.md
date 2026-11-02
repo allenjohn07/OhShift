@@ -40,12 +40,13 @@ API runs at `http://localhost:3001`.
 | `POST /auth/login` | Email/password login → JWT |
 | `GET /auth/me` | Current user profile (Bearer token) |
 | `POST /auth/register-company` | Public company signup |
-| `POST /auth/reset-password` | Returns `tempPassword` in JSON (email deferred) |
+| `POST /auth/set-password` | Redeem a single-use account link and revoke old sessions |
+| `POST /auth/reset-password` | Queues a single-use password recovery email; always returns a generic message |
 | `POST /auth/change-password` | Authenticated password change |
 | `PUT /company` | Update shift presets |
 | `POST /company/schedule/publish` | Publish draft shifts for a week |
 | `PUT/DELETE /employees` | Manage team / roles |
-| `POST /employees/invite` | Invite employees; returns `inviteCode` per user |
+| `POST /employees/invite` | Email expiring account-setup links to employees |
 | `GET/POST/PUT/DELETE /shifts` | Shift CRUD (`/shifts/bulk`, `/shifts/eligible`) |
 | `GET /shifts/mine` | Employee's published shifts |
 | `/availability`, `/time-off`, `/time-entries` | Worker availability, time off, timesheets |
@@ -78,7 +79,7 @@ bun run deploy
 
 ## Email (deferred)
 
-Outbound email is not wired. Invite codes and password-reset temps are returned in API responses for the UI to display. When you re-add email, prefer **Resend** or **Brevo**.
+Transactional email uses Resend. See [production setup](../docs/production-setup.md) for domain verification, Worker secrets and recovery behavior. Passwords and raw account-link tokens are never returned by the API.
 
 ## Frontend
 

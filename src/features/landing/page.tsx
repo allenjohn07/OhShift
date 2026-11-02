@@ -80,7 +80,7 @@ const steps = [
   {
     title: "Invite your team",
     description:
-      "Add employees and share their invite codes. Promote anyone to manager.",
+      "Invite employees by email. Promote anyone to manager.",
   },
   {
     title: "Build and publish",

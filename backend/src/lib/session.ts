@@ -8,6 +8,7 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
 export type AuthPayload = {
   sub: string;
+  sessionVersion?: number;
   email?: string;
   role?: UserRole;
   companyId?: string | null;
@@ -43,11 +44,13 @@ export async function createAccessToken(user: {
   email: string;
   role: UserRole;
   companyId: string | null;
+  sessionVersion: number;
 }) {
   const now = Math.floor(Date.now() / 1000);
   return sign(
     {
       sub: user.id,
+      sessionVersion: user.sessionVersion,
       email: user.email,
       role: user.role,
       companyId: user.companyId,

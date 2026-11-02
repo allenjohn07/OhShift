@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as CompanyLoginRouteImport } from './routes/company/login'
 import { Route as CompanyRegisterRouteImport } from './routes/company/register'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
@@ -38,6 +39,11 @@ const LoginRoute = LoginRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompanyLoginRoute = CompanyLoginRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/set-password': typeof SetPasswordRoute
   '/company/login': typeof CompanyLoginRoute
   '/company/register': typeof CompanyRegisterRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/set-password': typeof SetPasswordRoute
   '/company/login': typeof CompanyLoginRoute
   '/company/register': typeof CompanyRegisterRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/set-password': typeof SetPasswordRoute
   '/company/login': typeof CompanyLoginRoute
   '/company/register': typeof CompanyRegisterRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/profile'
+    | '/set-password'
     | '/company/login'
     | '/company/register'
     | '/dashboard/availability'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/profile'
+    | '/set-password'
     | '/company/login'
     | '/company/register'
     | '/dashboard/availability'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/profile'
+    | '/set-password'
     | '/company/login'
     | '/company/register'
     | '/dashboard/availability'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  SetPasswordRoute: typeof SetPasswordRoute
   CompanyLoginRoute: typeof CompanyLoginRoute
   CompanyRegisterRoute: typeof CompanyRegisterRoute
   DashboardAvailabilityRoute: typeof DashboardAvailabilityRoute
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/company/login': {
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  SetPasswordRoute: SetPasswordRoute,
   CompanyLoginRoute: CompanyLoginRoute,
   CompanyRegisterRoute: CompanyRegisterRoute,
   DashboardAvailabilityRoute: DashboardAvailabilityRoute,

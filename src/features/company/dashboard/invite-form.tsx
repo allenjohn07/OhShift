@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ function isValidEmail(email: string) {
 
 /** Invite form body — rendered inside the Invite dialog on the Overview. */
 export function InviteEmployeeForm() {
+  const queryClient = useQueryClient();
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -83,16 +85,9 @@ export function InviteEmployeeForm() {
       const created = data.invites;
 
       if (created.length > 0) {
-        const summary = created
-          .map((i) => `${i.email}: ${i.inviteCode}`)
-          .join(" · ");
-        toast.success(
-          created.length === 1 ? "Employee invited" : "Employees invited",
-          {
-            description: `Share these invite codes (not emailed yet): ${summary}`,
-            duration: 30_000,
-          },
-        );
+        toast.success(created.length === 1 ? "Invitation sent" : "Invitations sent", {
+          description: "Each employee will receive a link to set their password.",
+        });
       } else {
         toast.success(data.message || "Invitations created");
       }
@@ -103,6 +98,7 @@ export function InviteEmployeeForm() {
         });
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       clearForm();
       if (clearList) setInvitees([]);
     } catch {

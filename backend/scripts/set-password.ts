@@ -18,14 +18,14 @@ if (!email || !newPassword) {
   process.exit(1);
 }
 
-if (newPassword.length < 8) {
-  console.error("Password must be at least 8 characters.");
+if (newPassword.length < 12 || newPassword.length > 128) {
+  console.error("Password must be between 12 and 128 characters.");
   process.exit(1);
 }
 
 const passwordHash = await hashPassword(newPassword);
 const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
-const sql = `UPDATE users SET password_hash = ${quote(passwordHash)} WHERE email = ${quote(email)};`;
+const sql = `UPDATE users SET password_hash = ${quote(passwordHash)}, session_version = session_version + 1 WHERE email = ${quote(email)};`;
 
 const proc = Bun.spawnSync(
   ["bunx", "wrangler", "d1", "execute", "ohshift", target, "--json", "--command", sql],

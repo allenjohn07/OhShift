@@ -58,12 +58,7 @@ export default function CompanyLoginPage() {
         ),
         "Failed to reset password",
       );
-      toast.success("Temporary password ready", {
-        description: data.tempPassword
-          ? `Copy this password and log in: ${data.tempPassword}`
-          : data.message || "Use the temporary password to log in.",
-        duration: 20_000,
-      });
+      toast.success("Check your email", { description: data.message });
     } catch (err: unknown) {
       toast.error("Reset failed", {
         description:

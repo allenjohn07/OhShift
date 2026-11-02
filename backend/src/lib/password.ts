@@ -57,11 +57,3 @@ export async function verifyPassword(password: string, stored: string | null) {
   for (let i = 0; i < actual.length; i++) diff |= actual[i]! ^ expected[i]!;
   return diff === 0;
 }
-
-/** Cryptographically secure temp password / invite code (8 hex chars). */
-export function generateTempPassword() {
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0"))
-    .join("")
-    .toUpperCase();
-}

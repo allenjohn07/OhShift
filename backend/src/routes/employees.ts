@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { users, type UserRole } from "../db/schema";
@@ -9,7 +9,8 @@ import {
   verifyEmployeeInCompany,
   queryParams,
 } from "../lib/auth-guard";
-import { generateTempPassword, hashPassword } from "../lib/password";
+import { sendAccountLink } from "../lib/account-tokens";
+import { emailConfig } from "../lib/email";
 import { serializeUser } from "../lib/serialize";
 
 const ASSIGNABLE_ROLES: UserRole[] = ["employee", "manager"];
@@ -96,68 +97,33 @@ export const employeesRoutes = new Hono()
     const sender = await requireManager(c);
     const { invites } = c.req.valid("json");
 
-    if (!invites?.length) {
-      return c.json({ error: "At least one invitee is required." }, 400);
+    if (!Array.isArray(invites) || invites.length < 1 || invites.length > 20 || invites.some(i => !i || typeof i.email !== "string" || i.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email.trim()) || typeof i.fullName !== "string" || !i.fullName.trim() || i.fullName.length > 120 || (i.designation !== undefined && (typeof i.designation !== "string" || i.designation.length > 120)))) {
+      return c.json({ error: "Provide 1–20 valid invitations with names and email addresses." }, 400);
     }
-
-    let successCount = 0;
+    try { emailConfig(); } catch { return c.json({ error: "Email delivery is not configured. Contact your administrator." }, 503); }
+    const created: Array<{ email: string; fullName: string }> = [];
     const inviteErrors: string[] = [];
-    const created: Array<{ email: string; fullName: string; inviteCode: string }> =
-      [];
-
     for (const invite of invites) {
-      const email = invite.email.trim();
+      const email = invite.email.trim().toLowerCase();
       const fullName = invite.fullName.trim();
-      const designation = invite.designation?.trim() || null;
-
       try {
-        const inviteCode = generateTempPassword();
-        const passwordHash = await hashPassword(inviteCode);
-
-        // Unique email: skip silently-conflicting rows instead of a pre-check query.
-        const inserted = await db
-          .insert(users)
-          .values({
-            email,
-            fullName,
-            role: "employee",
-            companyId: sender.companyId,
-            designation,
-            passwordHash,
-          })
-          .onConflictDoNothing({ target: users.email })
-          .returning({ id: users.id });
-
-        if (inserted.length === 0) {
-          inviteErrors.push(
-            `${email}: already registered — use a different email`,
-          );
+        let member = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email}` });
+        if (member && (member.companyId !== sender.companyId || member.passwordHash !== null)) {
+          inviteErrors.push(`${email}: already registered`);
           continue;
         }
-
-        created.push({ email, fullName, inviteCode });
-        successCount++;
-      } catch (err) {
-        console.error("Invite failed for", email, err);
-        const reason =
-          err instanceof Error ? err.message : "Unexpected error";
-        inviteErrors.push(`${email}: ${reason}`);
+        if (!member) {
+          const [inserted] = await db.insert(users).values({ email, fullName, role: "employee", companyId: sender.companyId, designation: invite.designation?.trim() || null, passwordHash: null }).onConflictDoNothing({ target: users.email }).returning();
+          member = inserted;
+        }
+        if (!member) { inviteErrors.push(`${email}: already registered`); continue; }
+        await sendAccountLink(member, "invite", sender.company?.name);
+        created.push({ email, fullName });
+      } catch {
+        console.error("Invitation delivery failed");
+        inviteErrors.push(`${email}: delivery failed; try inviting this address again`);
       }
     }
-
-    if (successCount === 0) {
-      return c.json(
-        {
-          error: "Failed to invite any employees.",
-          details: inviteErrors,
-        },
-        400,
-      );
-    }
-
-    return c.json({
-      message: `Successfully invited ${successCount} employee(s). Share their invite codes — email is not sent yet.`,
-      invites: created,
-      errors: inviteErrors.length > 0 ? inviteErrors : undefined,
-    });
+    if (!created.length) return c.json({ error: "No invitations could be sent.", details: inviteErrors }, 400);
+    return c.json({ message: `Sent ${created.length} invitation(s).`, invites: created, errors: inviteErrors.length ? inviteErrors : undefined });
   });

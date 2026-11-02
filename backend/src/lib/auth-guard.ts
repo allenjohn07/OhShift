@@ -23,7 +23,7 @@ export async function requireUser(c: Context) {
   }
 
   const user = await getDbUser(payload.sub);
-  if (!user) {
+  if (!user || payload.sessionVersion !== user.sessionVersion) {
     throw new ApiError("Unauthorized", 401);
   }
 

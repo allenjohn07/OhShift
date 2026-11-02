@@ -4,12 +4,12 @@
 
 OhShift is an employee shift-scheduling platform. Build features incrementally per the roadmap phases in `.claude/plans/`.
 
-**Current phase (Phase 0 — no email yet):**
+**Current phase (Phase 0 — foundations):**
 - Manager role assignment (owner promotes/demotes employees ↔ managers)
 - Shift conflict detection (overlapping shifts for the same employee)
 - Schedule publish (draft shifts visible to managers only; published shifts visible to employees)
 
-**Deferred until domain + Brevo/Resend:** outbound email (invites, password reset, schedule notifications).
+**Email:** Resend is the transactional provider for invitations, password recovery and schedule notifications. Keep keys in Worker secrets; never return passwords or account-link tokens in API responses. See `docs/production-setup.md`.
 
 **Do not implement** unrelated features, refactors, or “while we're here” fixes unless the user explicitly asks. If you notice unrelated breakage, mention it — do not fix it in the same change unless it blocks the current task.
 

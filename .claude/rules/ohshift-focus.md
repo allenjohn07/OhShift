@@ -7,7 +7,7 @@ Read `AGENTS.md` at the repo root for product context and current phase.
 1. Implement only what the user asked for in the current task. Do not add unrelated features, drive-by refactors, or “improvements” outside scope.
 2. If you spot unrelated bugs or tech debt, note them briefly — do not fix unless the user asks or the bug blocks your task.
 3. Follow the phased roadmap: Phase 0 (foundations, no email) → Phase 1 (availability, PTO, templates, swaps) → later phases. Do not jump ahead.
-4. Email (Brevo/Resend) is **deferred** — invite codes and temp passwords stay in API/UI until the user has a domain.
+4. Transactional email uses Resend. Invitation and recovery links are single-use and expire; never expose credentials in the API/UI. See `docs/production-setup.md`.
 5. One vertical slice per change: Drizzle schema (backend/src/db/schema.ts) → backend route → frontend UI → behavioral tests → verification.
 
 ## Code style

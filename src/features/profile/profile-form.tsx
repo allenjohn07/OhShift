@@ -23,7 +23,7 @@ type ProfileUser = {
 };
 
 export function ProfileForm({ user }: { user: ProfileUser }) {
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
   const queryClient = useQueryClient();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -78,8 +78,8 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
         "Failed to update password",
       );
 
-      toast.success("Password updated successfully");
-      (e.target as HTMLFormElement).reset();
+      toast.success("Password updated. Sign in again with your new password.");
+      logout();
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to update password",
@@ -100,12 +100,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
         ),
         "Failed to reset password",
       );
-      toast.success("Temporary password ready", {
-        description: data.tempPassword
-          ? `Copy this password and log in: ${data.tempPassword}`
-          : data.message || "Use the temporary password to log in.",
-        duration: 20_000,
-      });
+      toast.success("Check your email", { description: data.message });
     } catch (err: unknown) {
       toast.error("Reset failed", {
         description:
@@ -242,7 +237,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                   name="newPassword"
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={12} maxLength={128}
                   className={cn(fieldClass, "h-9 pr-10")}
                 />
                 <IconTooltip
