@@ -11,6 +11,7 @@ import { highlightTourTarget } from "./highlight";
 import { QuestPanel } from "./quest-panel";
 import { setTourPanelOpen, setTourSandbox, useTour } from "./tour-store";
 import { finishDemoSwitch, takePendingDemoDestination, useDemoRoleSwitch, useDemoSwitching } from "./use-demo-role-switch";
+import { Spinner } from "@/components/ui/spinner";
 
 const VIEWS: Array<{ role: AppRole; label: string; persona: string }> = [
   { role: "owner", label: "Owner", persona: "Alex, who owns the café" },
@@ -126,7 +127,7 @@ export function DemoPageGate({ children }: { children: React.ReactNode }) {
   if (!switching) return <>{children}</>;
   return (
     <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]" role="status" aria-label="Switching view">
-      <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+      <Spinner className="h-8 w-8 text-muted-foreground" />
     </div>
   );
 }

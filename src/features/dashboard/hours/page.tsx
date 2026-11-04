@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Loader2,
   Timer,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
@@ -21,6 +20,7 @@ import { formatTime, clockEntriesRange, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 type TimeEntryStatus = "open" | "pending" | "approved" | "denied";
 
@@ -286,7 +286,7 @@ function HoursPageContent() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -465,7 +465,7 @@ function HoursPageContent() {
                         onClick={() => clockOut(shift.id)}
                       >
                         {actingShiftId === shift.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner className="h-4 w-4" />
                         ) : (
                           "Clock out"
                         )}
@@ -477,7 +477,7 @@ function HoursPageContent() {
                         onClick={() => clockIn(shift.id)}
                       >
                         {actingShiftId === shift.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner className="h-4 w-4" />
                         ) : (
                           "Clock in"
                         )}

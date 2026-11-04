@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { CompanySettings } from "./company-settings";
 import {
@@ -19,6 +19,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { shiftRange } from "@/lib/dates";
 import { OvernightHint } from "@/components/overnight-hint";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Employee {
   id: string;
@@ -216,7 +217,7 @@ export function AssignShiftModal({
                   >
                     {isAiLoading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Spinner className="w-3.5 h-3.5" />
                         Filling...
                       </>
                     ) : (
@@ -343,7 +344,7 @@ export function AssignShiftModal({
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Spinner className="w-4 h-4 mr-2" />
                   Assigning...
                 </span>
               ) : (

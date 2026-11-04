@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Loader2, Save, Trash2, Shield } from "lucide-react";
+import { X, Save, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Input, fieldClass } from "@/components/ui/input";
 import { IconTooltip } from "@/components/icon-tooltip";
@@ -17,6 +17,7 @@ import {
 import { SimpleSelect } from "@/components/ui/select";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Employee {
   id: string;
@@ -208,7 +209,7 @@ export function ManageTeamModal({
                             aria-label="Save title"
                           >
                             {isSaving === emp.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Spinner className="w-4 h-4" />
                             ) : (
                               <Save className="w-4 h-4" />
                             )}
@@ -255,7 +256,7 @@ export function ManageTeamModal({
                         aria-label="Remove employee"
                       >
                         {isDeleting === emp.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Spinner className="w-4 h-4" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
                         )}

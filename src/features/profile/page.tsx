@@ -9,6 +9,7 @@ import { ProfileForm } from "./profile-form";
 import type { AppRole } from "@/lib/nav";
 import { queries } from "@/lib/queries";
 import { ApiRequestError } from "@/lib/rpc";
+import { Spinner } from "@/components/ui/spinner";
 
 type ProfileData = {
   full_name?: string | null;
@@ -23,7 +24,7 @@ type ProfileData = {
 function PageSpinner() {
   return (
     <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-      <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+      <Spinner className="h-8 w-8 text-muted-foreground" />
     </div>
   );
 }

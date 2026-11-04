@@ -40,6 +40,7 @@ import {
   usePendingTimeOff,
   usePendingTimesheets,
 } from "@/hooks/use-live-badges";
+import { Spinner } from "@/components/ui/spinner";
 
 const SIDEBAR_COLLAPSED_KEY = "ohshift-sidebar-collapsed";
 /** Expanded / collapsed widths — icons sit on a fixed left gutter in both states */
@@ -536,7 +537,7 @@ export function AppShell({
   if (loading) {
     return (
       <div className="min-h-screen bg-background w-full flex items-center justify-center">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }

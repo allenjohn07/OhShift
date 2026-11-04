@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth-provider";
 import { normalizePath } from "@/lib/nav";
+import { Spinner } from "@/components/ui/spinner";
 
 /** Self-service pages managers/owners share with employees */
 const SHARED_SELF_SERVICE = new Set([
@@ -59,7 +60,7 @@ export function AuthGuard({
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }

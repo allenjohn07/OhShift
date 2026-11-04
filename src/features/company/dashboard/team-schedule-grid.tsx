@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queries } from "@/lib/queries";
 import { useState, useRef } from "react";
-import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Edit2, Send } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { rpc, unwrap } from "@/lib/rpc";
@@ -24,6 +24,7 @@ import { toLocalDateInput, toLocalTimeInput, formatTimeShort, startOfWeek as fir
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { OvernightHint } from "@/components/overnight-hint";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Shift {
   id: string;
@@ -312,7 +313,7 @@ export function TeamScheduleGrid({
                className="ml-1 flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium btn-brand disabled:cursor-not-allowed disabled:opacity-50"
              >
                {isPublishing ? (
-                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                 <Spinner className="w-3.5 h-3.5" />
                ) : (
                  <Send className="w-3.5 h-3.5" />
                )}
@@ -484,7 +485,7 @@ export function TeamScheduleGrid({
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isSaving}>
-                      {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isSaving && <Spinner className="h-4 w-4" />}
                       {isSaving ? "Saving…" : "Save changes"}
                     </Button>
                   </DialogFooter>
@@ -505,7 +506,7 @@ export function TeamScheduleGrid({
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       {isDeleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner className="h-4 w-4" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}

@@ -2,13 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Clock, Loader2 } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { clockEntriesRange, formatTime, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Shift {
   id: string;
@@ -210,11 +211,11 @@ export function ShiftSummary({
     <span className="text-xs text-muted-foreground">Loading…</span>
   ) : canClockOut ? (
     <Button disabled={acting} onClick={clockOut}>
-      {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock out"}
+      {acting ? <Spinner className="h-4 w-4" /> : "Clock out"}
     </Button>
   ) : canClockIn ? (
     <Button disabled={acting} onClick={clockIn} data-tour="clock">
-      {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock in"}
+      {acting ? <Spinner className="h-4 w-4" /> : "Clock in"}
     </Button>
   ) : null;
 

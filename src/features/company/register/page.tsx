@@ -9,6 +9,7 @@ import { ColdStartBanner } from "@/components/cold-start-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { apiError, rpc } from "@/lib/rpc";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function CompanyRegisterPage() {
   const navigate = useNavigate();
@@ -258,7 +259,7 @@ export default function CompanyRegisterPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <Spinner className="h-4 w-4" />
                     Creating account...
                   </span>
                 ) : (

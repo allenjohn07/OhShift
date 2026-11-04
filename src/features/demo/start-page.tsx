@@ -5,6 +5,7 @@ import { ArrowLeft, RotateCw } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { startOfWeek } from "@/lib/dates";
 import { isDemoProfile } from "@/lib/demo";
 import { homeHrefForRole, shellRoleFromProfile } from "@/lib/nav";
@@ -12,7 +13,7 @@ import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import { setTourPanelOpen } from "./tour-store";
 
-/** Shortest time the setup screen stays up, so it reads as a step, not a blink. */
+/** Shortest time the loading spinner stays up, so it reads as a step, not a blink. */
 const MIN_SCREEN_MS = 900;
 
 /**
@@ -38,8 +39,8 @@ async function prepareOverview(queryClient: QueryClient, router: AnyRouter) {
 /**
  * `/demo` (and the root of demo.ohshifts.com): creates a private sandbox
  * company, signs the visitor in as its owner and opens the tour. A visitor
- * who already has a demo session just goes back to it. This screen stays up
- * until the Overview is ready to show.
+ * who already has a demo session just goes back to it. Just a spinner stays
+ * up until the Overview is ready to show.
  */
 export default function DemoStartPage() {
   const { user, loading, adoptSession } = useAuth();
@@ -51,7 +52,7 @@ export default function DemoStartPage() {
 
   const start = useCallback(async () => {
     setError(null);
-    // A fast local API would swap screens within ~200ms, which reads as a flash.
+    // A fast API would swap screens within ~200ms, which reads as a flash.
     const minimumScreenTime = new Promise((resolve) => setTimeout(resolve, MIN_SCREEN_MS));
     try {
       const session = await unwrap(
@@ -85,9 +86,9 @@ export default function DemoStartPage() {
 
   return (
     <div className="animate-fade-in flex min-h-dvh flex-col items-center justify-center bg-background px-4 text-center">
-      <BrandMark size={40} />
       {error ? (
         <>
+          <BrandMark size={40} />
           <h1 className="mt-6 text-2xl font-semibold tracking-tight">The demo didn't start</h1>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground" role="alert">{error}</p>
           <div className="mt-6 flex gap-2">
@@ -104,13 +105,7 @@ export default function DemoStartPage() {
           </div>
         </>
       ) : (
-        <>
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Setting up your demo café…</h1>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            We're creating a private company with a team, schedules and requests just for you. Nothing you do here affects anyone else.
-          </p>
-          <div className="mt-8 h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" aria-label="Loading" />
-        </>
+        <Spinner label="Loading the demo" className="h-8 w-8 text-muted-foreground" />
       )}
     </div>
   );

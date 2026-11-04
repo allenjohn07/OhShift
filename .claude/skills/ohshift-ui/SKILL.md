@@ -134,11 +134,11 @@ Use `AppShell` (role-aware sidebar + mobile tabs) — not the marketing `Navbar`
 - Mobile: bottom tabs + a **Menu** tab (the only menu button). It opens a **bottom sheet** attached to the top of the tab bar, sized to its content (dimmed page behind): large rows for extra pages, then the account row (name → Profile / Log out popup, theme button) — same component as the desktop sidebar. The same tab (now "Close"), tapping the dimmed page, or Escape closes it. The sheet slides up from behind the tab bar (300ms, iOS-style ease), has no handle or shadow, uses 16px rows (same as the logged-out menu), and its side insets are measured from the first/last tab labels so icons line up with \"Overview\" and \"Close\".
 - Sidebar bottom: avatar menu (Profile, theme, Log out — hairline border, no shadow) + theme button; in the collapsed rail only the avatar shows and the menu carries theme + Log out. Transitions are 150ms — keep them snappy.
 - Marketing/auth pages still use `Navbar` (logged-out only). Logged-in visits to `/` redirect via `AuthHomeRedirect`.
-- Loading spinner: full remaining viewport, centered:
+- Loading spinner: always `Spinner` from `src/components/ui/spinner.tsx` (Apple-style spokes; in buttons, `h-4 w-4` and it inherits the text colour). Page loading fills the remaining viewport, centered:
 
 ```tsx
 <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-  <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+  <Spinner className="h-8 w-8 text-muted-foreground" />
 </div>
 ```
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Palmtree } from "lucide-react";
+import { Palmtree } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
@@ -34,6 +34,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 
 type TimeOffRequest = {
@@ -145,7 +146,7 @@ function TimeOffPageContent() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -206,7 +207,7 @@ function TimeOffPageContent() {
                             onClick={() => handleCancel(req.id)}
                           >
                             {cancellingId === req.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Spinner className="h-4 w-4" />
                             ) : (
                               "Cancel"
                             )}
@@ -353,7 +354,7 @@ function TimeOffPageContent() {
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2 h-4 w-4" />
                     Submitting…
                   </>
                 ) : (
