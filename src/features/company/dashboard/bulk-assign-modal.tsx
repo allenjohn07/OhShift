@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CheckSquare, ChevronDown, ChevronRight, Loader2, Users } from "lucide-react";
+import { CheckSquare, ChevronDown, ChevronRight, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CompanySettings } from "./company-settings";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
 import { shiftRange } from "@/lib/dates";
 import { OvernightHint } from "@/components/overnight-hint";
+import { Spinner } from "@/components/ui/spinner";
 
 type EligibilityReason =
   | "unavailable"
@@ -395,7 +396,7 @@ export function BulkAssignModal({
                 <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Eligible
                   {isFetching && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                    <Spinner className="w-3.5 h-3.5 text-muted-foreground" />
                   )}
                 </h3>
                 <button
@@ -559,7 +560,7 @@ export function BulkAssignModal({
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Spinner className="w-4 h-4 mr-2" />
                   Creating...
                 </span>
               ) : (

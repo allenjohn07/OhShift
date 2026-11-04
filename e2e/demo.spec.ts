@@ -78,7 +78,12 @@ test("the hero's live demo button creates a sandbox and opens the tour", async (
 test("the loading screen stays up until the Overview's data has loaded", async ({ page }) => {
   await mockApi(page, { dashboardDelayMs: 1500 });
   await page.goto("/demo");
-  await expect(page.getByRole("heading", { name: /Setting up your demo café/ })).toBeVisible();
+  // Just the spinner: 12 animated spokes and no text to try to read.
+  const spinner = page.getByRole("status", { name: "Loading the demo" });
+  await expect(spinner).toBeVisible();
+  await expect(spinner.locator("line")).toHaveCount(12);
+  expect(await spinner.locator("line").first().evaluate((el) => getComputedStyle(el).animationName)).toBe("spinner-fade");
+  expect((await page.locator("#root").innerText()).trim()).toBe("");
   await page.waitForTimeout(700);
   // Still the loading screen: no half-loaded dashboard, spinner or tour yet.
   await expect(page).toHaveURL(/\/demo$/);

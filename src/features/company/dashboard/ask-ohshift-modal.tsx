@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Loader2, Calendar, Clock, User } from "lucide-react";
+import { Sparkles, Calendar, Clock, User } from "lucide-react";
 
 import { toast } from "sonner";
 import {
@@ -22,6 +22,7 @@ import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
 import { OvernightHint } from "@/components/overnight-hint";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type ShiftProposal = {
   employee_id: string;
@@ -333,7 +334,7 @@ export function AskOhShiftModal({
                     >
                       {isParsing ? (
                         <span className="flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Spinner className="w-4 h-4 mr-2" />
                           Thinking...
                         </span>
                       ) : (
@@ -615,7 +616,7 @@ export function AskOhShiftModal({
                     >
                       {isCreating ? (
                         <span className="flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Spinner className="w-4 h-4 mr-2" />
                           Creating...
                         </span>
                       ) : (
@@ -684,7 +685,7 @@ export function AskOhShiftModal({
                       >
                         {isCreating ? (
                           <span className="flex items-center justify-center">
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Spinner className="w-4 h-4 mr-2" />
                             Creating...
                           </span>
                         ) : (

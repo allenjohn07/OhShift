@@ -10,6 +10,7 @@ import { formatTime } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import type { ApiData, rpc } from "@/lib/rpc";
 import { useQuery } from "@tanstack/react-query";
+import { Spinner } from "@/components/ui/spinner";
 
 type LogEntry = ApiData<typeof rpc.company.activity.$get>["activity"][number];
 
@@ -223,7 +224,7 @@ export function ActivityFeed({
         <div id={panelId}>
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+              <Spinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : logs.length === 0 ? (
             <PanelEmpty icon={<Send />} title="Nothing published yet">

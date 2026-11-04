@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Moon } from "lucide-react";
+import { Moon } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { PageHeader, PageMain } from "@/components/page";
@@ -16,6 +16,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 type DayAvailability = {
   day_of_week: number;
@@ -142,7 +143,7 @@ function AvailabilityEditor() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -161,7 +162,7 @@ function AvailabilityEditor() {
             <Button onClick={handleSave} disabled={saving || !dirty}>
               {saving ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4" />
                   Saving…
                 </>
               ) : (

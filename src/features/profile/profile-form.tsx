@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Building2, Calendar, Loader2, Eye, EyeOff } from "lucide-react";
+import { User, Building2, Calendar, Eye, EyeOff } from "lucide-react";
 import { IconTooltip } from "@/components/icon-tooltip";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { rpc, unwrap } from "@/lib/rpc";
+import { Spinner } from "@/components/ui/spinner";
 
 type ProfileUser = {
   full_name?: string | null;
@@ -191,7 +192,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 disabled={isUpdatingAvatar}
 
               >
-                {isUpdatingAvatar && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isUpdatingAvatar && <Spinner className="h-4 w-4" />}
                 Save picture
               </Button>
             </div>
@@ -267,7 +268,7 @@ export function ProfileForm({ user }: { user: ProfileUser }) {
                 disabled={isUpdatingPassword}
 
               >
-                {isUpdatingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isUpdatingPassword && <Spinner className="h-4 w-4" />}
                 Update password
               </Button>
             </div>

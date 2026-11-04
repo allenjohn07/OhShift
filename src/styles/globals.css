@@ -158,6 +158,27 @@
   }
 }
 
+/* Apple-style spinner (components/ui/spinner.tsx): spokes fade in 12 ticks. */
+.spinner line {
+  animation: spinner-fade 1s steps(12) infinite;
+}
+
+@keyframes spinner-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner line {
+    animation: none;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

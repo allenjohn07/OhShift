@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
@@ -18,6 +18,7 @@ import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
 import type { AppRole } from "@/lib/nav";
 import type { CompanySettings } from "../company-settings";
+import { Spinner } from "@/components/ui/spinner";
 
 type Presets = Pick<
   CompanySettings,
@@ -143,7 +144,7 @@ function ShiftPresetsSection() {
             </Button>
           )}
           <Button type="button" size="sm" onClick={save} disabled={!dirty || saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            {saving && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
             Save presets
           </Button>
         </PanelFooter>

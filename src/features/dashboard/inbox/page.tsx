@@ -4,7 +4,6 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  Loader2,
   Megaphone,
   MessageSquare,
   Pencil,
@@ -35,6 +34,7 @@ import type { AppRole } from "@/lib/nav";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/dates";
+import { Spinner } from "@/components/ui/spinner";
 
 type TabId = "announcements" | "messages";
 
@@ -289,7 +289,7 @@ function InboxPageContent() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -457,7 +457,7 @@ function InboxPageContent() {
                                 }
                               >
                                 {deletingId === ann.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  <Spinner className="h-3.5 w-3.5" />
                                 ) : (
                                   <Trash2 className="h-3.5 w-3.5" />
                                 )}
@@ -659,7 +659,7 @@ function InboxPageContent() {
                         className="h-9 shrink-0 px-4"
                       >
                         {sending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner className="h-4 w-4" />
                         ) : (
                           "Send"
                         )}
@@ -728,7 +728,7 @@ function InboxPageContent() {
               >
                 {savingAnnouncement ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2 h-4 w-4" />
                     Saving…
                   </>
                 ) : editing ? (

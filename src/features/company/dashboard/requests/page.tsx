@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, Inbox, Loader2 } from "lucide-react";
+import { CalendarDays, Inbox } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PageHeader, PageMain } from "@/components/page";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 function timeAgo(iso?: string | null) {
   if (!iso) return null;
@@ -79,7 +80,7 @@ function RequestsContent() {
   if (!loaded) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -156,7 +157,7 @@ function RequestsContent() {
                             onClick={() => review(req.id, "approved")}
                           >
                             {actingId === req.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Spinner className="h-4 w-4" />
                             ) : (
                               "Approve"
                             )}

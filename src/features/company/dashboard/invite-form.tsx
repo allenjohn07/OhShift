@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, Loader2, X, Plus, Pencil } from "lucide-react";
+import { Send, X, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { IconTooltip } from "@/components/icon-tooltip";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { apiError, rpc } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Invitee {
   fullName: string;
@@ -257,7 +258,7 @@ export function InviteEmployeeForm() {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4" />
                   Inviting...
                 </span>
               ) : (
@@ -344,7 +345,7 @@ export function InviteEmployeeForm() {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4" />
                   Sending...
                 </span>
               ) : (

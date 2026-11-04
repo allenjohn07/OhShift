@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader, PageMain } from "@/components/page";
@@ -21,6 +21,7 @@ import { DateTimePicker } from "@/components/ui/time-picker";
 import { formatTime, timeFormatOptions } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
 import { completeDemoStep } from "@/features/demo/tour-store";
+import { Spinner } from "@/components/ui/spinner";
 
 /** Stable fallback so effects keyed on `pending` don't rerun every render. */
 const NO_ENTRIES: CompanyTimeEntry[] = [];
@@ -150,7 +151,7 @@ function TimesheetsContent() {
   if (!loaded) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[calc(100dvh-4rem)]">
-        <div className="h-8 w-8 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -301,7 +302,7 @@ function TimesheetsContent() {
                             onClick={() => review(entry, "approved")}
                           >
                             {actingId === entry.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Spinner className="h-4 w-4" />
                             ) : (
                               "Approve"
                             )}
