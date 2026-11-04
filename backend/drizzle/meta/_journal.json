@@ -43,6 +43,13 @@
       "when": 1793653850561,
       "tag": "0005_schedule_email_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793653851561,
+      "tag": "0006_demo_sandboxes",
+      "breakpoints": true
     }
   ]
 }

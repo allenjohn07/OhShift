@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { clockEntriesRange, formatTime, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 interface Shift {
   id: string;
@@ -144,6 +145,7 @@ export function ShiftSummary({
         "Failed to clock in",
       );
       toast.success("Clocked in");
+      completeDemoStep("clock-in");
       writeCachedEntry(todayShift.id, data.entry);
       await refreshClock();
     } catch (error: unknown) {
@@ -211,7 +213,7 @@ export function ShiftSummary({
       {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock out"}
     </Button>
   ) : canClockIn ? (
-    <Button disabled={acting} onClick={clockIn}>
+    <Button disabled={acting} onClick={clockIn} data-tour="clock">
       {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clock in"}
     </Button>
   ) : null;

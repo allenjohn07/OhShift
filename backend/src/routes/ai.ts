@@ -12,6 +12,7 @@ import {
 } from "../lib/auth-guard";
 import { ask } from "../lib/ai/ask";
 import { enforceAiRateLimit } from "../lib/ai/limits";
+import { enforceDemoAiAllowance } from "../lib/demo";
 import { parseShiftFromPrompt } from "../lib/nl-shift-parse";
 
 async function loadRosterAndPresets(user: {
@@ -118,6 +119,7 @@ export const aiRoutes = new Hono()
   .post("/parse-shift", jsonBody<PromptBody>({ prompt: v.text(500, 1), timezone: v.timezone, employeeId: v.text(100, 1) }), async (c) => {
     const user = await requireManager(c);
     const { prompt, timezone, employeeId } = readPrompt(c.req.valid("json"));
+    await enforceDemoAiAllowance(user);
 
     try {
       const { roster, selfRow, presets } = await loadRosterAndPresets(user);
@@ -148,6 +150,7 @@ export const aiRoutes = new Hono()
     const companyId = requireCompanyMember(user);
     const { prompt, timezone } = readPrompt(c.req.valid("json"));
     await enforceAiRateLimit(user.id);
+    await enforceDemoAiAllowance(user);
 
     try {
       const result = await ask({

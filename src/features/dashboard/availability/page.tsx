@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { TimePicker } from "@/components/ui/time-picker";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 type DayAvailability = {
   day_of_week: number;
@@ -120,6 +121,7 @@ function AvailabilityEditor() {
       setDays(saved);
       setSavedSnapshot(JSON.stringify(saved));
       toast.success("Availability saved");
+      completeDemoStep("availability");
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save availability",

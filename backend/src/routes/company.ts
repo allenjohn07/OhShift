@@ -2,8 +2,9 @@ import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 import * as v from "../lib/validation";
 import { Hono } from "hono";
 import { db } from "../db";
-import { companies, shiftLogs, shifts } from "../db/schema";
+import { companies, emailJobs, shiftLogs, shifts } from "../db/schema";
 import { jsonBody, requireManager } from "../lib/auth-guard";
+import { isDemoUser } from "../lib/demo";
 import { serializeCompany } from "../lib/serialize";
 import { weekRangeFromStart } from "../lib/week-range";
 
@@ -107,18 +108,44 @@ export const companyRoutes = new Hono()
 
     const eventId = crypto.randomUUID();
     const now = new Date();
-    const draftWhere = sql`s.company_id = ${user.companyId} AND s.status = 'draft' AND s.start_time >= ${range.start.getTime()} AND s.start_time < ${range.end.getTime()}`;
-    // The outbox/log select only drafts; a competing publish sees zero after this
-    // batch commits, so it cannot enqueue duplicate notifications.
-    const [, , published] = await db.batch([
-      db.run(sql`INSERT INTO email_jobs (id, company_id, employee_id, week_start, status, attempts, available_at, created_at)
-        SELECT ${eventId} || ':' || s.employee_id, ${user.companyId}, s.employee_id, ${weekStart}, 'pending', 0, ${now.getTime()}, ${now.getTime()}
-        FROM shifts s WHERE ${draftWhere} GROUP BY s.employee_id`),
-      db.run(sql`INSERT INTO shift_logs (id, company_id, actor_id, action, detail, week_start, created_at)
-        SELECT ${eventId}, ${user.companyId}, ${user.id}, 'published', 'Published ' || COUNT(*) || ' shift(s) for the week of ' || ${weekStart}, ${weekStart}, ${now.getTime()}
-        FROM shifts s WHERE ${draftWhere} HAVING COUNT(*) > 0`),
-      db.update(shifts).set({ status: "published", publishedAt: now }).where(and(eq(shifts.companyId, user.companyId), eq(shifts.status, "draft"), gte(shifts.startTime, range.start), lt(shifts.startTime, range.end))).returning({ id: shifts.id }),
-    ]);
+    const drafts = and(eq(shifts.companyId, user.companyId), eq(shifts.status, "draft"), gte(shifts.startTime, range.start), lt(shifts.startTime, range.end));
+    // Query builders, not db.run(sql): Drizzle's D1 batch can't bind raw
+    // statements that have parameters. Each select lists every column of its
+    // target table in schema order (Drizzle checks this at runtime).
+    // The outbox/log select only drafts; a competing publish sees zero after
+    // this batch commits, so it cannot enqueue duplicate notifications.
+    const outbox = db.insert(emailJobs).select(
+      db.select({
+        id: sql<string>`${eventId} || ':' || ${shifts.employeeId}`.as("id"),
+        companyId: sql<string>`${user.companyId}`.as("company_id"),
+        employeeId: shifts.employeeId,
+        weekStart: sql<string>`${weekStart}`.as("week_start"),
+        status: sql<string>`'pending'`.as("status"),
+        attempts: sql<number>`0`.as("attempts"),
+        availableAt: sql<number>`${now.getTime()}`.as("available_at"),
+        leaseToken: sql<null>`NULL`.as("lease_token"),
+        leaseUntil: sql<null>`NULL`.as("lease_until"),
+        sentAt: sql<null>`NULL`.as("sent_at"),
+        createdAt: sql<number>`${now.getTime()}`.as("created_at"),
+      }).from(shifts).where(drafts).groupBy(shifts.employeeId),
+    );
+    const log = db.insert(shiftLogs).select(
+      db.select({
+        id: sql<string>`${eventId}`.as("id"),
+        companyId: sql<string>`${user.companyId}`.as("company_id"),
+        shiftId: sql<null>`NULL`.as("shift_id"),
+        actorId: sql<string>`${user.id}`.as("actor_id"),
+        action: sql<string>`'published'`.as("action"),
+        detail: sql<string>`'Published ' || count(*) || ' shift(s) for the week of ' || ${weekStart}`.as("detail"),
+        weekStart: sql<string>`${weekStart}`.as("week_start"),
+        createdAt: sql<number>`${now.getTime()}`.as("created_at"),
+      }).from(shifts).where(drafts).having(sql`count(*) > 0`),
+    );
+    const publish = db.update(shifts).set({ status: "published", publishedAt: now }).where(drafts).returning({ id: shifts.id });
+    // Demo sandboxes never email, so their batch has no outbox insert.
+    const published = isDemoUser(user)
+      ? (await db.batch([log, publish]))[1]
+      : (await db.batch([outbox, log, publish]))[2];
     const count = published.length;
 
     return c.json({

@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Reveal } from "@/components/reveal";
 import { AuthHomeRedirect } from "@/components/auth-home-redirect";
+import { DEMO_IS_EXTERNAL, DEMO_URL } from "@/lib/demo";
 import { SchedulePreview } from "./schedule-preview";
 import {
   FEATURE_SCENES,
@@ -180,6 +181,21 @@ export default function LandingPage() {
                   Employee sign in
                 </Button>
               </Link>
+              {/* In production the demo is its own subdomain (a page load); locally
+                  it's /demo, reached in-app so the page doesn't reload and flash. */}
+              <Button asChild size="lg" variant="outline" className="h-11 px-5 text-base">
+                {DEMO_IS_EXTERNAL ? (
+                  <a href={DEMO_URL}>
+                    <Play className="h-4 w-4 text-brand" />
+                    Try the live demo
+                  </a>
+                ) : (
+                  <Link to="/demo">
+                    <Play className="h-4 w-4 text-brand" />
+                    Try the live demo
+                  </Link>
+                )}
+              </Button>
             </div>
           </div>
         </section>

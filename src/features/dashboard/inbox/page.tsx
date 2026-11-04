@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap, type ApiData } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 import type { AppRole } from "@/lib/nav";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -164,6 +165,7 @@ function InboxPageContent() {
         "Failed to save",
       );
       toast.success(editing ? "Announcement updated" : "Announcement posted");
+      if (!editing) completeDemoStep("announce");
       setComposeOpen(false);
       await refresh(["announcements"], ["inbox"]);
     } catch (error: unknown) {
@@ -260,6 +262,7 @@ function InboxPageContent() {
         "Failed to send",
       );
       setDraft("");
+      completeDemoStep("message");
       queryClient.setQueryData(queries.thread(activeId).queryKey, (prev) =>
         prev && { ...prev, messages: [...prev.messages, data.message] },
       );

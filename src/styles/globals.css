@@ -138,6 +138,26 @@
   }
 }
 
+/* Demo tour: outline the element "Take me there" points at (features/demo/highlight.ts). */
+[data-tour-highlight] {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 6px;
+  animation: tour-blink 1s ease-in-out 3;
+}
+
+@keyframes tour-blink {
+  50% {
+    outline-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tour-highlight] {
+    animation: none;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

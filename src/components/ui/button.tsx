@@ -16,7 +16,7 @@ const buttonVariants = cva(
           "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/30",
         // Notion-style white button with a hairline border.
         outline:
-          "border border-input bg-background text-foreground hover:bg-accent dark:bg-transparent",
+          "border border-input bg-background text-foreground hover:bg-accent dark:bg-transparent dark:hover:bg-accent",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-accent dark:hover:bg-accent",
         ghost: "text-foreground hover:bg-accent",

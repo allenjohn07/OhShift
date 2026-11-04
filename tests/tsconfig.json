@@ -4,6 +4,6 @@
     "types": ["bun"],
     "typeRoots": ["../backend/node_modules/@types", "../node_modules/@types"]
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "../src/types/**/*.d.ts", "../src/vite-env.d.ts"],
   "exclude": []
 }

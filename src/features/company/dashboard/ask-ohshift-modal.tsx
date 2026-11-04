@@ -19,6 +19,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { timeFormatOptions, shiftRange } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 import { OvernightHint } from "@/components/overnight-hint";
 import { Button } from "@/components/ui/button";
 
@@ -169,6 +170,7 @@ export function AskOhShiftModal({
         rpc.ai.ask.$post({ json: { prompt: trimmed, timezone } }),
         "Could not process that request",
       );
+      completeDemoStep("ask");
 
       if (data.kind === "query") {
         setQueryAnswer(data.answer || "No answer returned.");
@@ -232,6 +234,7 @@ export function AskOhShiftModal({
       );
 
       toast.success("Shift saved as draft — publish the week when ready");
+      completeDemoStep("assign");
       setIsOpen(false);
       reset();
       await onCreated?.();
@@ -253,6 +256,7 @@ export function AskOhShiftModal({
         variant="outline"
         onClick={() => setIsOpen(true)}
         className="[&_svg]:text-brand"
+        data-tour="ask"
       >
         <Sparkles className="h-4 w-4" />
         Ask OhShifts

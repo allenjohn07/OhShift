@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 
 type TimeOffRequest = {
@@ -96,6 +97,7 @@ function TimeOffPageContent() {
         "Failed to submit request",
       );
       toast.success("Time-off request submitted");
+      completeDemoStep("request-time-off");
       setModalOpen(false);
       await refresh();
     } catch (error: unknown) {

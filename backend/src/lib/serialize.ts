@@ -20,6 +20,7 @@ export function serializeUser(user: UserWithCompany) {
           morning_end: user.company.morningEnd,
           evening_start: user.company.eveningStart,
           evening_end: user.company.eveningEnd,
+          is_demo: Boolean(user.company.demoExpiresAt),
         }
       : null,
   };

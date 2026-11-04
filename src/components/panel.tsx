@@ -9,13 +9,17 @@ export function Panel({
   children,
   className,
   as: Tag = "section",
+  tour,
 }: {
   children: ReactNode;
   className?: string;
   as?: "section" | "div";
+  /** `data-tour` anchor for the demo tour's "Take me there". */
+  tour?: string;
 }) {
   return (
     <Tag
+      data-tour={tour}
       className={cn(
         "flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card",
         className,

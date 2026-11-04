@@ -33,6 +33,10 @@ try {
     assert.deepEqual(responses.map(r => r.status).sort(), [200, 409]);
   } else assert.equal((await request("/shifts", shift, accessToken)).status, 200);
   const mine = await request("/shifts/mine", undefined, accessToken); assert.equal(mine.status, 200); assert.equal((await mine.json()).shifts.length, 0);
+  // Publishing goes through a multi-statement D1 batch (outbox + log + update).
+  const publishRes = await request("/company/schedule/publish", { weekStart: date.toISOString().slice(0, 10), from: new Date(date.getTime() - 3_600_000).toISOString(), to: end.toISOString() }, accessToken);
+  assert.equal(publishRes.status, 200, await publishRes.clone().text());
+  assert.equal((await publishRes.json()).publishedCount, 1);
   if (existsSync("drizzle/0002_supreme_dreadnoughts.sql")) {
     const response = await request("/auth/reset-password", { email: "owner@runtime.test" });
     assert.equal(response.status, 200); assert.equal("tempPassword" in await response.json(), false);
@@ -44,7 +48,35 @@ try {
     assert.deepEqual(results.map(r => r.status).sort(), [200, 400]);
     assert.equal((await (await request("/auth/me", undefined, accessToken)).json()).user, null);
   }
-  console.log("Workers/D1 runtime checks passed (migrations, auth, draft visibility, and installed integrity/recovery guards).");
+  if (existsSync("src/routes/demo.ts")) {
+    // Real D1 caps bound parameters per statement (100); the seeder and demo invites must stay under it.
+    const mailBefore = sent.length;
+    const started = await request("/demo/start", { timezone: "Asia/Kolkata" });
+    assert.equal(started.status, 201);
+    const demo = await started.json();
+    assert.equal(demo.user.profile.companies.is_demo, true);
+    const employee = await request("/demo/switch", { role: "employee" }, demo.accessToken);
+    assert.equal(employee.status, 200); assert.equal((await employee.json()).user.profile.role, "employee");
+    const crew = Array.from({ length: 20 }, (_, i) => ({ email: `crew${i}@example.com`, fullName: `Crew ${i}` }));
+    assert.equal((await request("/employees/invite", { invites: crew }, demo.accessToken)).status, 200);
+    // Publishing next week's seeded drafts (the tour's "Publish next week" step).
+    const nextWeek = new Date(); nextWeek.setUTCDate(nextWeek.getUTCDate() + ((8 - nextWeek.getUTCDay()) % 7 || 7)); nextWeek.setUTCHours(0, 0, 0, 0);
+    const weekEnd = new Date(nextWeek.getTime() + 7 * 86_400_000);
+    const published = await request("/company/schedule/publish", { weekStart: nextWeek.toISOString().slice(0, 10), from: new Date(nextWeek.getTime() - 86_400_000).toISOString(), to: weekEnd.toISOString() }, demo.accessToken);
+    const publishBody = await published.json();
+    assert.equal(published.status, 200, JSON.stringify(publishBody));
+    assert.ok(publishBody.publishedCount > 0);
+    assert.equal(sent.length, mailBefore);
+    // The cron's cleanup removes expired sandboxes (one D1 batch of deletes).
+    const sandboxId = demo.user.profile.company_id;
+    await db.prepare("UPDATE companies SET demo_expires_at = ? WHERE id = ?").bind(Date.now() - 1000, sandboxId).run();
+    const worker = await mf.getWorker();
+    await worker.scheduled({ scheduledTime: new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000), cron: "* * * * *" });
+    assert.equal((await db.prepare("SELECT count(*) AS n FROM companies WHERE id = ?").bind(sandboxId).first()).n, 0);
+    assert.equal((await db.prepare("SELECT count(*) AS n FROM users WHERE email LIKE '%.demo.invalid'").first()).n, 0);
+    assert.equal((await db.prepare("SELECT count(*) AS n FROM shifts WHERE company_id = ?").bind(sandboxId).first()).n, 0);
+  }
+  console.log("Workers/D1 runtime checks passed (migrations, auth, draft visibility, demo sandboxes, and installed integrity/recovery guards).");
 } finally {
   if (mf) await mf.dispose();
   rmSync(scratch, { recursive: true, force: true });

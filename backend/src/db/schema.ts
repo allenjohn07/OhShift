@@ -63,8 +63,10 @@ export const companies = sqliteTable("companies", {
   morningEnd: text("morning_end").notNull().default("16:00"),
   eveningStart: text("evening_start").notNull().default("16:00"),
   eveningEnd: text("evening_end").notNull().default("00:00"),
+  /** Set only for demo sandboxes (`lib/demo`); they are deleted after this time. */
+  demoExpiresAt: timestamp("demo_expires_at"),
   createdAt: createdAt(),
-});
+}, (t) => [index("companies_demo_expires_idx").on(t.demoExpiresAt)]);
 
 export const users = sqliteTable(
   "users",

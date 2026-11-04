@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/ui/time-picker";
 import { formatTime, timeFormatOptions } from "@/lib/dates";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 /** Stable fallback so effects keyed on `pending` don't rerun every render. */
 const NO_ENTRIES: CompanyTimeEntry[] = [];
@@ -135,6 +136,7 @@ function TimesheetsContent() {
       toast.success(
         decision === "approved" ? "Timesheet approved" : "Timesheet denied",
       );
+      completeDemoStep("timesheet");
       await queryClient.invalidateQueries({ queryKey: ["time-entries"] });
     } catch (error: unknown) {
       toast.error(

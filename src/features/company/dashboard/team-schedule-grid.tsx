@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Trash2, Loader2, Edit2, Send } from "lucide-
 import { IconTooltip } from "@/components/icon-tooltip";
 import { toast } from "sonner";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 import { getEmployeeColor } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import {
@@ -259,6 +260,7 @@ export function TeamScheduleGrid({
         "Failed to publish schedule",
       );
       toast.success(data.message || "Schedule published");
+      if (data.publishedCount > 0) completeDemoStep("publish");
       await onScheduleChanged?.();
     } catch (err: unknown) {
       toast.error(
@@ -304,6 +306,7 @@ export function TeamScheduleGrid({
                <span>Reset</span>
              </button>
              <button
+               data-tour="publish"
                onClick={handlePublishWeek}
                disabled={isPublishing || draftCount === 0}
                className="ml-1 flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium btn-brand disabled:cursor-not-allowed disabled:opacity-50"

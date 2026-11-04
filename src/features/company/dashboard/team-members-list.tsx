@@ -50,7 +50,7 @@ export function TeamMembersList({
   );
 
   return (
-    <Panel className={className}>
+    <Panel className={className} tour="team">
       <PanelHeader
         title="Team"
         meta={all.length}

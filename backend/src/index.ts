@@ -1,4 +1,5 @@
 import { deliverScheduleEmails } from "./lib/schedule-emails";
+import { deleteExpiredDemoSandboxes } from "./lib/demo/cleanup";
 import { databaseConflict } from "./lib/database-error";
 import { bodyLimit } from "hono/body-limit";
 import { env } from "cloudflare:workers";
@@ -16,6 +17,7 @@ import { authRoutes } from "./routes/auth";
 import { availabilityRoutes } from "./routes/availability";
 import { companyRoutes } from "./routes/company";
 import { dashboardRoutes } from "./routes/dashboard";
+import { demoRoutes } from "./routes/demo";
 import { employeesRoutes } from "./routes/employees";
 import { inboxRoutes } from "./routes/inbox";
 import { messagesRoutes } from "./routes/messages";
@@ -96,10 +98,11 @@ export const app = new Hono()
   .get("/", (c) =>
     c.json({
       name: "OhShifts API",
-      docs: "JWT Bearer auth. Routes: /auth, /shifts, /employees, /company, /dashboard, /availability, /time-off, /time-entries, /announcements, /messages, /inbox, /ai",
+      docs: "JWT Bearer auth. Routes: /auth, /demo, /shifts, /employees, /company, /dashboard, /availability, /time-off, /time-entries, /announcements, /messages, /inbox, /ai",
     }),
   )
   .route("/auth", authRoutes)
+  .route("/demo", demoRoutes)
   .route("/company", companyRoutes)
   .route("/employees", employeesRoutes)
   .route("/shifts", shiftsRoutes)
@@ -127,4 +130,12 @@ export const app = new Hono()
 
 export type AppType = typeof app;
 
-export default Object.assign(app, { async scheduled() { await deliverScheduleEmails(); } });
+export default Object.assign(app, {
+  async scheduled(controller: { scheduledTime: number }) {
+    // The cron fires every minute; expired demo sandboxes are swept every 15.
+    const jobs = [deliverScheduleEmails()];
+    if (new Date(controller.scheduledTime).getUTCMinutes() % 15 === 0) jobs.push(deleteExpiredDemoSandboxes().then(() => {}));
+    const failed = (await Promise.allSettled(jobs)).find(result => result.status === "rejected");
+    if (failed) throw failed.reason;
+  },
+});

@@ -136,7 +136,7 @@ export function DashboardContent({
           actions={
             <>
               <AskOhShiftModal company={company} onCreated={onScheduleChanged} />
-              <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
+              <Button variant="outline" onClick={() => setIsInviteOpen(true)} data-tour="invite">
                 <UserPlus className="h-4 w-4" />
                 Invite
               </Button>

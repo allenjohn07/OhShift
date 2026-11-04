@@ -34,6 +34,16 @@ Publishing creates the schedule change, audit entry and one notification per aff
 
 Monitor pending and failed `email_jobs` records, Worker delivery errors, and Resend delivery/bounce events. To retry a terminal job after fixing delivery, use an audited administrative operation and retain its existing ID/idempotency key. Do not delete historical shifts or users to clean up delivery records.
 
+## Live demo (demo.ohshifts.com)
+
+"Try the live demo" on the landing page creates a private sandbox company per visitor (`POST /demo/start`, `backend/src/lib/demo/`): a seeded café team with schedules, requests and timesheets, signed in as its owner, with a guided tour. Visitors switch between the owner, manager and employee personas (`POST /demo/switch`, demo sessions only).
+
+- Sandboxes are companies with `demo_expires_at` set (migration 0006). They expire after 24 hours; the minute cron deletes expired ones every 15 minutes.
+- Demo users have no password and an unroutable `*.demo.invalid` address. Demo invites add the teammate directly (the typed address is never stored), publishing enqueues no email, password/avatar changes are refused, and recovery mail is never sent. Demo traffic never reaches Resend.
+- Limits: 10 starts per IP per minute and 20 per hour, at most 2,000 live sandboxes, and 5 assistant questions per sandbox (on top of `AI_LIMITER`).
+- Setup: attach `demo.ohshifts.com` as a second custom domain on the **`ohshifts`** Pages project (same build; its root redirects to `/demo`). `FRONTEND_URLS` in `backend/wrangler.toml` allows it for CORS. Set the GitHub variable `VITE_DEMO_URL=https://demo.ohshifts.com`; without it the button opens `/demo` on the main site, which works the same way.
+- Deploy order: `bun run db:migrate:remote` (0006), then the Worker, then Pages.
+
 ## Local verification
 
 ```sh

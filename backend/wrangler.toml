@@ -8,6 +8,8 @@ compatibility_date = "2026-10-01"
 NODE_ENV = "production"
 EMAIL_FROM = "OhShift <notification@ohshifts.com>"
 APP_URL = "https://ohshifts.com"
+# Extra CORS origins: the live demo is the same SPA served on its own subdomain.
+FRONTEND_URLS = "https://demo.ohshifts.com"
 
 # D1 database. Create once with: bunx wrangler d1 create ohshift
 # then paste the printed database_id below.

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { SimpleSelect } from "@/components/ui/select";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 interface Employee {
   id: string;
@@ -84,6 +85,7 @@ export function ManageTeamModal({
           ? `${name} is now a manager`
           : `${name} is now an employee`,
       );
+      if (role === "manager") completeDemoStep("promote");
       await onChanged?.();
     } catch (error: unknown) {
       toast.error(

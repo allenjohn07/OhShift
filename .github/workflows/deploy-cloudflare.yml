@@ -51,6 +51,7 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_APP_URL: ${{ vars.VITE_APP_URL }}
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          VITE_DEMO_URL: ${{ vars.VITE_DEMO_URL }}
         run: bun run build
 
       # Use the existing project that owns ohshifts.com; fail if it is missing.

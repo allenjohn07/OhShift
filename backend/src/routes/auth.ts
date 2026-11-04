@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from "../lib/password";
 import { serializeUser } from "../lib/serialize";
 import { consumeAccountToken, sendAccountLink } from "../lib/account-tokens";
 import { limitAuth } from "../lib/auth-rate-limit";
+import { assertNotDemo, isDemoEmail } from "../lib/demo";
 import { createAccessToken, getAuthFromBearer, getDbUser } from "../lib/session";
 
 type LoginBody = {
@@ -126,7 +127,7 @@ export const authRoutes = new Hono()
 
     await limitAuth(c, "reset", typeof email === "string" ? email : undefined);
     const user = await db.query.users.findFirst({ where: sql`lower(${users.email}) = ${email?.trim().toLowerCase()}`, columns: { id: true, email: true, fullName: true, sessionVersion: true, isActive: true } });
-    if (user?.isActive) c.executionCtx.waitUntil(sendAccountLink(user, "reset").catch(() => {
+    if (user?.isActive && !isDemoEmail(user.email)) c.executionCtx.waitUntil(sendAccountLink(user, "reset").catch(() => {
       console.error("Account recovery delivery failed");
     }));
     return c.json({ message: "If an account exists for that email, a password link will arrive shortly." });
@@ -142,6 +143,7 @@ export const authRoutes = new Hono()
   })
   .post("/update-avatar", jsonBody<UpdateAvatarBody>({ avatarUrl: v.httpsUrl }), async (c) => {
     const user = await requireUser(c);
+    assertNotDemo(user);
     const { avatarUrl } = c.req.valid("json");
 
     if (!avatarUrl) {
@@ -154,6 +156,7 @@ export const authRoutes = new Hono()
   })
   .post("/change-password", jsonBody<ChangePasswordBody>({ currentPassword: v.text(128, 1), newPassword: v.text(128, 12) }), async (c) => {
     const user = await requireUser(c);
+    assertNotDemo(user);
     const { currentPassword, newPassword } = c.req.valid("json");
 
     if (typeof currentPassword !== "string" || !currentPassword || currentPassword.length > 128 || typeof newPassword !== "string" || newPassword.length < 12 || newPassword.length > 128) {

@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { apiError, rpc } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 interface Invitee {
   fullName: string;
@@ -84,7 +85,10 @@ export function InviteEmployeeForm() {
 
       const created = data.invites;
 
-      if (created.length > 0) {
+      if ("demo" in data) {
+        toast.success(data.message);
+        completeDemoStep("invite");
+      } else if (created.length > 0) {
         toast.success(created.length === 1 ? "Invitation sent" : "Invitations sent", {
           description: "Each employee will receive a link to set their password.",
         });
@@ -92,7 +96,7 @@ export function InviteEmployeeForm() {
         toast.success(data.message || "Invitations created");
       }
 
-      if (data.errors?.length) {
+      if ("errors" in data && data.errors?.length) {
         toast.warning("Some invites had issues", {
           description: data.errors[0],
         });

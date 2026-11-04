@@ -38,6 +38,8 @@ type AuthContextValue = {
   accessToken: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  /** Store a session issued by another endpoint (the demo's start / role switch). */
+  adoptSession: (session: { user: AuthUser; accessToken: string }) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
 };
@@ -144,6 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.user;
   }, [applySession]);
 
+  const adoptSession = useCallback((session: { user: AuthUser; accessToken: string }) => {
+    applySession(session.user, session.accessToken);
+  }, [applySession]);
+
   const logout = useCallback(() => {
     applySession(null, null);
   }, [applySession]);
@@ -154,10 +160,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken,
       loading,
       login,
+      adoptSession,
       logout,
       refreshUser,
     }),
-    [user, accessToken, loading, login, logout, refreshUser],
+    [user, accessToken, loading, login, adoptSession, logout, refreshUser],
   );
 
   return (

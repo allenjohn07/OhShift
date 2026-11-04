@@ -14,6 +14,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 import { shiftRange } from "@/lib/dates";
 import { OvernightHint } from "@/components/overnight-hint";
 
@@ -240,6 +241,7 @@ export function BulkAssignModal({
         return;
       }
 
+      completeDemoStep("assign");
       setIsOpen(false);
       await onAssigned?.();
     } catch (err: unknown) {

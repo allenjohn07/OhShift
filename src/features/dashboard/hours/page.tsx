@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { formatTime, clockEntriesRange, isInProgress } from "@/lib/dates";
 import { queries } from "@/lib/queries";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 type TimeEntryStatus = "open" | "pending" | "approved" | "denied";
 
@@ -219,6 +220,7 @@ function HoursPageContent() {
         "Failed to clock in",
       );
       toast.success("Clocked in");
+      completeDemoStep("clock-in");
       if (data.entry) {
         try {
           sessionStorage.setItem(
@@ -470,7 +472,7 @@ function HoursPageContent() {
                       </Button>
                     ) : canClockIn && earlyOk && notEnded ? (
                       <Button
-                        
+                        data-tour="clock"
                         disabled={actingShiftId === shift.id}
                         onClick={() => clockIn(shift.id)}
                       >

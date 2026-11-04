@@ -22,6 +22,7 @@ import {
 } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 
 function timeAgo(iso?: string | null) {
   if (!iso) return null;
@@ -64,6 +65,7 @@ function RequestsContent() {
         "Failed to update request",
       );
       toast.success(decision === "approved" ? "Request approved" : "Request denied");
+      completeDemoStep("review-time-off");
       await queryClient.invalidateQueries({ queryKey: ["time-off"] });
     } catch (error: unknown) {
       toast.error(

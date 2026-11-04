@@ -11,10 +11,31 @@ import {
   queryParams,
 } from "../lib/auth-guard";
 import { sendAccountLink } from "../lib/account-tokens";
+import { demoEmail, isDemoUser } from "../lib/demo";
 import { emailConfig } from "../lib/email";
 import { serializeUser } from "../lib/serialize";
 
 const ASSIGNABLE_ROLES: UserRole[] = ["employee", "manager"];
+
+/**
+ * Demo invites add the teammate straight away and send nothing. The typed
+ * address is never stored: it becomes an unroutable sandbox address, so a
+ * visitor can't reserve (or email) a real person's address.
+ */
+async function addDemoTeammates(companyId: string, invites: InviteBody["invites"]) {
+  const rows = invites.map((invite) => {
+    const local = invite.email.trim().toLowerCase().split("@")[0]!.replace(/[^a-z0-9._-]/g, "").slice(0, 40) || "teammate";
+    return { email: demoEmail(`${local}.${crypto.randomUUID().slice(0, 4)}`, companyId), fullName: invite.fullName.trim(), role: "employee" as const, companyId, designation: invite.designation?.trim() || null, passwordHash: null };
+  });
+  // ≤10 rows per statement keeps each insert under D1's 100-parameter cap.
+  const [first, ...rest] = [rows.slice(0, 10), rows.slice(10)].filter(chunk => chunk.length).map(chunk => db.insert(users).values(chunk));
+  await db.batch([first!, ...rest]);
+  return {
+    message: `Added ${rows.length} teammate(s). In the demo no email is sent.`,
+    invites: rows.map(({ email, fullName }) => ({ email, fullName })),
+    demo: true,
+  };
+}
 
 type UpdateEmployeeBody = {
   employeeId: string;
@@ -103,6 +124,7 @@ export const employeesRoutes = new Hono()
     if (!Array.isArray(invites) || invites.length < 1 || invites.length > 20 || invites.some(i => !i || typeof i.email !== "string" || i.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email.trim()) || typeof i.fullName !== "string" || !i.fullName.trim() || i.fullName.length > 120 || (i.designation !== undefined && (typeof i.designation !== "string" || i.designation.length > 120)))) {
       return c.json({ error: "Provide 1–20 valid invitations with names and email addresses." }, 400);
     }
+    if (isDemoUser(sender)) return c.json(await addDemoTeammates(sender.companyId, invites));
     try { emailConfig(); } catch { return c.json({ error: "Email delivery is not configured. Contact your administrator." }, 503); }
     const created: Array<{ email: string; fullName: string }> = [];
     const inviteErrors: string[] = [];

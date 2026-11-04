@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { rpc, unwrap } from "@/lib/rpc";
+import { completeDemoStep } from "@/features/demo/tour-store";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -136,6 +137,7 @@ export function AssignShiftModal({
       );
 
       toast.success("Shift saved as draft — publish the week when ready");
+      completeDemoStep("assign");
       setIsOpen(false);
       await onAssigned?.();
     } catch (err: unknown) {

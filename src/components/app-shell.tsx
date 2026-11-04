@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DemoChrome, DemoPageGate } from "@/features/demo/demo-chrome";
 import { cn } from "@/lib/utils";
 import {
   type AppRole,
@@ -659,7 +660,8 @@ export function AppShell({
           collapsed ? SIDEBAR_COLLAPSED_PL : SIDEBAR_EXPANDED_PL,
         )}
       >
-        {children}
+        <DemoChrome />
+        <DemoPageGate>{children}</DemoPageGate>
       </div>
 
       {/* Mobile bottom tabs (+ Menu, which opens the sheet above) */}
