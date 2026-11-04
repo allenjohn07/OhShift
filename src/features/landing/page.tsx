@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useTheme } from "next-themes";
 import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Reveal } from "@/components/reveal";
 import { AuthHomeRedirect } from "@/components/auth-home-redirect";
-import { DEMO_IS_EXTERNAL, DEMO_URL } from "@/lib/demo";
+import { DEMO_IS_EXTERNAL, externalDemoUrl } from "@/lib/demo";
 import { SchedulePreview } from "./schedule-preview";
 import {
   FEATURE_SCENES,
@@ -142,6 +143,8 @@ function SectionHeading({
 }
 
 export default function LandingPage() {
+  // Re-renders on theme changes, so the demo link carries the current theme.
+  const { theme } = useTheme();
   return (
     <AuthHomeRedirect>
       <div className="flex min-h-screen flex-col bg-background">
@@ -185,7 +188,7 @@ export default function LandingPage() {
                   it's /demo, reached in-app so the page doesn't reload and flash. */}
               <Button asChild size="lg" variant="outline" className="h-11 px-5 text-base">
                 {DEMO_IS_EXTERNAL ? (
-                  <a href={DEMO_URL}>
+                  <a href={externalDemoUrl(theme)}>
                     <Play className="h-4 w-4 text-brand" />
                     Try the live demo
                   </a>
