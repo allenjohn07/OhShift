@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 // The production layout: ohshifts.com and demo.ohshifts.com are different
@@ -76,4 +77,23 @@ test("a carried ?theme= is applied and removed from the address bar", async ({ p
   await page.goto(`${MAIN}/?theme=neon`);
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   expect(await page.evaluate(() => localStorage.getItem("theme"))).toBe("light");
+});
+
+// The dev server sends no CSP, so serve the real index.html and theme script
+// under the real production policy from public/_headers.
+test("the theme is applied under the production content security policy", async ({ page }) => {
+  const csp = readFileSync("public/_headers", "utf8").match(/Content-Security-Policy: (.+)/)![1]!;
+  const violations: string[] = [];
+  page.on("console", (message) => { if (/Content Security Policy/.test(message.text())) violations.push(message.text()); });
+  await page.route("http://csp.test/**", async (route) => {
+    const { pathname } = new URL(route.request().url());
+    if (pathname === "/theme-init.js") await route.fulfill({ contentType: "text/javascript", body: readFileSync("public/theme-init.js", "utf8") });
+    else if (pathname === "/demo") await route.fulfill({ contentType: "text/html", headers: { "Content-Security-Policy": csp }, body: readFileSync("index.html", "utf8") });
+    else await route.abort();
+  });
+  await page.goto("http://csp.test/demo?theme=light");
+  expect(violations).toEqual([]);
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  expect(await page.evaluate(() => localStorage.getItem("theme"))).toBe("light");
+  await expect(page).toHaveURL("http://csp.test/demo");
 });

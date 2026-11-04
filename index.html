@@ -10,31 +10,14 @@
     />
     <link rel="icon" type="image/svg+xml" href="/logo/ohshift-os-monogram.svg" />
     <!-- Paint the theme's page colour before the app (and its CSS) loads, so a
-         full page load never flashes the wrong colour. Mirrors next-themes (key "theme",
-         default dark, system allowed); --background in globals.css. -->
+         full page load never flashes the wrong colour (public/theme-init.js;
+         colours match --background in globals.css). A blocking, same-origin
+         script: the CSP in public/_headers forbids inline ones. -->
     <style>
       html { background: #ffffff; }
       html.dark { background: #191919; color-scheme: dark; }
     </style>
-    <script>
-      try {
-        // ohshifts.com and demo.ohshifts.com keep separate storage, so links
-        // between them carry the theme as ?theme= (src/lib/demo.ts). Adopt it,
-        // then drop it from the address bar before the app reads the URL.
-        var url = new URL(location.href);
-        var carried = url.searchParams.get("theme");
-        if (carried === "light" || carried === "dark" || carried === "system") {
-          localStorage.setItem("theme", carried);
-          url.searchParams.delete("theme");
-          history.replaceState(history.state, "", url.pathname + url.search + url.hash);
-        }
-        var theme = localStorage.getItem("theme") || "dark";
-        var dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.classList.toggle("dark", dark);
-      } catch (e) {
-        document.documentElement.classList.add("dark");
-      }
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body class="font-sans antialiased overflow-x-hidden bg-background">
     <div id="root"></div>
