@@ -17,7 +17,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
       - run: bun install --frozen-lockfile
       - run: bun install --cwd backend --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
@@ -36,7 +36,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install dependencies
         run: bun install
@@ -79,7 +79,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install dependencies
         run: bun install

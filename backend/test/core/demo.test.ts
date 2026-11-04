@@ -1,5 +1,5 @@
 import { schema, testDb } from "../ai/harness";
-import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { Hono } from "hono";
 import { and, eq, like, sql } from "drizzle-orm";
 
@@ -191,10 +191,18 @@ test("each sandbox gets five assistant questions in total, across roles", async 
 });
 
 test("starting demos is rate-limited per IP", async () => {
-  const statuses: number[] = [];
-  for (let i = 0; i < 11; i++) statuses.push((await call("/demo/start", { method: "POST", body: {}, ip: "203.0.113.9" })).status);
-  expect(statuses.slice(0, 10).every(s => s === 201)).toBe(true);
-  expect(statuses[10]).toBe(429);
+  // The limit counts per calendar minute: if the 11 requests straddled a
+  // minute boundary, the 11th would land in a fresh bucket and pass. Freeze
+  // the clock just after the current minute starts.
+  setSystemTime(new Date(Math.floor(Date.now() / 60_000) * 60_000 + 1_000));
+  try {
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) statuses.push((await call("/demo/start", { method: "POST", body: {}, ip: "203.0.113.9" })).status);
+    expect(statuses.slice(0, 10).every(s => s === 201)).toBe(true);
+    expect(statuses[10]).toBe(429);
+  } finally {
+    setSystemTime();
+  }
 });
 
 test("cleanup deletes expired sandboxes only", async () => {
