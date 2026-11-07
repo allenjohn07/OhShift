@@ -12,12 +12,13 @@ const profile = { id: "alex", full_name: "Alex Morgan", email: "alex@demo.invali
 const session = { accessToken: "token-owner", user: { id: "alex", email: profile.email, profile } };
 
 async function mockApi(page: Page) {
+  const calls = { start: 0 };
   await page.route("http://127.0.0.1:3099/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     const authed = Boolean(route.request().headers().authorization);
     let body: object = {};
     let status = 200;
-    if (path === "/demo/start") { status = 201; body = session; }
+    if (path === "/demo/start") { calls.start++; status = 201; body = session; }
     else if (path === "/auth/me") body = { user: authed ? session.user : null };
     else if (path === "/dashboard/company") body = { profile, employees: [], shifts: [], myShifts: [] };
     else if (path === "/shifts/company") body = { shifts: [] };
@@ -25,6 +26,39 @@ async function mockApi(page: Page) {
     else if (path === "/company/activity") body = { activity: [] };
     else if (path === "/inbox/unread") body = { announcements: 0, messages: 0, total: 0 };
     await route.fulfill({ status, json: body, headers: { "Access-Control-Allow-Origin": "*" } });
+  });
+  return calls;
+}
+
+for (const mobile of [false, true]) {
+  test.describe(`account logout on ${mobile ? "mobile" : "desktop"}`, () => {
+    test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+
+    test("leaves the demo for an interactive main site and preserves the sandbox", async ({ page }) => {
+      const calls = await mockApi(page);
+      await page.goto(`${DEMO}/demo?theme=light`);
+      await expect(page).toHaveURL(`${DEMO}/company/dashboard`);
+      await page.getByRole("button", { name: "Hide the tour", exact: true }).click();
+      if (mobile) await page.getByRole("button", { name: "Open menu", exact: true }).click();
+      await page.getByRole("button", { name: /Alex/ }).click();
+      await page.getByRole("menuitem", { name: "Log out", exact: true }).click();
+
+      await expect(page).toHaveURL(`${MAIN}/`);
+      await expect(page.getByTestId("demo-bar")).toHaveCount(0);
+      expect(await page.evaluate(() => localStorage.getItem("theme"))).toBe("light");
+      await expect(page.getByRole("link", { name: "Try the live demo" })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe("hidden");
+      await page.mouse.move(200, 400);
+      await expect.poll(async () => {
+        await page.mouse.wheel(0, 200);
+        return page.evaluate(() => window.scrollY);
+      }).toBeGreaterThan(0);
+      // A real click proves no menu overlay intercepts the landing page.
+      await page.getByRole("link", { name: "Try the live demo" }).click();
+      await expect(page).toHaveURL(`${DEMO}/company/dashboard`);
+      expect(calls.start).toBe(1);
+      expect(await page.evaluate(() => localStorage.getItem("ohshift_access_token"))).toBe("token-owner");
+    });
   });
 }
 

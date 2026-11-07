@@ -58,6 +58,32 @@ async function mockApi(page: Page, { startFails = false, isDemo = true, dashboar
 
 const tour = (page: Page) => page.getByRole("complementary", { name: "Product tour" });
 
+for (const isDemo of [true, false]) {
+  test(`mobile account logout clears a same-origin ${isDemo ? "demo" : "regular"} session`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const calls = await mockApi(page, { isDemo });
+    if (isDemo) {
+      await page.goto("/demo");
+      await page.getByRole("button", { name: "Hide the tour", exact: true }).click();
+    } else {
+      await page.addInitScript(() => {
+        if (location.pathname === "/company/dashboard") localStorage.setItem("ohshift_access_token", "token-owner");
+      });
+      await page.goto("/company/dashboard");
+    }
+    await page.getByRole("button", { name: "Open menu", exact: true }).click();
+    await page.getByRole("button", { name: /Alex Morgan/ }).click();
+    await page.getByRole("menuitem", { name: "Log out", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("link", { name: "Try the live demo" })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("ohshift_access_token"))).toBeNull();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe("hidden");
+    await page.reload();
+    await expect(page.getByRole("link", { name: "Try the live demo" })).toBeVisible();
+    expect(calls.start).toHaveLength(isDemo ? 1 : 0);
+  });
+}
+
 test("the hero's live demo button creates a sandbox and opens the tour", async ({ page }) => {
   const calls = await mockApi(page);
   await page.goto("/");
