@@ -24,7 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DemoChrome, DemoPageGate } from "@/features/demo/demo-chrome";
+import { DemoChrome, DemoPageGate, useLeaveDemo } from "@/features/demo/demo-chrome";
+import { isDemoProfile } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 import {
   type AppRole,
@@ -440,6 +441,7 @@ export function AppShell({
   const pathname = useLocation({ select: (l) => l.pathname });
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
+  const leaveDemo = useLeaveDemo();
   const [menuOpen, setMenuOpen] = useState(false);
   const { collapsed, toggle: toggleSidebar } = useSidebarCollapsed();
   // Prefer auth profile so pages that default role before /auth/me returns
@@ -520,6 +522,10 @@ export function AppShell({
   const handleLogout = () => {
     try {
       setMenuOpen(false);
+      if (isDemoProfile(user?.profile)) {
+        leaveDemo("/");
+        return;
+      }
       logout();
       toast.success("Logged out successfully");
       navigate({ to: "/", replace: true });
